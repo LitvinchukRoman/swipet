@@ -1,7 +1,12 @@
 spring:
-  application:
-    name: backend
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:swipet}
+    username: ${POSTGRES_USER:swipet_user}
+    password: ${POSTGRES_PASSWORD:secret}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
