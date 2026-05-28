@@ -1,0 +1,24 @@
+# --- secrets ---
+.env
+.env.*
+!.env.example
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+
+# --- Java/Gradle build artifacts ---
+backend/build/
+backend/.gradle/
+backend/out/
+
+# --- TLS material ---
+infra/nginx/certs/*.crt
+infra/nginx/certs/*.key
+infra/nginx/certs/*.pem

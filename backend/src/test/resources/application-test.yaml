@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+swipet:
+  jwt:
+    secret: test-test-test-test-test-test-test-test-test-test-test-test-test-test
+    access-expiration-seconds: 900
+    refresh-expiration-seconds: 604800
+    issuer: swipet-backend-test
+  storage:
+    backend: mock
+  cors:
+    allowed-origins: http://localhost:8081
+
+logging:
+  level:
+    org.hibernate.SQL: WARN
