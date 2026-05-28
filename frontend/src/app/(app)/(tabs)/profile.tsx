@@ -1,15 +1,23 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
+
+const ROLE_LABEL: Record<string, string> = {
+  USER: 'Усиновлювач',
+  SHELTER_ADMIN: 'Адміністратор притулку',
+  ADMIN: 'Адміністратор',
+};
 
 export default function ProfileScreen() {
   const { user, refreshToken, clearAuth } = useAuthStore();
 
-  const handleLogout = async () => {
-    Alert.alert('Вихід', 'Ти впевнений?', [
+  const handleLogout = () => {
+    Alert.alert('Вихід', 'Точно вийти з акаунту?', [
       { text: 'Скасувати', style: 'cancel' },
       {
         text: 'Вийти',
@@ -27,48 +35,58 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+      {/* Хедер профілю */}
+      <View className="items-center px-5 pb-6 pt-8">
+        <Avatar uri={user?.avatarUrl} name={user?.fullName} size={96} />
+        <Text className="mt-3 text-2xl font-extrabold text-gray-900">{user?.fullName}</Text>
+        <Text className="text-sm text-gray-500">{user?.email}</Text>
+        <View className="mt-2 rounded-full bg-primary/10 px-3 py-1">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-primary">
+            {ROLE_LABEL[user?.role ?? 'USER'] ?? user?.role}
           </Text>
         </View>
-        <Text style={styles.name}>{user?.fullName}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-        <Text style={styles.role}>{user?.role}</Text>
+      </View>
 
-        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Вийти</Text>
-        </Pressable>
+      {/* Пункти меню */}
+      <View className="mx-4 overflow-hidden rounded-2xl bg-white">
+        <MenuRow emoji="✏️" label="Редагувати профіль" onPress={() => router.push('/(app)/profile/edit')} />
+        <MenuRow emoji="🌟" label="Мої підопічні" onPress={() => router.push('/(app)/guardianship')} />
+        <MenuRow emoji="❤️" label="Вподобані" onPress={() => router.push('/(app)/(tabs)/liked')} last />
+      </View>
+
+      {user?.role === 'SHELTER_ADMIN' ? (
+        <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white">
+          <MenuRow emoji="📊" label="Дашборд притулку" onPress={() => router.push('/(app)/shelter/dashboard')} last />
+        </View>
+      ) : null}
+
+      <View className="mt-auto px-5 pb-4">
+        <Button label="Вийти" variant="outline" onPress={handleLogout} />
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1, alignItems: 'center', paddingTop: 60, gap: 12 },
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#FF6B6B',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  avatarText: { fontSize: 36, color: '#fff', fontWeight: '700' },
-  name: { fontSize: 22, fontWeight: '700', color: '#1a1a1a' },
-  email: { fontSize: 14, color: '#666' },
-  role: { fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: 1 },
-  logoutBtn: {
-    marginTop: 32,
-    borderWidth: 1,
-    borderColor: '#FF6B6B',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-  },
-  logoutText: { color: '#FF6B6B', fontWeight: '600', fontSize: 16 },
-});
+function MenuRow({
+  emoji,
+  label,
+  onPress,
+  last,
+}: {
+  emoji: string;
+  label: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-row items-center px-4 py-4 active:bg-gray-50 ${last ? '' : 'border-b border-gray-100'}`}
+    >
+      <Text className="text-lg">{emoji}</Text>
+      <Text className="ml-3 flex-1 text-base text-gray-800">{label}</Text>
+      <Text className="text-gray-300">›</Text>
+    </Pressable>
+  );
+}
