@@ -43,4 +43,14 @@ public class FeedController {
         
         return swipeService.recordSwipe(userId, request);
     }
+
+    @GetMapping("/liked")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ua.edu.ukma.swipet.backend.animal.dto.AnimalResponse> getLikedAnimals(
+        @RequestHeader("X-User-Id") Long userId,
+        @RequestParam(required = false, defaultValue = "1") Integer page,
+        @RequestParam(required = false, defaultValue = "20") Integer limit) {
+
+        return feedService.getLikedAnimals(userId, page, limit);
+    }
 }

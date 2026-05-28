@@ -3,17 +3,21 @@ package ua.edu.ukma.swipet.backend.swipe.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.edu.ukma.swipet.backend.animal.mapper.AnimalMapper;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.swipe.dto.FeedAnimalResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import ua.edu.ukma.swipet.backend.swipe.repository.SwipeRepository;
 
 @Service
 @RequiredArgsConstructor
 public class FeedService {
 
     private final AnimalRepository animalRepository;
+    private final AnimalMapper animalMapper;
+    private final SwipeRepository swipeRepository;
 
     @Transactional(readOnly = true)
     public List<FeedAnimalResponse> getFeed(
@@ -39,5 +43,26 @@ public class FeedService {
                  Math.round(proj.getDistanceKm() * 10.0) / 10.0
          ))
          .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ua.edu.ukma.swipet.backend.animal.dto.AnimalResponse> getLikedAnimals(
+        Long userId, Integer page, Integer limit) {
+
+        // Пагінація у Spring Data JPA починається з 0, а клієнти зазвичай передають сторінку 1
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
+        int pageSize = (limit != null && limit > 0) ? limit : 20;
+
+        org.springframework.data.domain.Pageable pageable =
+            org.springframework.data.domain.PageRequest.of(pageNumber, pageSize);
+
+        return swipeRepository.findLikedAnimalsByUserId(
+                userId,
+                ua.edu.ukma.swipet.backend.swipe.entity.SwipeDirection.RIGHT,
+                pageable
+            )
+            .stream()
+            .map(animalMapper::toResponse)
+            .collect(Collectors.toList());
     }
 }
