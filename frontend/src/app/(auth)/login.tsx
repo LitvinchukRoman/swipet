@@ -22,6 +22,23 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
 
+  // Тимчасовий вхід для перегляду UI поки бекенд не готовий.
+  // TODO: прибрати перед релізом.
+  const demoLogin = async () => {
+    await setAuth(
+      {
+        id: 99,
+        email: 'demo@swipet.ua',
+        fullName: 'Демо Користувач',
+        role: 'USER',
+        isEmailVerified: true,
+      },
+      'demo-access-token',
+      'demo-refresh-token'
+    );
+    router.replace('/(app)/(tabs)');
+  };
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert('Помилка', 'Введіть email та пароль');
@@ -88,6 +105,10 @@ export default function LoginScreen() {
               Немає акаунту? <Text style={styles.linkBold}>Зареєструватись</Text>
             </Text>
           </Pressable>
+
+          <Pressable onPress={demoLogin} style={styles.demoBtn}>
+            <Text style={styles.demoText}>👀 Переглянути в демо-режимі</Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -120,4 +141,14 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   link: { textAlign: 'center', color: '#666', marginTop: 8 },
   linkBold: { color: '#FF6B6B', fontWeight: '600' },
+  demoBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+  },
+  demoText: { color: '#999', fontSize: 14, fontWeight: '500' },
 });
