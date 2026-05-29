@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { Dimensions, Pressable, Text, View } from 'react-native';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
+import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -9,148 +9,306 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
+  SharedValue,
 } from 'react-native-reanimated';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Heart, Info, X } from 'lucide-react-native';
+ 
 import { SwipeCard } from '@/components/SwipeCard';
+import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal, SwipeDirection } from '@/types/models';
-
+ 
+// ─── Constants ───────────────────────────────
 const { width: SCREEN_W } = Dimensions.get('window');
-const SWIPE_THRESHOLD = SCREEN_W * 0.25; // чверть екрана — поріг спрацювання
-const EXIT_X = SCREEN_W * 1.5; // куди відлітає картка
-
+const SWIPE_THRESHOLD = SCREEN_W * 0.28;
+const VELOCITY_THRESHOLD = 500;
+const EXIT_X = SCREEN_W * 1.6;
+const EXIT_DURATION = 380;
+ 
+// Floating tab bar geometry — must match TabsLayout values
+const TAB_BAR_HEIGHT   = 72;
+const TAB_BAR_MARGIN_B = 12;
+const TAB_BAR_CLEARANCE = TAB_BAR_HEIGHT + TAB_BAR_MARGIN_B + 12;
+ 
+// ─────────────────────────────────────────────
+//  TopCard
+// ─────────────────────────────────────────────
+interface TopCardRef {
+  swipeLeft: () => void;
+  swipeRight: () => void;
+}
+ 
+interface TopCardProps {
+  animal: Animal;
+  swipeProgress: SharedValue<number>;
+  onSwipeDone: (direction: SwipeDirection) => void;
+  onPress?: () => void;
+}
+ 
+const TopCard = forwardRef<TopCardRef, TopCardProps>(
+  ({ animal, swipeProgress, onSwipeDone, onPress }, ref) => {
+    const x = useSharedValue(0);
+    const y = useSharedValue(0);
+ 
+    const animateExit = useCallback(
+      (direction: SwipeDirection) => {
+        const toX = direction === 'RIGHT' ? EXIT_X : -EXIT_X;
+        x.value = withTiming(toX, { duration: EXIT_DURATION }, (finished) => {
+          'worklet';
+          if (finished) {
+            swipeProgress.value = withSpring(0);
+            runOnJS(onSwipeDone)(direction);
+          }
+        });
+        y.value = withTiming(-24, { duration: EXIT_DURATION });
+      },
+      [onSwipeDone, swipeProgress, x, y],
+    );
+ 
+    useImperativeHandle(ref, () => ({
+      swipeLeft:  () => animateExit('LEFT'),
+      swipeRight: () => animateExit('RIGHT'),
+    }));
+ 
+    const pan = Gesture.Pan()
+      .onUpdate((e) => {
+        x.value = e.translationX;
+        y.value = e.translationY * 0.18;
+        swipeProgress.value = Math.min(Math.abs(e.translationX) / SWIPE_THRESHOLD, 1);
+      })
+      .onEnd((e) => {
+        const goRight = e.translationX > SWIPE_THRESHOLD || e.velocityX > VELOCITY_THRESHOLD;
+        const goLeft  = e.translationX < -SWIPE_THRESHOLD || e.velocityX < -VELOCITY_THRESHOLD;
+ 
+        if (goRight) {
+          runOnJS(animateExit)('RIGHT');
+        } else if (goLeft) {
+          runOnJS(animateExit)('LEFT');
+        } else {
+          x.value = withSpring(0, { damping: 18, stiffness: 180, mass: 0.9 });
+          y.value = withSpring(0, { damping: 18, stiffness: 180, mass: 0.9 });
+          swipeProgress.value = withSpring(0, { damping: 18, stiffness: 180 });
+        }
+      });
+ 
+    const cardStyle = useAnimatedStyle(() => ({
+      transform: [
+        { translateX: x.value },
+        { translateY: y.value },
+        {
+          rotateZ: `${interpolate(
+            x.value,
+            [-SCREEN_W / 2, 0, SCREEN_W / 2],
+            [-13, 0, 13],
+            Extrapolation.CLAMP,
+          )}deg`,
+        },
+      ],
+    }));
+ 
+    const likeStyle = useAnimatedStyle(() => ({
+      opacity: interpolate(x.value, [0, SWIPE_THRESHOLD * 0.6], [0, 1], Extrapolation.CLAMP),
+    }));
+ 
+    const nopeStyle = useAnimatedStyle(() => ({
+      opacity: interpolate(x.value, [-SWIPE_THRESHOLD * 0.6, 0], [1, 0], Extrapolation.CLAMP),
+    }));
+ 
+    return (
+      <GestureDetector gesture={pan}>
+        <Animated.View style={[styles.cardWrapper, cardStyle]}>
+          <SwipeCard
+            animal={animal}
+            likeStyle={likeStyle}
+            nopeStyle={nopeStyle}
+            onPress={onPress ? () => onPress() : undefined}
+          />
+        </Animated.View>
+      </GestureDetector>
+    );
+  },
+);
+TopCard.displayName = 'TopCard';
+ 
+// ─────────────────────────────────────────────
+//  SwipeDeck
+// ─────────────────────────────────────────────
 interface SwipeDeckProps {
   cards: Animal[];
   currentIndex: number;
   onSwipe: (animal: Animal, direction: SwipeDirection) => void;
   onOpenDetail?: (animal: Animal) => void;
 }
-
+ 
 export function SwipeDeck({ cards, currentIndex, onSwipe, onOpenDetail }: SwipeDeckProps) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-
-  const top = cards[currentIndex];
-  const behind = cards[currentIndex + 1];
-
-  // Єдиний шлях анімації виходу — використовується і жестом, і кнопками.
-  const animateExit = useCallback(
+  const insets = useSafeAreaInsets();
+  const swipeProgress = useSharedValue(0);
+  const topCardRef = useRef<TopCardRef>(null);
+ 
+  const top     = cards[currentIndex];
+  const behind1 = cards[currentIndex + 1];
+  const behind2 = cards[currentIndex + 2];
+ 
+  const handleSwipeDone = useCallback(
     (direction: SwipeDirection) => {
-      if (!top) return;
-      const toX = direction === 'RIGHT' ? EXIT_X : -EXIT_X;
-      translateX.value = withTiming(toX, { duration: 250 }, (finished) => {
-        'worklet';
-        if (finished) {
-          translateX.value = 0;
-          translateY.value = 0;
-          runOnJS(onSwipe)(top, direction);
-        }
-      });
+      if (top) onSwipe(top, direction);
     },
-    [top, onSwipe, translateX, translateY]
+    [top, onSwipe],
   );
-
-  const pan = Gesture.Pan()
-    .onUpdate((e) => {
-      translateX.value = e.translationX;
-      translateY.value = e.translationY;
-    })
-    .onEnd((e) => {
-      if (Math.abs(e.translationX) > SWIPE_THRESHOLD) {
-        const dir: SwipeDirection = e.translationX > 0 ? 'RIGHT' : 'LEFT';
-        runOnJS(animateExit)(dir);
-      } else {
-        // не дотягнув — пружинка повертає на місце
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-      }
-    });
-
-  const cardStyle = useAnimatedStyle(() => ({
+ 
+  const behind1Style = useAnimatedStyle(() => ({
     transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      {
-        rotateZ: `${interpolate(
-          translateX.value,
-          [-SCREEN_W, 0, SCREEN_W],
-          [-10, 0, 10],
-          Extrapolation.CLAMP
-        )}deg`,
-      },
+      { scale:      interpolate(swipeProgress.value, [0, 1], [0.945, 1.0],  Extrapolation.CLAMP) },
+      { translateY: interpolate(swipeProgress.value, [0, 1], [16,    0],    Extrapolation.CLAMP) },
     ],
+    opacity: interpolate(swipeProgress.value, [0, 0.4], [0.82, 1.0], Extrapolation.CLAMP),
   }));
-
-  const likeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+ 
+  const behind2Style = useAnimatedStyle(() => ({
+    transform: [
+      { scale:      interpolate(swipeProgress.value, [0, 1], [0.89, 0.945], Extrapolation.CLAMP) },
+      { translateY: interpolate(swipeProgress.value, [0, 1], [32,   16],    Extrapolation.CLAMP) },
+    ],
+    opacity: interpolate(swipeProgress.value, [0, 0.6], [0.60, 0.82], Extrapolation.CLAMP),
   }));
-
-  const nopeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP),
-  }));
-
+ 
+  // Total bottom padding = safe area + tab bar pill + its margin from edge
+  const actionBarPaddingBottom = insets.bottom + TAB_BAR_CLEARANCE;
+ 
   return (
-    <View className="flex-1">
-      {/* Стос карток */}
-      <View className="flex-1 px-4">
-        {/* Картка позаду (наступна) — статична, трохи зменшена */}
-        {behind ? (
-          <View
-            className="absolute inset-x-4 inset-y-0"
-            style={{ transform: [{ scale: 0.95 }], opacity: 0.8 }}
-          >
-            <SwipeCard animal={behind} />
-          </View>
-        ) : null}
-
-        {/* Верхня картка — з жестом */}
-        {top ? (
-          <GestureDetector gesture={pan}>
-            <Animated.View className="absolute inset-x-4 inset-y-0" style={cardStyle}>
-              <SwipeCard animal={top} likeStyle={likeStyle} nopeStyle={nopeStyle} />
-            </Animated.View>
-          </GestureDetector>
-        ) : null}
+    <View style={styles.container}>
+      {/* ── Card stack ───────────────────────── */}
+      <View style={styles.stack}>
+        {behind2 && (
+          <Animated.View style={[styles.cardWrapper, behind2Style]}>
+            <SwipeCard animal={behind2} />
+          </Animated.View>
+        )}
+        {behind1 && (
+          <Animated.View style={[styles.cardWrapper, behind1Style]}>
+            <SwipeCard animal={behind1} />
+          </Animated.View>
+        )}
+        {top && (
+          <TopCard
+            key={top.id}
+            ref={topCardRef}
+            animal={top}
+            swipeProgress={swipeProgress}
+            onSwipeDone={handleSwipeDone}
+            onPress={onOpenDetail ? () => onOpenDetail(top) : undefined}
+          />
+        )}
       </View>
-
-      {/* Кнопки дій */}
-      <View className="flex-row items-center justify-center gap-5 py-5">
-        <CircleButton emoji="✕" color="#EF4444" onPress={() => animateExit('LEFT')} />
-        {onOpenDetail && top ? (
-          <CircleButton emoji="ℹ️" color="#3B82F6" small onPress={() => onOpenDetail(top)} />
-        ) : null}
-        <CircleButton emoji="♥" color="#22C55E" onPress={() => animateExit('RIGHT')} />
+ 
+      {/* ── Action buttons ───────────────────── */}
+      <View style={[styles.buttonsRow, { paddingBottom: actionBarPaddingBottom }]}>
+        <ActionBtn
+          onPress={() => topCardRef.current?.swipeLeft()}
+          size={64}
+          borderColor={Colors.error}
+          shadowStyle={null}
+        >
+          <X size={26} color={Colors.error} strokeWidth={2.5} />
+        </ActionBtn>
+ 
+        {top && onOpenDetail && (
+          <ActionBtn
+            onPress={() => onOpenDetail(top)}
+            size={52}
+            borderColor={Colors.neutral[200]}
+            shadowStyle={null}
+          >
+            <Info size={20} color={Colors.neutral[400]} strokeWidth={2} />
+          </ActionBtn>
+        )}
+ 
+        <ActionBtn
+          onPress={() => topCardRef.current?.swipeRight()}
+          size={64}
+          borderColor={Colors.primary[500]}
+          shadowStyle={Shadow.orange}
+        >
+          <Heart size={26} color={Colors.primary[500]} fill={Colors.primary[500]} strokeWidth={0} />
+        </ActionBtn>
       </View>
     </View>
   );
 }
-
-function CircleButton({
-  emoji,
-  color,
-  onPress,
-  small,
-}: {
-  emoji: string;
-  color: string;
+ 
+// ─────────────────────────────────────────────
+//  ActionBtn
+// ─────────────────────────────────────────────
+interface ActionBtnProps {
   onPress: () => void;
-  small?: boolean;
-}) {
-  const size = small ? 52 : 64;
+  size: number;
+  borderColor: string;
+  shadowStyle: object | null;
+  children: React.ReactNode;
+}
+ 
+function ActionBtn({ onPress, size, borderColor, shadowStyle, children }: ActionBtnProps) {
+  const scale = useSharedValue(1);
+ 
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+ 
   return (
     <Pressable
-      onPress={onPress}
-      className="items-center justify-center rounded-full bg-white active:opacity-70"
-      style={{
-        width: size,
-        height: size,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-        elevation: 4,
+      onPressIn={() => {
+        scale.value = withSpring(0.86, { damping: 14, stiffness: 320 });
       }}
+      onPressOut={() => {
+        scale.value = withSpring(1.0, { damping: 14, stiffness: 320 });
+      }}
+      onPress={onPress}
     >
-      <Text style={{ fontSize: small ? 20 : 26, color }}>{emoji}</Text>
+      <Animated.View
+        style={[
+          styles.actionBtn,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderColor,
+          },
+          shadowStyle ?? Shadow.sm,
+          animStyle,
+        ]}
+      >
+        {children}
+      </Animated.View>
     </Pressable>
   );
 }
+ 
+// ─── Styles ──────────────────────────────────
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  stack: {
+    flex: 1,
+    marginHorizontal: Spacing[4],
+    marginBottom: Spacing[2],
+  },
+  cardWrapper: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  buttonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing[5],
+    paddingTop: Spacing[5],
+    // paddingBottom is set dynamically via insets + tab bar clearance
+  },
+  actionBtn: {
+    backgroundColor: Colors.neutral[0],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+});
+ 

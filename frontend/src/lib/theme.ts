@@ -5,21 +5,21 @@
 
 // ── Palette ──────────────────────────────────
 export const Colors = {
-  // Primary — orange family
+  // Primary — orange family (matches Tailwind orange-* exactly)
   primary: {
     50:  '#FFF7ED',
     100: '#FFEDD5',
     200: '#FED7AA',
     300: '#FDBA74',
     400: '#FB923C',
-    500: '#F97316', // ← main accent
+    500: '#F97316', // ← main accent  (Tailwind: orange-500)
     600: '#EA6C0A',
     700: '#C2570A',
     800: '#9A3E08',
     900: '#7C2D0A',
   },
 
-  // Neutrals
+  // Neutrals — warm stone tones (matches Tailwind stone-*)
   neutral: {
     0:   '#FFFFFF',
     50:  '#FAFAF9',
@@ -53,6 +53,7 @@ export const Colors = {
   overlay: {
     light: 'rgba(255,255,255,0.85)',
     dark:  'rgba(28,25,23,0.55)',
+    card:  'rgba(28,25,23,0.92)',
   },
 } as const;
 
@@ -103,12 +104,12 @@ export const Spacing = {
 
 // ── Border Radius ─────────────────────────────
 export const Radius = {
-  sm:   8,
-  md:   12,
-  lg:   16,
-  xl:   20,
+  sm:    8,
+  md:    12,
+  lg:    16,
+  xl:    20,
   '2xl': 28,
-  full: 9999,
+  full:  9999,
 } as const;
 
 // ── Shadows ───────────────────────────────────
@@ -128,18 +129,25 @@ export const Shadow = {
     elevation: 5,
   },
   lg: {
-    shadowColor: '#F97316',
+    shadowColor: '#1C1917',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.13,
     shadowRadius: 24,
     elevation: 10,
   },
   orange: {
     shadowColor: '#F97316',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.40,
     shadowRadius: 16,
     elevation: 8,
+  },
+  card: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 32,
+    elevation: 12,
   },
 } as const;
 
@@ -168,27 +176,26 @@ export const Layout = {
   inputHeight: 56,
   buttonHeight: 56,
   tabBarHeight: 80,
+  headerHeight: 60,
 } as const;
 
-// ── NativeWind class helpers (frequently reused combos) ──
-// Use these as reference when writing className strings
+// ── NativeWind class helpers (reusable combos) ─
 export const NW = {
   // Buttons
-  btnPrimary:  'bg-orange-500 active:bg-orange-600 rounded-2xl h-14 items-center justify-center',
+  btnPrimary: 'bg-orange-500 active:bg-orange-600 rounded-2xl h-14 items-center justify-center',
   btnOutline:  'border border-orange-500 rounded-2xl h-14 items-center justify-center',
   btnGhost:    'rounded-2xl h-14 items-center justify-center',
 
   // Inputs
-  inputBase:   'bg-neutral-50 border border-neutral-200 rounded-2xl px-4 h-14 text-neutral-900 text-base',
-  inputFocused:'bg-white border-orange-400 rounded-2xl px-4 h-14 text-neutral-900 text-base',
+  inputBase:   'bg-stone-50 border border-stone-200 rounded-2xl px-4 h-14 text-stone-900 text-base',
 
   // Text styles
-  heading1:   'text-4xl font-extrabold text-neutral-900 tracking-tight',
-  heading2:   'text-2xl font-bold text-neutral-900',
-  body:       'text-base text-neutral-600 leading-relaxed',
-  caption:    'text-xs text-neutral-400',
-  label:      'text-sm font-semibold text-neutral-700 mb-1',
+  heading1:   'text-4xl font-extrabold text-stone-900 tracking-tight',
+  heading2:   'text-2xl font-bold text-stone-900',
+  body:       'text-base text-stone-500 leading-relaxed',
+  caption:    'text-xs text-stone-400',
+  label:      'text-sm font-semibold text-stone-700',
 
   // Cards
-  card:       'bg-white rounded-3xl p-5 shadow-sm',
+  card:       'bg-white rounded-3xl shadow-sm',
 } as const;

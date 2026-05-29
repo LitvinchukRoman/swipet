@@ -1,19 +1,35 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
-import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated';
+import { PawPrint, SlidersHorizontal } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SwipeDeck } from '@/components/SwipeDeck';
+import { Toast, type ToastType } from '@/components/common/Toast';
+import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { useFeedStore } from '@/store/feed';
 import type { Animal, SwipeDirection } from '@/types/models';
 
+// ─── Types ────────────────────────────────────
+interface ToastState {
+  visible: boolean;
+  message: string;
+  type: ToastType;
+}
+
+// ─── Component ───────────────────────────────
 export default function FeedScreen() {
   const { cards, currentIndex, isLoading, loadFeed, swipe } = useFeedStore();
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>({
+    visible: false,
+    message: '',
+    type: 'info',
+  });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Load on mount
   useEffect(() => {
     loadFeed();
     return () => {
@@ -21,36 +37,66 @@ export default function FeedScreen() {
     };
   }, []);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
+  // ── Toast helper
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    setToast({ visible: true, message, type });
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 1600);
-  };
+    toastTimer.current = setTimeout(
+      () => setToast((t) => ({ ...t, visible: false })),
+      1800,
+    );
+  }, []);
 
-  const handleSwipe = (animal: Animal, direction: SwipeDirection) => {
-    swipe(animal, direction);
-    if (direction === 'RIGHT') showToast(`💚 ${animal.name} додано до вподобаних!`);
-  };
+  // ── Swipe handler
+  const handleSwipe = useCallback(
+    (animal: Animal, direction: SwipeDirection) => {
+      swipe(animal, direction);
+      if (direction === 'RIGHT') {
+        showToast(`${animal.name} added to favorites`, 'like');
+      }
+    },
+    [swipe, showToast],
+  );
 
   const isDone = !isLoading && currentIndex >= cards.length;
+  const remaining = Math.max(cards.length - currentIndex, 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      {/* Шапка */}
-      <View className="flex-row items-center justify-between px-5 pb-2 pt-1">
-        <Text className="text-2xl font-extrabold text-primary">🐾 Swipet</Text>
-        <Text className="text-sm text-gray-400">{cards.length - currentIndex} карток</Text>
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      {/* ── Header ──────────────────────────── */}
+      <View style={styles.header}>
+        {/* Logo */}
+        <View style={styles.logoRow}>
+          <View style={styles.logoIconWrap}>
+            <PawPrint size={20} color={Colors.neutral[0]} strokeWidth={2} />
+          </View>
+          <Text style={styles.logoText}>swipet</Text>
+        </View>
+
+        {/* Card count + filter */}
+        <View style={styles.headerRight}>
+          {remaining > 0 && !isLoading && (
+            <Animated.View entering={FadeIn.duration(300)} style={styles.countPill}>
+              <Text style={styles.countText}>{remaining}</Text>
+            </Animated.View>
+          )}
+          <TouchableOpacity
+            onPress={() => {/* TODO: open filter sheet */}}
+            activeOpacity={0.75}
+            style={styles.filterBtn}
+          >
+            <SlidersHorizontal size={20} color={Colors.neutral[600]} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {/* ── Content ─────────────────────────── */}
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF6B6B" />
-        </View>
+        <LoadingState />
       ) : isDone ? (
         <EmptyState
-          emoji="🎉"
-          title="Це всі тваринки поблизу"
-          subtitle="Загляни пізніше або зміни фільтри — нові улюбленці з'являються щодня"
+          onCta={() => {/* TODO: open filter sheet */}}
+          ctaLabel="Update Filters"
         />
       ) : (
         <SwipeDeck
@@ -61,19 +107,106 @@ export default function FeedScreen() {
         />
       )}
 
-      {/* Toast */}
-      {toast ? (
-        <Animated.View
-          entering={FadeInUp}
-          exiting={FadeOut}
-          pointerEvents="none"
-          className="absolute inset-x-0 top-20 items-center"
-        >
-          <View className="rounded-full bg-gray-900/90 px-5 py-3">
-            <Text className="text-base font-semibold text-white">{toast}</Text>
-          </View>
-        </Animated.View>
-      ) : null}
+      {/* ── Toast overlay ───────────────────── */}
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} />
     </SafeAreaView>
   );
 }
+
+// ─── Loading state ────────────────────────────
+function LoadingState() {
+  return (
+    <View style={styles.loading}>
+      <View style={styles.loadingIconWrap}>
+        <PawPrint size={36} color={Colors.primary[300]} strokeWidth={1.5} />
+      </View>
+      <ActivityIndicator size="large" color={Colors.primary[500]} style={{ marginTop: Spacing[4] }} />
+      <Text style={styles.loadingText}>Finding animals nearby…</Text>
+    </View>
+  );
+}
+
+// ─── Styles ──────────────────────────────────
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.neutral[50],
+  },
+
+  // ── Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing[5],
+    paddingVertical: Spacing[3],
+    paddingBottom: Spacing[4],
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[2],
+  },
+  logoIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primary[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    color: Colors.neutral[900],
+    fontSize: FontSize['2xl'],
+    fontWeight: FontWeight.extrabold,
+    letterSpacing: -0.6,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+  },
+  countPill: {
+    backgroundColor: Colors.primary[100],
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: 4,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  countText: {
+    color: Colors.primary[700],
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+  },
+  filterBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.neutral[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Loading
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing[2],
+  },
+  loadingIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: Spacing[3],
+    color: Colors.neutral[400],
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.medium,
+  },
+});
