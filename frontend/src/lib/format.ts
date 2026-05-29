@@ -1,71 +1,69 @@
 import type { AnimalSize, Gender, Species } from '@/types/models';
+import { Cat, Dog, Rabbit, PawPrint } from 'lucide-react-native';
+import type { ComponentType } from 'react';
 
-// Українська форма слова "місяць"/"рік" залежно від числа.
-function plural(n: number, one: string, few: string, many: string): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
-  return many;
-}
-
-/** 5 → "5 міс", 14 → "1 рік 2 міс", 24 → "2 роки" */
 export function formatAge(ageMonths: number): string {
+  if (ageMonths <= 0) return '< 1mo';
   const years = Math.floor(ageMonths / 12);
   const months = ageMonths % 12;
-
-  if (years === 0) {
-    return `${months} ${plural(months, 'місяць', 'місяці', 'місяців')}`;
-  }
-
-  const yearStr = `${years} ${plural(years, 'рік', 'роки', 'років')}`;
-  if (months === 0) return yearStr;
-  return `${yearStr} ${months} ${plural(months, 'місяць', 'місяці', 'місяців')}`;
+  if (years === 0) return `${months}mo`;
+  if (months === 0) return `${years}y`;
+  return `${years}y ${months}mo`;
 }
 
-/** 2.34 → "2.3 км", 0.4 → "поруч" */
 export function formatDistance(km?: number): string {
   if (km == null) return '';
-  if (km < 1) return 'поруч';
-  return `${km.toFixed(1)} км`;
+  if (km < 0.5) return 'nearby';
+  return `${km.toFixed(1)} km`;
 }
 
-/** ISO-рядок → "14:05" або "вчора" або "24.05" */
 export function formatMessageTime(iso?: string): string {
   if (!iso) return '';
   const date = new Date(iso);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  if (sameDay) {
-    return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  const now  = new Date();
+
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
+
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return 'вчора';
-  return date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 export const SPECIES_EMOJI: Record<Species, string> = {
-  DOG: '🐶',
-  CAT: '🐱',
+  DOG:    '🐶',
+  CAT:    '🐱',
   RABBIT: '🐰',
-  OTHER: '🐾',
+  OTHER:  '🐾',
 };
 
 export const SPECIES_LABEL: Record<Species, string> = {
-  DOG: 'Собака',
-  CAT: 'Кіт',
-  RABBIT: 'Кролик',
-  OTHER: 'Інше',
+  DOG:    'Dog',
+  CAT:    'Cat',
+  RABBIT: 'Rabbit',
+  OTHER:  'Other',
 };
 
 export const SIZE_LABEL: Record<AnimalSize, string> = {
-  SMALL: 'Малий',
-  MEDIUM: 'Середній',
-  LARGE: 'Великий',
+  SMALL:  'Small',
+  MEDIUM: 'Medium',
+  LARGE:  'Large',
 };
 
 export const GENDER_LABEL: Record<Gender, string> = {
-  MALE: 'Хлопчик',
-  FEMALE: 'Дівчинка',
+  MALE:   'Male',
+  FEMALE: 'Female',
+};
+
+export const SPECIES_ICON: Record<
+  Species,
+  ComponentType<{ size: number; color: string; strokeWidth?: number }>
+> = {
+  DOG:    Dog,
+  CAT:    Cat,
+  RABBIT: Rabbit,
+  OTHER:  PawPrint,
 };

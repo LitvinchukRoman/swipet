@@ -1,29 +1,46 @@
+import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 interface TagProps {
   label: string;
-  icon?: string;
-  tone?: 'neutral' | 'success' | 'primary';
+  /**
+   * Optional leading icon — accepts either:
+   *  - a string (emoji): rendered inside a <Text>
+   *  - a ReactNode (e.g. Lucide icon): rendered directly
+   */
+  icon?: ReactNode;
+  tone?: 'neutral' | 'success' | 'primary' | 'warning';
 }
 
-const TONE: Record<NonNullable<TagProps['tone']>, string> = {
-  neutral: 'bg-gray-100',
-  success: 'bg-green-100',
-  primary: 'bg-primary/10',
+// NativeWind classes per tone — must be full class names (no dynamic concat)
+const BG: Record<NonNullable<TagProps['tone']>, string> = {
+  neutral: 'bg-stone-100',
+  success: 'bg-green-50',
+  primary: 'bg-orange-50',
+  warning: 'bg-yellow-50',
 };
 
-const TONE_TEXT: Record<NonNullable<TagProps['tone']>, string> = {
-  neutral: 'text-gray-700',
+const TEXT_COLOR: Record<NonNullable<TagProps['tone']>, string> = {
+  neutral: 'text-stone-600',
   success: 'text-green-700',
-  primary: 'text-primary',
+  primary: 'text-orange-600',
+  warning: 'text-yellow-700',
 };
 
-/** Маленька «пігулка» для характеристик: порода, розмір, вакцинація тощо. */
 export function Tag({ label, icon, tone = 'neutral' }: TagProps) {
   return (
-    <View className={`flex-row items-center gap-1 rounded-full px-3 py-1.5 ${TONE[tone]}`}>
-      {icon ? <Text className="text-xs">{icon}</Text> : null}
-      <Text className={`text-xs font-medium ${TONE_TEXT[tone]}`}>{label}</Text>
+    <View
+      className={`flex-row items-center self-start rounded-full px-2.5 py-1 ${BG[tone]}`}
+      style={{ gap: 4 }}
+    >
+      {icon != null ? (
+        typeof icon === 'string' ? (
+          <Text className="text-xs leading-none">{icon}</Text>
+        ) : (
+          icon
+        )
+      ) : null}
+      <Text className={`text-xs font-semibold ${TEXT_COLOR[tone]}`}>{label}</Text>
     </View>
   );
 }
