@@ -153,11 +153,11 @@ export const Shadow = {
 
 // ── Animation durations (ms) ──────────────────
 export const Duration = {
-  instant: 80,
-  fast:    150,
-  normal:  250,
-  slow:    400,
-  xslow:   600,
+  instant: 100,
+  fast:    180,
+  normal:  300,
+  slow:    600,
+  xslow:   800,
 } as const;
 
 // ── Z-Index ───────────────────────────────────
