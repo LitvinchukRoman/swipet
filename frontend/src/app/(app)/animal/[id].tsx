@@ -1,43 +1,410 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import {
+  ArrowLeft,
+  Calendar,
+  Cat,
+  Dog,
+  Heart,
+  MapPin,
+  Mars,
+  MessageCircle,
+  PawPrint,
+  Rabbit,
+  Ruler,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Venus,
+  House
+} from 'lucide-react-native';
+import type { ComponentType } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Dimensions,
+  Easing,
   FlatList,
+  Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Tag } from '@/components/ui/Tag';
 import {
   formatAge,
   formatDistance,
   GENDER_LABEL,
   SIZE_LABEL,
-  SPECIES_EMOJI,
   SPECIES_LABEL,
 } from '@/lib/format';
+import type { Species } from '@/types/models';
 import { animalService } from '@/services/animal';
 import { chatService } from '@/services/chat';
+import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal } from '@/types/models';
 
 const { width: SCREEN_W } = Dimensions.get('window');
+const PHOTO_H = SCREEN_W * 1.05;
 
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+/** One-shot fade + translateY entrance */
+function useFadeSlide(delay = 0, fromY = 20) {
+  const opacity    = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(fromY)).current;
+  const run = () =>
+    Animated.parallel([
+      Animated.timing(opacity,    { toValue: 1, duration: Duration.slow,  delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(translateY, { toValue: 0, duration: Duration.slow,  delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+    ]).start();
+  return { anim: { opacity, transform: [{ translateY }] }, run };
+}
+
+/** Spring pop for interactive elements */
+function useSpringPop() {
+  const scale = useRef(new Animated.Value(1)).current;
+  const pop = () =>
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.18, useNativeDriver: true, damping: 4, stiffness: 300 }),
+      Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
+    ]).start();
+  return { scaleStyle: { transform: [{ scale }] }, pop };
+}
+
+// ─── Badge ────────────────────────────────────────────────────────────────────
+function Badge({
+  label,
+  icon,
+  tone = 'default',
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  tone?: 'default' | 'success' | 'orange';
+}) {
+  const bg    = tone === 'success' ? '#F0FDF4' : tone === 'orange' ? Colors.primary[50]  : Colors.neutral[100];
+  const color = tone === 'success' ? Colors.success : tone === 'orange' ? Colors.primary[500] : Colors.neutral[600];
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: bg, borderRadius: Radius.full,
+        paddingHorizontal: Spacing[3], paddingVertical: 6,
+      }}
+    >
+      {icon}
+      <Text style={{ fontSize: 12, fontWeight: '600', color }}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── Species icon map ────────────────────────────────────────────────────────
+const SPECIES_ICON: Record<
+  Species,
+  ComponentType<{ size: number; color: string; strokeWidth?: number }>
+> = {
+  DOG:    Dog,
+  CAT:    Cat,
+  RABBIT: Rabbit,
+  OTHER:  PawPrint,
+};
+
+// ─── Stat tile ────────────────────────────────────────────────────────────────
+function StatTile({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View
+      className="flex-1 items-center py-3 rounded-2xl"
+      style={{ backgroundColor: Colors.neutral[50], gap: 4 }}
+    >
+      {icon}
+      <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.neutral[800] }}>{value}</Text>
+      <Text style={{ fontSize: 11, color: Colors.neutral[400] }}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── Heart button (like/unlike) ──────────────────────────────────────────────
+function HeartButton({ size = 44, darkMode = false }: { size?: number; darkMode?: boolean }) {
+  const [liked, setLiked] = useState(false);
+
+  // scale — useNativeDriver: true → окремий Animated.View
+  const scale = useRef(new Animated.Value(1)).current;
+
+  // backgroundColor — useNativeDriver: false → окремий Animated.View
+  const bgAnim = useRef(new Animated.Value(0)).current;
+
+  const toggle = () => {
+    const next = !liked;
+    setLiked(next);
+
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.22, useNativeDriver: true, damping: 4, stiffness: 300 }),
+      Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
+    ]).start();
+
+    Animated.timing(bgAnim, {
+      toValue: next ? 1 : 0,
+      duration: Duration.normal,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const bg = bgAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: darkMode
+      ? ['rgba(0,0,0,0.35)', 'rgba(239,68,68,0.55)']   // топ бар — темний фон
+      : ['#F5F5F4',          '#FEE2E2'],                 // звичайний — світлий фон
+  });
+
+  return (
+    <Pressable onPress={toggle} hitSlop={8}>
+      {/* JS-driver шар — тільки backgroundColor */}
+      <Animated.View
+        style={{
+          width: size, height: size, borderRadius: size / 2,
+          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: bg,
+        }}
+      >
+        {/* Native-driver шар — тільки scale */}
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Heart
+            size={size * 0.5}
+            color={liked ? '#EF4444' : (darkMode ? '#fff' : Colors.neutral[400])}
+            fill={liked ? '#EF4444' : 'transparent'}
+            strokeWidth={1.8}
+          />
+        </Animated.View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// ─── Photo carousel ──────────────────────────────────────────────────────────
+function PhotoCarousel({ photos }: { photos: string[] }) {
+  const [index, setIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const onScroll = (e: any) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    if (i !== index) {
+      setIndex(i);
+      Animated.sequence([
+        Animated.timing(fadeAnim, { toValue: 0.7, duration: 80,  useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1,   duration: 160, useNativeDriver: true }),
+      ]).start();
+    }
+  };
+
+  return (
+    <View style={{ width: SCREEN_W, height: PHOTO_H, position: 'relative' }}>
+      <FlatList
+        data={photos}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(_, i) => String(i)}
+        onMomentumScrollEnd={onScroll}
+        style={{ width: SCREEN_W, height: PHOTO_H }}
+        renderItem={({ item }) => (
+          <Image
+            source={{ uri: item }}
+            style={{ width: SCREEN_W, height: PHOTO_H }}
+            contentFit="cover"
+            transition={300}
+          />
+        )}
+      />
+
+      {/* dot indicators */}
+      {photos.length > 1 && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            bottom: 18,
+            left: 0,
+            right: 0,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 6,
+            opacity: fadeAnim,
+            // ensure it sits above FlatList on web
+            zIndex: 10,
+          }}
+          pointerEvents="none"
+        >
+          {photos.map((_, i) => (
+            <View
+              key={i}
+              style={{
+                height: 6,
+                borderRadius: 3,
+                width: i === index ? 22 : 6,
+                backgroundColor: i === index ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+              }}
+            />
+          ))}
+        </Animated.View>
+      )}
+
+      {/* photo count pill */}
+      {photos.length > 1 && (
+        <View
+          style={{
+            position: 'absolute', bottom: 42, right: 16,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            paddingHorizontal: 10, paddingVertical: 4,
+            borderRadius: Radius.full,
+            zIndex: 10,
+          }}
+          pointerEvents="none"
+        >
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+            {index + 1} / {photos.length}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Section heading ──────────────────────────────────────────────────────────
+function SectionHeading({ label }: { label: string }) {
+  return (
+    <Text
+      style={{
+        fontSize: 17, fontWeight: '700',
+        color: Colors.neutral[900],
+        marginBottom: Spacing[3],
+      }}
+    >
+      {label}
+    </Text>
+  );
+}
+
+// ─── Action button ────────────────────────────────────────────────────────────
+function ActionBtn({
+  label,
+  icon,
+  variant = 'primary',
+  onPress,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  variant?: 'primary' | 'outline';
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onIn  = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
+  const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
+
+  const isPrimary = variant === 'primary';
+
+  return (
+    <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut} style={{ flex: 1 }}>
+      <Animated.View
+        style={[
+          {
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+            gap: Spacing[2], height: 52, borderRadius: Radius.lg,
+            transform: [{ scale }],
+          },
+          isPrimary
+            ? { backgroundColor: Colors.primary[500], ...Shadow.orange }
+            : {
+                backgroundColor: Colors.neutral[0],
+                borderWidth: 1.5, borderColor: Colors.neutral[200],
+                ...Shadow.sm,
+              },
+        ]}
+      >
+        {icon}
+        <Text
+          style={{
+            fontSize: 14, fontWeight: '700',
+            color: isPrimary ? Colors.neutral[0] : Colors.neutral[700],
+          }}
+        >
+          {label}
+        </Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+function SkeletonBlock({ h, w = '100%', radius = 12 }: { h: number; w?: any; radius?: number }) {
+  const anim = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1,   duration: 700, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  return (
+    <Animated.View
+      style={{
+        height: h, width: w, borderRadius: radius,
+        backgroundColor: Colors.neutral[200], opacity: anim,
+      }}
+    />
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
+      <SkeletonBlock h={PHOTO_H} radius={0} />
+      <View style={{ padding: Spacing[6], gap: Spacing[4] }}>
+        <SkeletonBlock h={32} w="60%" />
+        <SkeletonBlock h={18} w="40%" />
+        <View style={{ flexDirection: 'row', gap: Spacing[2] }}>
+          <SkeletonBlock h={32} w={80} radius={Radius.full} />
+          <SkeletonBlock h={32} w={100} radius={Radius.full} />
+        </View>
+        <SkeletonBlock h={80} />
+      </View>
+    </View>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function AnimalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [animal, setAnimal] = useState<Animal | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [photoIndex, setPhotoIndex] = useState(0);
+  const [animal,     setAnimal]     = useState<Animal | null>(null);
+  const [loading,    setLoading]    = useState(true);
+
+  // section entrance animations
+  const header  = useFadeSlide(0);
+  const stats   = useFadeSlide(80);
+  const about   = useFadeSlide(160);
+  const shelter = useFadeSlide(240);
+  const actions = useFadeSlide(320);
 
   useEffect(() => {
-    animalService.getById(Number(id)).then((a) => {
+    animalService.getById(Number(id)).then(a => {
       setAnimal(a);
       setLoading(false);
+      // trigger entrance chain
+      setTimeout(() => {
+        header.run(); stats.run(); about.run(); shelter.run(); actions.run();
+      }, 50);
     });
   }, [id]);
 
@@ -47,119 +414,258 @@ export default function AnimalDetailScreen() {
     router.push(`/(app)/chat/${roomId}`);
   };
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#FF6B6B" />
-      </View>
-    );
-  }
+  // ── Loading ─────────────────────────────────────────────────────────────
+  if (loading) return <LoadingSkeleton />;
 
+  // ── Not found ───────────────────────────────────────────────────────────
   if (!animal) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <EmptyState emoji="🔍" title="Тваринку не знайдено" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
+        <EmptyState title="Animal not found" />
       </SafeAreaView>
     );
   }
 
-  const photos = animal.photos.length ? animal.photos : [animal.primaryPhotoUrl ?? ''];
+  const photos = animal.photos?.length ? animal.photos : [animal.primaryPhotoUrl ?? ''];
 
+  // ─── Render ──────────────────────────────────────────────────────────────
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Карусель фото */}
+    <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
+      <ScrollView showsVerticalScrollIndicator={false} bounces>
+
+        {/* ── Photo carousel ──────────────────────────── */}
         <View>
-          <FlatList
-            data={photos}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(_, i) => String(i)}
-            onMomentumScrollEnd={(e) =>
-              setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_W))
-            }
-            renderItem={({ item }) => (
-              <Image
-                source={{ uri: item }}
-                style={{ width: SCREEN_W, height: SCREEN_W }}
-                contentFit="cover"
-                transition={250}
-              />
-            )}
-          />
-          {/* Точки-індикатори */}
-          {photos.length > 1 ? (
-            <View className="absolute bottom-3 w-full flex-row justify-center gap-1.5">
-              {photos.map((_, i) => (
-                <View
-                  key={i}
-                  className={`h-2 rounded-full ${
-                    i === photoIndex ? 'w-5 bg-white' : 'w-2 bg-white/50'
-                  }`}
-                />
-              ))}
+          <PhotoCarousel photos={photos} />
+
+          {/* floating top bar — back + share + heart */}
+          <SafeAreaView
+            edges={['top']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+            pointerEvents="box-none"
+          >
+            <View
+              className="flex-row items-center justify-between px-4 pt-2"
+              pointerEvents="box-none"
+            >
+              {/* back */}
+              <Pressable
+                onPress={() => router.back()}
+                style={({ pressed }) => ({
+                  width: 40, height: 40, borderRadius: 20,
+                  backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)',
+                  alignItems: 'center', justifyContent: 'center',
+                })}
+              >
+                <ArrowLeft size={20} color="#fff" strokeWidth={2} />
+              </Pressable>
+
+              <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                {/* share */}
+                <Pressable
+                  style={({ pressed }) => ({
+                    width: 40, height: 40, borderRadius: 20,
+                    backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)',
+                    alignItems: 'center', justifyContent: 'center',
+                  })}
+                >
+                  <Share2 size={18} color="#fff" strokeWidth={2} />
+                </Pressable>
+                {/* heart — same 40x40 as share, dark bg to match top bar */}
+                <HeartButton size={40} darkMode />
+              </View>
             </View>
-          ) : null}
+          </SafeAreaView>
         </View>
 
-        {/* Інфо */}
-        <View className="p-5">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-3xl font-extrabold text-gray-900">{animal.name}</Text>
-            <Text className="text-xl text-gray-400">
-              {animal.gender === 'MALE' ? '♂️' : '♀️'} {GENDER_LABEL[animal.gender]}
-            </Text>
-          </View>
-          <Text className="mt-1 text-base text-gray-500">
-            {SPECIES_EMOJI[animal.species]} {animal.breed ?? SPECIES_LABEL[animal.species]} ·{' '}
-            {formatAge(animal.ageMonths)}
-          </Text>
+        {/* ── Content card ────────────────────────────── */}
+        <View
+          style={{
+            backgroundColor: Colors.neutral[0],
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            marginTop: -28,
+            paddingTop: Spacing[6],
+            paddingHorizontal: Spacing[5],
+            paddingBottom: Spacing[6],
+          }}
+        >
+          {/* ── Name + species row ─────────────────────── */}
+          <Animated.View style={header.anim}>
+            <View className="flex-row items-start justify-between">
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 30, fontWeight: '800',
+                    color: Colors.neutral[900], letterSpacing: -0.5,
+                  }}
+                >
+                  {animal.name}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                  {(() => { const Icon = SPECIES_ICON[animal.species]; return <Icon size={20} color={Colors.neutral[400]} strokeWidth={1.8} />; })()}
+                  <Text style={{ fontSize: 18, color: Colors.neutral[400] }}>
+                    {animal.breed ?? SPECIES_LABEL[animal.species]}
+                  </Text>
+                  <Text style={{ fontSize: 18, color: Colors.neutral[300] }}>·</Text>
+                  {animal.gender === 'MALE'
+                    ? <Mars  size={20} color={Colors.neutral[400]} strokeWidth={1.8} />
+                    : <Venus size={20} color={Colors.neutral[400]} strokeWidth={1.8} />
+                  }
+                  <Text style={{ fontSize: 18, color: Colors.neutral[400] }}>
+                    {GENDER_LABEL[animal.gender]}
+                  </Text>
+                </View>
+              </View>
 
-          {/* Характеристики */}
-          <View className="mt-4 flex-row flex-wrap gap-2">
-            <Tag label={SIZE_LABEL[animal.size]} icon="📏" />
-            {animal.isVaccinated ? <Tag label="Вакцинований" icon="💉" tone="success" /> : null}
-            {animal.isSterilized ? <Tag label="Стерилізований" icon="✓" tone="success" /> : null}
-          </View>
+              {/* age badge */}
+              <View
+                style={{
+                  backgroundColor: Colors.primary[50],
+                  paddingHorizontal: Spacing[3], paddingVertical: Spacing[2],
+                  borderRadius: Radius.lg, alignItems: 'center',
+                }}
+              >
+                <Calendar size={16} color={Colors.primary[500]} strokeWidth={1.8} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary[500], marginTop: 2 }}>
+                  {formatAge(animal.ageMonths)}
+                </Text>
+              </View>
+            </View>
 
-          {/* Опис */}
+            {/* badges row */}
+            <View className="flex-row flex-wrap gap-2 mt-4">
+              <Badge label={SIZE_LABEL[animal.size]} icon={<Ruler size={14} color={Colors.neutral[500]} strokeWidth={1.8} />} />
+              {animal.isVaccinated && (
+                <Badge label="Vaccinated" icon={<ShieldCheck size={14} color={Colors.success} strokeWidth={1.8} />} tone="success" />
+              )}
+              {animal.isSterilized && (
+                <Badge label="Neutered" icon={<Sparkles size={14} color={Colors.primary[500]} strokeWidth={1.8} />} tone="orange" />
+              )}
+            </View>
+          </Animated.View>
+
+          {/* ── Stats row ──────────────────────────────── */}
+          <Animated.View style={[{ flexDirection: 'row', gap: Spacing[3], marginTop: Spacing[5] }, stats.anim]}>
+            <StatTile
+              icon={(() => { const Icon = SPECIES_ICON[animal.species]; return <Icon size={20} color={Colors.primary[500]} strokeWidth={1.8} />; })()}
+              label="Species"
+              value={SPECIES_LABEL[animal.species]}
+            />
+            <StatTile
+              icon={<Ruler size={20} color={Colors.primary[500]} strokeWidth={1.8} />}
+              label="Size"
+              value={SIZE_LABEL[animal.size]}
+            />
+            <StatTile
+              icon={animal.gender === 'MALE'
+                ? <Mars   size={20} color={Colors.primary[500]} strokeWidth={1.8} />
+                : <Venus  size={20} color={Colors.primary[500]} strokeWidth={1.8} />
+              }
+              label="Gender"
+              value={GENDER_LABEL[animal.gender]}
+            />
+          </Animated.View>
+
+          {/* ── Divider ───────────────────────────────── */}
+          <View style={{ height: 1, backgroundColor: Colors.neutral[100], marginVertical: Spacing[6] }} />
+
+          {/* ── About ─────────────────────────────────── */}
           {animal.description ? (
-            <>
-              <Text className="mt-6 text-lg font-bold text-gray-900">Про мене</Text>
-              <Text className="mt-2 text-base leading-6 text-gray-600">
+            <Animated.View style={about.anim}>
+              <SectionHeading label="About me" />
+              <Text
+                style={{
+                  fontSize: 15, color: Colors.neutral[500],
+                  lineHeight: 24,
+                }}
+              >
                 {animal.description}
               </Text>
-            </>
+              <View style={{ height: 1, backgroundColor: Colors.neutral[100], marginVertical: Spacing[6] }} />
+            </Animated.View>
           ) : null}
 
-          {/* Притулок */}
-          <View className="mt-6 rounded-2xl bg-gray-50 p-4">
-            <Text className="text-sm text-gray-400">Притулок</Text>
-            <Text className="mt-1 text-base font-semibold text-gray-900">
-              🏠 {animal.shelterName}
-            </Text>
-            <Text className="mt-0.5 text-sm text-gray-500">
-              📍 {formatDistance(animal.distanceKm)} від тебе
-            </Text>
-            <Button
-              label="Профіль притулку"
-              variant="ghost"
-              size="md"
-              className="mt-2 self-start"
+          {/* ── Shelter card ──────────────────────────── */}
+          <Animated.View style={shelter.anim}>
+            <SectionHeading label="Shelter" />
+            <Pressable
               onPress={() => router.push(`/(app)/shelter/${animal.shelterId}`)}
-            />
-          </View>
+              style={({ pressed }) => ({
+                backgroundColor: pressed ? Colors.neutral[100] : Colors.neutral[50],
+                borderRadius: Radius.xl,
+                padding: Spacing[4],
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing[3],
+                borderWidth: 1,
+                borderColor: Colors.neutral[150],
+              })}
+            >
+              {/* icon */}
+              <View
+                style={{
+                  width: 48, height: 48, borderRadius: 16,
+                  backgroundColor: Colors.primary[100],
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <House size={26} color={Colors.primary[500]} strokeWidth={1.8} />
+              </View>
+
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.neutral[900] }}>
+                  {animal.shelterName}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={14} color={Colors.neutral[400]} strokeWidth={1.8} />
+                  <Text style={{ fontSize: 12, color: Colors.neutral[400] }}>
+                    {formatDistance(animal.distanceKm)} away
+                  </Text>
+                </View>
+              </View>
+
+              {/* chevron */}
+              <Text style={{ fontSize: 18, color: Colors.neutral[300] }}>›</Text>
+            </Pressable>
+          </Animated.View>
+
+          {/* bottom spacing for the fixed bar */}
+          <View style={{ height: 100 }} />
         </View>
       </ScrollView>
 
-      {/* Закріплені дії знизу */}
-      <SafeAreaView edges={['bottom']} className="border-t border-gray-100 bg-white">
-        <View className="flex-row gap-3 px-5 py-3">
-          <Button label="💰 Підтримати" variant="outline" className="flex-1" onPress={() => {}} />
-          <Button label="✉️ Написати" className="flex-1" onPress={openChat} />
-        </View>
-      </SafeAreaView>
+      {/* ── Fixed bottom action bar ──────────────────── */}
+      <Animated.View style={actions.anim}>
+        <SafeAreaView
+          edges={['bottom']}
+          style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            backgroundColor: Colors.neutral[0],
+            borderTopWidth: 1, borderTopColor: Colors.neutral[100],
+            ...Shadow.md,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row', gap: Spacing[3],
+              paddingHorizontal: Spacing[5], paddingTop: Spacing[3], paddingBottom: Spacing[2],
+            }}
+          >
+            <ActionBtn
+              label="Support"
+              variant="outline"
+              icon={<Heart size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
+              onPress={() => {}}
+            />
+            <ActionBtn
+              label="Message"
+              variant="primary"
+              icon={<MessageCircle size={18} color={Colors.neutral[0]} strokeWidth={1.8} />}
+              onPress={openChat}
+            />
+          </View>
+        </SafeAreaView>
+      </Animated.View>
     </View>
   );
 }
