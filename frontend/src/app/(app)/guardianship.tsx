@@ -8,7 +8,6 @@ export default function GuardianshipScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <EmptyState
-        emoji="🌟"
         title="Мої підопічні"
         subtitle="Тут з'являться тваринки під твоєю віртуальною опікою. Розділ у розробці."
       />

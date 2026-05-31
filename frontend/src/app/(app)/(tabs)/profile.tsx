@@ -1,92 +1,407 @@
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { Alert, Pressable, Text, View } from 'react-native';
+import {
+  ChevronRight,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Pencil,
+  Star,
+} from 'lucide-react-native';
+import type { ComponentType } from 'react';
+import { useState } from 'react';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
+import { useFeedStore } from '@/store/feed';
 
+// ── Role labels ───────────────────────────────
 const ROLE_LABEL: Record<string, string> = {
-  USER: 'Усиновлювач',
-  SHELTER_ADMIN: 'Адміністратор притулку',
-  ADMIN: 'Адміністратор',
+  USER:          'Adopter',
+  SHELTER_ADMIN: 'Shelter Admin',
+  ADMIN:         'Administrator',
 };
 
+// ─────────────────────────────────────────────
+//  Screen
+// ─────────────────────────────────────────────
 export default function ProfileScreen() {
-  const { user, refreshToken, clearAuth } = useAuthStore();
+  const { user, refreshToken, clearAuth, updateUser } = useAuthStore();
+  const liked = useFeedStore((s) => s.liked);
+  const [uploading, setUploading] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert('Вихід', 'Точно вийти з акаунту?', [
-      { text: 'Скасувати', style: 'cancel' },
-      {
-        text: 'Вийти',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            if (refreshToken) await authService.logout(refreshToken);
-          } finally {
-            await clearAuth();
-            router.replace('/(auth)/login');
-          }
-        },
-      },
-    ]);
+  // ── Avatar upload (web + mobile) ─────────
+  const handleAvatarPress = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      if (Platform.OS === 'web') {
+        const res  = await fetch(asset.uri);
+        const blob = await res.blob();
+        formData.append('file', blob, 'avatar.jpg');
+      } else {
+        formData.append('file', {
+          uri:  asset.uri,
+          type: asset.mimeType ?? 'image/jpeg',
+          name: 'avatar.jpg',
+        } as any);
+      }
+      // TODO: POST /me/avatar  multipart/form-data → { avatarUrl }
+      // const { data } = await api.post('/me/avatar', formData, {
+      //   headers: { 'Content-Type': 'multipart/form-data' },
+      // });
+      // await updateUser({ avatarUrl: data.avatarUrl });
+
+      await updateUser({ avatarUrl: asset.uri }); // mock until backend ready
+    } catch {
+      Alert.alert('Upload failed', 'Could not update your photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
+  // ── Logout ────────────────────────────────
+const handleLogout = () => {
+  const performLogout = async () => {
+    try {
+      if (refreshToken) await authService.logout(refreshToken);
+    } finally {
+      await clearAuth();
+      router.replace('/(auth)/login');
+    }
+  };
+
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm('Are you sure you want to log out?');
+    if (confirmed) {
+      performLogout();
+    }
+  } else {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: performLogout,
+      },
+    ]);
+  }
+};
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      {/* Хедер профілю */}
-      <View className="items-center px-5 pb-6 pt-8">
-        <Avatar uri={user?.avatarUrl} name={user?.fullName} size={96} />
-        <Text className="mt-3 text-2xl font-extrabold text-gray-900">{user?.fullName}</Text>
-        <Text className="text-sm text-gray-500">{user?.email}</Text>
-        <View className="mt-2 rounded-full bg-primary/10 px-3 py-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-primary">
-            {ROLE_LABEL[user?.role ?? 'USER'] ?? user?.role}
-          </Text>
-        </View>
-      </View>
+    <SafeAreaView className="flex-1 bg-stone-50" edges={['top']}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ── Header card ─────────────────── */}
+        <Animated.View
+          entering={FadeInDown.delay(0).springify().damping(18)}
+          style={styles.headerCard}
+        >
+          {/* Decorative circles */}
+          <View style={styles.decor1} />
+          <View style={styles.decor2} />
 
-      {/* Пункти меню */}
-      <View className="mx-4 overflow-hidden rounded-2xl bg-white">
-        <MenuRow emoji="✏️" label="Редагувати профіль" onPress={() => router.push('/(app)/profile/edit')} />
-        <MenuRow emoji="🌟" label="Мої підопічні" onPress={() => router.push('/(app)/guardianship')} />
-        <MenuRow emoji="❤️" label="Вподобані" onPress={() => router.push('/(app)/(tabs)/liked')} last />
-      </View>
+          <Avatar
+            uri={user?.avatarUrl}
+            name={user?.fullName}
+            size={96}
+            onEditPress={handleAvatarPress}
+            uploading={uploading}
+          />
 
-      {user?.role === 'SHELTER_ADMIN' ? (
-        <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white">
-          <MenuRow emoji="📊" label="Дашборд притулку" onPress={() => router.push('/(app)/shelter/dashboard')} last />
-        </View>
-      ) : null}
+          <Text style={styles.userName}>{user?.fullName ?? 'User'}</Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
 
-      <View className="mt-auto px-5 pb-4">
-        <Button label="Вийти" variant="outline" onPress={handleLogout} />
-      </View>
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleText}>
+              {ROLE_LABEL[user?.role ?? 'USER'] ?? user?.role}
+            </Text>
+          </View>
+        </Animated.View>
+
+        {/* ── Stats row ───────────────────── */}
+        <Animated.View
+          entering={FadeInDown.delay(80).springify().damping(18)}
+          style={styles.statsCard}
+        >
+          <StatCell value={liked.length} label="Favorites" />
+          <View style={styles.statDivider} />
+          <StatCell value={0} label="Wards" />
+          <View style={styles.statDivider} />
+          <StatCell value={0} label="Contacted" />
+        </Animated.View>
+
+        {/* ── Account section ─────────────── */}
+        <Animated.View entering={FadeInDown.delay(150).springify().damping(18)}>
+          <SectionLabel title="Account" />
+          <View style={styles.sectionCard}>
+            <MenuRow
+              icon={Pencil}
+              iconColor={Colors.primary[500]}
+              iconBg={Colors.primary[50]}
+              label="Edit Profile"
+              onPress={() => router.push('/(app)/profile/edit')}
+            />
+            <MenuRow
+              icon={Star}
+              iconColor={Colors.warning}
+              iconBg="rgba(234,179,8,0.10)"
+              label="My Wards"
+              onPress={() => router.push('/(app)/guardianship')}
+            />
+            <MenuRow
+              icon={Heart}
+              iconColor={Colors.error}
+              iconBg="rgba(239,68,68,0.08)"
+              label="Favorites"
+              onPress={() => router.push('/(app)/(tabs)/liked')}
+              isLast
+            />
+          </View>
+        </Animated.View>
+
+        {/* ── Shelter admin section ────────── */}
+        {user?.role === 'SHELTER_ADMIN' && (
+          <Animated.View entering={FadeInDown.delay(200).springify().damping(18)}>
+            <SectionLabel title="Shelter" />
+            <View style={styles.sectionCard}>
+              <MenuRow
+                icon={LayoutDashboard}
+                iconColor={Colors.info}
+                iconBg="rgba(59,130,246,0.08)"
+                label="Shelter Dashboard"
+                onPress={() => router.push('/(app)/shelter/dashboard')}
+                isLast
+              />
+            </View>
+          </Animated.View>
+        )}
+
+        {/* ── Logout — always visible above tab bar ── */}
+        <Animated.View
+          entering={FadeInDown.delay(240).springify().damping(18)}
+          style={styles.logoutWrap}
+        >
+          <Button
+            label="Log Out"
+            variant="destructive"
+            icon={LogOut}
+            onPress={handleLogout}
+          />
+        </Animated.View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function MenuRow({
-  emoji,
-  label,
-  onPress,
-  last,
-}: {
-  emoji: string;
+// ─────────────────────────────────────────────
+//  Sub-components
+// ─────────────────────────────────────────────
+function SectionLabel({ title }: { title: string }) {
+  return (
+    <Text className="mb-2 mt-5 px-1 text-xs font-semibold uppercase tracking-widest text-stone-400">
+      {title}
+    </Text>
+  );
+}
+
+function StatCell({ value, label }: { value: number; label: string }) {
+  return (
+    <View className="flex-1 items-center gap-0.5 py-1">
+      <Text className="text-2xl font-extrabold text-orange-500">{value}</Text>
+      <Text className="text-xs font-medium text-stone-400">{label}</Text>
+    </View>
+  );
+}
+
+interface MenuRowProps {
+  icon: ComponentType<{ size: number; color: string; strokeWidth?: number }>;
+  iconColor: string;
+  iconBg: string;
   label: string;
   onPress: () => void;
-  last?: boolean;
-}) {
+  isLast?: boolean;
+}
+
+function MenuRow({ icon: Icon, iconColor, iconBg, label, onPress, isLast }: MenuRowProps) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
     <Pressable
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 14, stiffness: 320 }); }}
+      onPressOut={() => { scale.value = withSpring(1,    { damping: 14, stiffness: 320 }); }}
       onPress={onPress}
-      className={`flex-row items-center px-4 py-4 active:bg-gray-50 ${last ? '' : 'border-b border-gray-100'}`}
+      style={!isLast && styles.menuRowBorder}
     >
-      <Text className="text-lg">{emoji}</Text>
-      <Text className="ml-3 flex-1 text-base text-gray-800">{label}</Text>
-      <Text className="text-gray-300">›</Text>
+      <Animated.View style={[styles.menuRowInner, animStyle]}>
+        <View style={[styles.menuIconCircle, { backgroundColor: iconBg }]}>
+          <Icon size={16} color={iconColor} strokeWidth={2} />
+        </View>
+        <Text style={styles.menuLabel}>{label}</Text>
+        <ChevronRight size={16} color={Colors.neutral[300]} strokeWidth={2} />
+      </Animated.View>
     </Pressable>
   );
 }
+
+// ─────────────────────────────────────────────
+//  Styles
+// ─────────────────────────────────────────────
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: Spacing[4],
+    paddingTop: Spacing[3],
+    // Clears the tab bar + extra breathing room
+    paddingBottom: Layout.tabBarHeight + Spacing[8],
+  },
+
+  // ── Header card
+  headerCard: {
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius['2xl'],
+    alignItems: 'center',
+    paddingTop: Spacing[8],
+    paddingBottom: Spacing[6],
+    paddingHorizontal: Spacing[6],
+    overflow: 'hidden',
+    ...Shadow.md,
+  },
+  decor1: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: Colors.primary[100],
+    top: -50,
+    right: -50,
+    opacity: 0.55,
+  },
+  decor2: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: Colors.primary[50],
+    bottom: 10,
+    left: -25,
+    opacity: 0.7,
+  },
+  userName: {
+    marginTop: Spacing[4],
+    color: Colors.neutral[900],
+    fontSize: FontSize['2xl'],
+    fontWeight: FontWeight.extrabold,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+  },
+  userEmail: {
+    marginTop: Spacing[1],
+    color: Colors.neutral[400],
+    fontSize: FontSize.sm,
+  },
+  roleBadge: {
+    marginTop: Spacing[3],
+    backgroundColor: Colors.primary[50],
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[1],
+  },
+  roleText: {
+    color: Colors.primary[700],
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+
+  // ── Stats
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius['2xl'],
+    marginTop: Spacing[3],
+    paddingVertical: Spacing[4],
+    ...Shadow.sm,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: Colors.neutral[150],
+  },
+
+  // ── Menu
+  sectionCard: {
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius['2xl'],
+    overflow: 'hidden',
+    ...Shadow.sm,
+  },
+  menuRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[100],
+  },
+  menuRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[4],
+    gap: Spacing[3],
+  },
+  menuIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: {
+    flex: 1,
+    color: Colors.neutral[800],
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.medium,
+  },
+
+  // ── Logout
+  logoutWrap: {
+    marginTop: Spacing[6],
+  },
+});

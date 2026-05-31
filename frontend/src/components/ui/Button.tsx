@@ -1,7 +1,16 @@
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import type { ComponentType } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
-type Variant = 'primary' | 'outline' | 'ghost';
-type Size = 'md' | 'lg';
+import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
+
+// ─── Types ────────────────────────────────────
+type Variant = 'primary' | 'outline' | 'ghost' | 'destructive';
+type Size    = 'md' | 'lg';
 
 interface ButtonProps {
   label: string;
@@ -10,49 +19,124 @@ interface ButtonProps {
   size?: Size;
   disabled?: boolean;
   loading?: boolean;
-  className?: string;
+  /** Optional Lucide (or any) icon component */
+  icon?: ComponentType<{ size: number; color: string; strokeWidth?: number }>;
+  iconPosition?: 'left' | 'right';
 }
 
-// Класи фону/рамки під кожен варіант
-const CONTAINER: Record<Variant, string> = {
-  primary: 'bg-primary active:bg-primary-dark',
-  outline: 'border border-primary bg-transparent active:bg-primary/10',
-  ghost: 'bg-transparent active:bg-gray-100',
+// ─── Style maps ───────────────────────────────
+const CONTAINER: Record<Variant, object> = {
+  primary:     { backgroundColor: Colors.primary[500] },
+  outline:     { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary[500] },
+  ghost:       { backgroundColor: 'transparent' },
+  destructive: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.error },
 };
 
-// Класи тексту під кожен варіант
-const LABEL: Record<Variant, string> = {
-  primary: 'text-white',
-  outline: 'text-primary',
-  ghost: 'text-gray-700',
+const LABEL_COLOR: Record<Variant, string> = {
+  primary:     Colors.neutral[0],
+  outline:     Colors.primary[500],
+  ghost:       Colors.neutral[600],
+  destructive: Colors.error,
 };
 
-const PADDING: Record<Size, string> = {
-  md: 'py-3 px-5',
-  lg: 'py-4 px-6',
+const INDICATOR_COLOR: Record<Variant, string> = {
+  primary:     Colors.neutral[0],
+  outline:     Colors.primary[500],
+  ghost:       Colors.neutral[500],
+  destructive: Colors.error,
 };
 
+const HEIGHT: Record<Size, number> = {
+  md: 48,
+  lg: 56,
+};
+
+const FONT_SIZE: Record<Size, number> = {
+  md: FontSize.base,
+  lg: FontSize.md,
+};
+
+// ─── Component ───────────────────────────────
 export function Button({
   label,
   onPress,
-  variant = 'primary',
-  size = 'lg',
-  disabled = false,
-  loading = false,
-  className = '',
+  variant      = 'primary',
+  size         = 'lg',
+  disabled     = false,
+  loading      = false,
+  icon: Icon,
+  iconPosition = 'left',
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const scale = useSharedValue(1);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const labelColor = LABEL_COLOR[variant];
+  const iconSize   = size === 'lg' ? 20 : 18;
+
   return (
     <Pressable
+      onPressIn={() => {
+        if (!isDisabled)
+          scale.value = withSpring(0.97, { damping: 14, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 14, stiffness: 300 });
+      }}
       onPress={onPress}
       disabled={isDisabled}
-      className={`flex-row items-center justify-center rounded-2xl ${CONTAINER[variant]} ${PADDING[size]} ${isDisabled ? 'opacity-50' : ''} ${className}`}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#fff' : '#FF6B6B'} />
-      ) : (
-        <Text className={`text-base font-semibold ${LABEL[variant]}`}>{label}</Text>
-      )}
+      <Animated.View
+        style={[
+          styles.base,
+          CONTAINER[variant],
+          { height: HEIGHT[size] },
+          variant === 'primary' && Shadow.orange,
+          isDisabled && styles.disabled,
+          animStyle,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={INDICATOR_COLOR[variant]} />
+        ) : (
+          <View style={styles.row}>
+            {Icon && iconPosition === 'left' && (
+              <Icon size={iconSize} color={labelColor} strokeWidth={2} />
+            )}
+            <Text style={[styles.label, { color: labelColor, fontSize: FONT_SIZE[size] }]}>
+              {label}
+            </Text>
+            {Icon && iconPosition === 'right' && (
+              <Icon size={iconSize} color={labelColor} strokeWidth={2} />
+            )}
+          </View>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
+
+// ─── Styles ──────────────────────────────────
+const styles = StyleSheet.create({
+  base: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.xl,
+    paddingHorizontal: Spacing[6],
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[2],
+  },
+  label: {
+    fontWeight: FontWeight.semibold,
+  },
+  disabled: {
+    opacity: 0.45,
+  },
+});
