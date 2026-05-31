@@ -24,7 +24,7 @@ import Animated, {
   withSpring,
   ZoomIn,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
@@ -33,11 +33,17 @@ import { chatService } from '@/services/chat';
 import { useFeedStore } from '@/store/feed';
 import type { Animal } from '@/types/models';
 
+const TAB_BAR_HEIGHT   = 72;
+const TAB_BAR_MARGIN_B = 12;
+
 // ─────────────────────────────────────────────
 //  Screen
 // ─────────────────────────────────────────────
 export default function LikedScreen() {
-  const liked = useFeedStore((s) => s.liked);
+  const liked  = useFeedStore((s) => s.liked);
+  const insets = useSafeAreaInsets();
+
+  const listPaddingBottom = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_MARGIN_B + Spacing[4];
 
   const openChat = async (animal: Animal) => {
     const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
@@ -71,7 +77,10 @@ export default function LikedScreen() {
       <FlatList
         data={liked}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: listPaddingBottom },
+        ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
@@ -248,7 +257,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing[4],
     paddingTop: Spacing[1],
-    paddingBottom: Spacing[10],
     gap: Spacing[3],
   },
   emptyWrap: {
