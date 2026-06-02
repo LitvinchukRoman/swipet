@@ -1,4 +1,4 @@
-package ua.edu.ukma.swipet.backend.donation.repositiry;
+package ua.edu.ukma.swipet.backend.donation.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
