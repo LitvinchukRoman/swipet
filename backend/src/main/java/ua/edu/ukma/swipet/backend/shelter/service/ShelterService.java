@@ -3,8 +3,10 @@ package ua.edu.ukma.swipet.backend.shelter.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
+import ua.edu.ukma.swipet.backend.common.storage.StorageService;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterRequest;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterResponse;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
@@ -18,6 +20,7 @@ public class ShelterService {
     private final ShelterRepository shelterRepository;
     private final UserRepository userRepository;
     private final ShelterMapper shelterMapper;
+    private final StorageService storageService;
 
     @Transactional
     public ShelterResponse createShelter(Long adminUserId, ShelterRequest request) {
@@ -51,6 +54,21 @@ public class ShelterService {
         shelter.setLocationLng(request.locationLng());
         shelter.setPhone(request.phone());
         shelter.setWebsiteUrl(request.websiteUrl());
+
+        return shelterMapper.toResponse(shelter);
+    }
+
+    @Transactional
+    public ShelterResponse uploadLogo(Long id, MultipartFile file) {
+        Shelter shelter = shelterRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Притулок з ID " + id + " не знайдено"));
+
+        if (shelter.getLogoUrl() != null && !shelter.getLogoUrl().isBlank()) {
+            storageService.deleteFile(shelter.getLogoUrl());
+        }
+
+        String newLogoUrl = storageService.uploadFile(file);
+        shelter.setLogoUrl(newLogoUrl);
 
         return shelterMapper.toResponse(shelter);
     }
