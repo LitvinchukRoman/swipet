@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 
 import java.util.List;
+import ua.edu.ukma.swipet.backend.animal.entity.AnimalStatus;
 
 @Repository
 public interface AnimalRepository extends JpaRepository<Animal, Long> {
@@ -52,4 +53,6 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
             @Param("ageMax") Integer ageMax,
             @Param("limit") Integer limit
     );
+
+    List<Animal> findAllByStatus(AnimalStatus animalStatus);
 }
