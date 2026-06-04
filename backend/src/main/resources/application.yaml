@@ -82,3 +82,7 @@ logging:
     root: INFO
     ua.edu.ukma.swipet: ${LOG_LEVEL:INFO}
     org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_твоя_тестова_апі_кея}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_твій_вебхук_секрет}

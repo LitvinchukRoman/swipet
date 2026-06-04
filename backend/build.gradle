@@ -64,6 +64,8 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'com.stripe:stripe-java:24.2.0'
 }
 
 tasks.named('test') {
