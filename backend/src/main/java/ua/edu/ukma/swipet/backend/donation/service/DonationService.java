@@ -10,11 +10,11 @@ import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
+import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.PaymentInitResponse;
 import ua.edu.ukma.swipet.backend.donation.dto.VirtualGuardianshipResponse;
-import ua.edu.ukma.swipet.backend.donation.dto.WebhookPayload;
 import ua.edu.ukma.swipet.backend.donation.entity.Donation;
 import ua.edu.ukma.swipet.backend.donation.entity.DonationStatus;
 import ua.edu.ukma.swipet.backend.donation.entity.DonationType;
@@ -23,6 +23,10 @@ import ua.edu.ukma.swipet.backend.donation.repository.DonationRepository;
 import ua.edu.ukma.swipet.backend.donation.repository.VirtualGuardianshipRepository;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
+import com.stripe.model.Event;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
+import com.stripe.exception.SignatureVerificationException;
 
 import java.time.LocalDateTime;
 
@@ -37,6 +41,7 @@ public class DonationService {
     private final ShelterRepository shelterRepository;
     private final AnimalRepository animalRepository;
     private final PaymentService paymentService;
+    private final StripeProperties stripeProperties;
 
     @Transactional
     public String createOneTimeDonation(Long userId, DonationRequest request) {
@@ -107,29 +112,35 @@ public class DonationService {
     }
 
     @Transactional
-    public void processWebhook(WebhookPayload payload) {
-        Donation donation = donationRepository.findByExternalTxId(payload.externalTxId())
-                .orElseThrow(() -> new RuntimeException("Транзакцію не знайдено"));
-
-        if (donation.getStatus() == DonationStatus.SUCCESS) {
-            log.info("Транзакція {} вже була оброблена раніше", payload.externalTxId());
-            return;
+    public void processWebhook(String payload, String sigHeader) {
+        Event event;
+        try {
+            event = Webhook.constructEvent(payload, sigHeader, stripeProperties.webhookSecret());
+        } catch (SignatureVerificationException e) {
+            log.error("⚠️ Атака на вебхук або невірний підпис: {}", e.getMessage());
+            throw new RuntimeException("Недійсний підпис вебхуку. Доступ заборонено.");
         }
 
-        if ("SUCCESS".equalsIgnoreCase(payload.status())) {
-            donation.setStatus(DonationStatus.SUCCESS);
-            log.info("Успішний платіж: {}", payload.externalTxId());
-        } else {
-            donation.setStatus(DonationStatus.FAILED);
-            log.warn("Неуспішний платіж: {}", payload.externalTxId());
-            
-            if (donation.getType() == DonationType.SUBSCRIPTION) {
-                guardianshipRepository.findAllByUser_IdAndIsActiveTrue(donation.getUser().getId())
-                        .stream()
-                        .filter(g -> g.getAnimal().getId().equals(donation.getAnimal().getId()))
-                        .findFirst()
-                        .ifPresent(g -> g.setIsActive(false));
+        if ("checkout.session.completed".equals(event.getType())) {
+
+            Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
+            if (session == null) return;
+
+            String sessionId = session.getId();
+
+            Donation donation = donationRepository.findByExternalTxId(sessionId)
+                .orElseThrow(() -> new RuntimeException("Транзакцію " + sessionId + " не знайдено в БД"));
+
+            if (donation.getStatus() == DonationStatus.SUCCESS) {
+                log.info("Транзакція {} вже була успішно оброблена раніше", sessionId);
+                return;
             }
+
+            donation.setStatus(DonationStatus.SUCCESS);
+            log.info("✅ Успішно верифіковано та зараховано платіж: {} на суму {}", sessionId, donation.getAmount());
+
+        } else {
+            log.debug("Отримано вебхук типу {}, ігноруємо.", event.getType());
         }
     }
 

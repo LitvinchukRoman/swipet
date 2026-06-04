@@ -23,9 +23,9 @@ public class DonationController {
     @PostMapping("/one-time")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, String> createOneTimeDonation(
-            @RequestHeader("X-User-Id") Long userId,
-            @Valid @RequestBody DonationRequest request) {
-        
+        @RequestHeader("X-User-Id") Long userId,
+        @Valid @RequestBody DonationRequest request) {
+
         String paymentUrl = donationService.createOneTimeDonation(userId, request);
         return Map.of("paymentUrl", paymentUrl);
     }
@@ -33,9 +33,9 @@ public class DonationController {
     @PostMapping("/guardianship")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, String> createGuardianship(
-            @RequestHeader("X-User-Id") Long userId,
-            @Valid @RequestBody GuardianshipRequest request) {
-        
+        @RequestHeader("X-User-Id") Long userId,
+        @Valid @RequestBody GuardianshipRequest request) {
+
         String paymentUrl = donationService.createGuardianship(userId, request);
         return Map.of("paymentUrl", paymentUrl);
     }
@@ -43,23 +43,25 @@ public class DonationController {
     @DeleteMapping("/guardianship/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelGuardianship(
-            @RequestHeader("X-User-Id") Long userId,
-            @PathVariable Long id) {
-        
+        @RequestHeader("X-User-Id") Long userId,
+        @PathVariable Long id) {
+
         donationService.cancelGuardianship(userId, id);
     }
 
     @GetMapping("/my-guardianships")
     @ResponseStatus(HttpStatus.OK)
     public List<VirtualGuardianshipResponse> getMyGuardianships(
-            @RequestHeader("X-User-Id") Long userId) {
-        
+        @RequestHeader("X-User-Id") Long userId) {
+
         return donationService.getMyGuardianships(userId);
     }
 
     @PostMapping("/webhook")
     @ResponseStatus(HttpStatus.OK)
-    public void processWebhook(@RequestBody WebhookPayload payload) {
-        donationService.processWebhook(payload);
+    public void processWebhook(
+        @RequestBody String payload,
+        @RequestHeader("Stripe-Signature") String sigHeader) {
+        donationService.processWebhook(payload, sigHeader);
     }
 }
