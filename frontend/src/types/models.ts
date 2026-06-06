@@ -63,3 +63,47 @@ export interface FeedFilters {
   ageMax?: number;
   radiusKm?: number;
 }
+
+// ─── Donations & Guardianship — ТЗ розділи 2.1, 3.7 ─────────────────────────
+
+export type DonationType   = 'ONE_TIME' | 'SUBSCRIPTION';
+export type DonationStatus = 'PENDING'  | 'SUCCESS' | 'FAILED';
+
+/** donations table */
+export interface Donation {
+  id: number;
+  userId: number;
+  shelterId: number;
+  animalId?: number;           // null = донат притулку без прив'язки до тварини
+  amount: number;              // UAH
+  type: DonationType;
+  status: DonationStatus;
+  externalTxId?: string;       // ID транзакції платіжного шлюзу
+  createdAt: string;
+}
+
+/** virtual_guardianships table */
+export interface VirtualGuardianship {
+  id: number;
+  userId: number;
+  animalId: number;
+  monthlyAmount: number;       // UAH
+  isActive: boolean;
+  startedAt: string;           // ISO date string
+  nextBillingAt: string;       // ISO date string
+  /** Populated by API join — animal snapshot */
+  animal?: Pick<Animal, 'id' | 'name' | 'primaryPhotoUrl' | 'species' | 'breed'>;
+}
+
+/** booking_slots table */
+export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'CANCELLED';
+
+export interface BookingSlot {
+  id: number;
+  shelterId: number;
+  userId?: number;             // null = вільний слот
+  startsAt: string;            // ISO date string
+  endsAt: string;              // ISO date string
+  status: SlotStatus;
+  notes?: string;
+}

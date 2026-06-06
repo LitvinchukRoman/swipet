@@ -46,6 +46,7 @@ import { animalService } from '@/services/animal';
 import { chatService } from '@/services/chat';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal } from '@/types/models';
+import { DonationSheet } from '@/components/common/DonationSheet';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const PHOTO_H = SCREEN_W * 1.05;
@@ -387,8 +388,9 @@ function LoadingSkeleton() {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function AnimalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [animal,     setAnimal]     = useState<Animal | null>(null);
-  const [loading,    setLoading]    = useState(true);
+  const [animal,          setAnimal]          = useState<Animal | null>(null);
+  const [loading,         setLoading]         = useState(true);
+  const [donationVisible, setDonationVisible] = useState(false);
 
   // section entrance animations
   const header  = useFadeSlide(0);
@@ -655,7 +657,7 @@ export default function AnimalDetailScreen() {
               label="Support"
               variant="outline"
               icon={<Heart size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
-              onPress={() => {}}
+              onPress={() => setDonationVisible(true)}
             />
             <ActionBtn
               label="Message"
@@ -666,6 +668,16 @@ export default function AnimalDetailScreen() {
           </View>
         </SafeAreaView>
       </Animated.View>
+      {/* ── Donation Sheet ───────────────────────── */}
+      {animal && (
+        <DonationSheet
+          visible={donationVisible}
+          onClose={() => setDonationVisible(false)}
+          animalId={animal.id}
+          animalName={animal.name}
+          shelterId={animal.shelterId}
+        />
+      )}
     </View>
   );
 }

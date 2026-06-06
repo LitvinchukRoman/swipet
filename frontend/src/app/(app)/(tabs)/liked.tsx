@@ -25,7 +25,9 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
 
+import { DonationSheet } from '@/components/common/DonationSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { formatAge, formatDistance, SPECIES_ICON } from '@/lib/format';
@@ -42,6 +44,9 @@ const TAB_BAR_MARGIN_B = 12;
 export default function LikedScreen() {
   const liked  = useFeedStore((s) => s.liked);
   const insets = useSafeAreaInsets();
+
+  // null = closed, Animal = open for that animal
+  const [donationAnimal, setDonationAnimal] = useState<Animal | null>(null);
 
   const listPaddingBottom = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_MARGIN_B + Spacing[4];
 
@@ -91,8 +96,22 @@ export default function LikedScreen() {
           </View>
         }
         renderItem={({ item, index }) => (
-          <LikedCard animal={item} index={index} onChat={() => openChat(item)} />
+          <LikedCard
+            animal={item}
+            index={index}
+            onChat={() => openChat(item)}
+            onDonate={() => setDonationAnimal(item)}
+          />
         )}
+      />
+
+      {/* ── Donation Sheet ─────────────────── */}
+      <DonationSheet
+        visible={donationAnimal !== null}
+        onClose={() => setDonationAnimal(null)}
+        animalId={donationAnimal?.id ?? 0}
+        animalName={donationAnimal?.name ?? ''}
+        shelterId={donationAnimal?.shelterId ?? 0}
       />
     </SafeAreaView>
   );
@@ -105,9 +124,10 @@ interface LikedCardProps {
   animal: Animal;
   index: number;
   onChat: () => void;
+  onDonate: () => void;
 }
 
-function LikedCard({ animal, index, onChat }: LikedCardProps) {
+function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
   const SpeciesIcon = SPECIES_ICON[animal.species];
 
   return (
@@ -182,7 +202,7 @@ function LikedCard({ animal, index, onChat }: LikedCardProps) {
           label="Donate"
           color={Colors.error}
           bgColor="rgba(239,68,68,0.08)"
-          onPress={() => {/* TODO: open donation flow */}}
+          onPress={onDonate}
           showRightBorder
         />
         <ActionCell
@@ -205,7 +225,9 @@ function LikedCard({ animal, index, onChat }: LikedCardProps) {
   );
 }
 
-
+// ─────────────────────────────────────────────
+//  ActionCell
+// ─────────────────────────────────────────────
 interface ActionCellProps {
   icon: ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   label: string;
