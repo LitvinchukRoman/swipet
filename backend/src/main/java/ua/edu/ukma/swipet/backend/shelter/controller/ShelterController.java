@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterRequest;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterResponse;
 import ua.edu.ukma.swipet.backend.shelter.service.ShelterService;
@@ -21,9 +23,9 @@ public class ShelterController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public ShelterResponse createShelter(
-            @RequestHeader("X-User-Id") Long adminUserId,
+            @CurrentUser AuthenticatedUser currentUser,
             @Valid @RequestBody ShelterRequest request) {
-        return shelterService.createShelter(adminUserId, request);
+        return shelterService.createShelter(currentUser.id(), request);
     }
 
     @GetMapping("/{id}")

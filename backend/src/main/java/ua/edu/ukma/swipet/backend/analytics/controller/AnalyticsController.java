@@ -7,6 +7,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ua.edu.ukma.swipet.backend.analytics.dto.AnimalAnalyticsResponse;
 import ua.edu.ukma.swipet.backend.analytics.service.AnalyticsService;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,10 +24,10 @@ public class AnalyticsController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public List<AnimalAnalyticsResponse> getMyAnalytics(
-            @RequestHeader("X-Shelter-Id") Long shelterId,
+            @CurrentUser AuthenticatedUser currentUser,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
         
-        return analyticsService.getAnalyticsByShelter(shelterId, dateFrom, dateTo);
+        return analyticsService.getAnalyticsForAdmin(currentUser.id(), dateFrom, dateTo);
     }
 }

@@ -12,6 +12,9 @@ import ua.edu.ukma.swipet.backend.analytics.repository.AnimalAnalyticsRepository
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.entity.AnimalStatus;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
+import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
+import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,6 +27,7 @@ public class AnalyticsService {
 
     private final AnimalAnalyticsRepository analyticsRepository;
     private final AnimalRepository animalRepository;
+    private final ShelterRepository shelterRepository;
 
     @Transactional
     public void incrementView(Long animalId) {
@@ -43,6 +47,14 @@ public class AnalyticsService {
                     analyticsRepository.save(newStat);
                 }
         );
+    }
+
+    /** Резолвить притулок поточного адміна та повертає його аналітику. */
+    @Transactional(readOnly = true)
+    public List<AnimalAnalyticsResponse> getAnalyticsForAdmin(Long adminUserId, LocalDate dateFrom, LocalDate dateTo) {
+        Shelter shelter = shelterRepository.findByAdminUser_Id(adminUserId)
+                .orElseThrow(() -> AppException.notFound("Притулок для поточного користувача не знайдено"));
+        return getAnalyticsByShelter(shelter.getId(), dateFrom, dateTo);
     }
 
     @Transactional(readOnly = true)
