@@ -18,6 +18,7 @@ import ua.edu.ukma.swipet.backend.chat.entity.ChatRoom;
 import ua.edu.ukma.swipet.backend.chat.mapper.ChatMapper;
 import ua.edu.ukma.swipet.backend.chat.repository.ChatMessageRepository;
 import ua.edu.ukma.swipet.backend.chat.repository.ChatRoomRepository;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
 
@@ -44,11 +45,11 @@ public class ChatService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Користувача не знайдено"));
         Shelter shelter = shelterRepository.findById(shelterId)
-                .orElseThrow(() -> new RuntimeException("Притулок не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Притулок не знайдено"));
         Animal animal = animalRepository.findById(animalId)
-                .orElseThrow(() -> new RuntimeException("Тварину не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину не знайдено"));
 
         ChatRoom newRoom = ChatRoom.builder()
                 .user(user)
@@ -63,10 +64,10 @@ public class ChatService {
     @Transactional
     public ChatMessageResponse saveMessage(Long roomId, MessageSaveRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Кімнату чату не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Кімнату чату не знайдено"));
 
         User sender = userRepository.findById(request.senderId())
-                .orElseThrow(() -> new RuntimeException("Відправника не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Відправника не знайдено"));
 
         ChatMessage message = ChatMessage.builder()
                 .room(room)

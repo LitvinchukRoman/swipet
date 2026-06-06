@@ -3,6 +3,8 @@ package ua.edu.ukma.swipet.backend.swipe.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 
@@ -29,8 +31,8 @@ public class Swipe {
     @JoinColumn(name = "animal_id", nullable = false)
     private Animal animal;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "direction", nullable = false, columnDefinition = "swipe_direction")
     private SwipeDirection direction;
 
     @CreationTimestamp

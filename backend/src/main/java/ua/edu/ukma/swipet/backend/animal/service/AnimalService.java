@@ -9,6 +9,7 @@ import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.entity.AnimalStatus;
 import ua.edu.ukma.swipet.backend.animal.mapper.AnimalMapper;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
 
@@ -24,7 +25,7 @@ public class AnimalService {
     public AnimalResponse createAnimal(AnimalRequest request) {
         // Перевіряємо, чи існує такий притулок
         Shelter shelter = shelterRepository.findById(request.shelterId())
-                .orElseThrow(() -> new RuntimeException("Притулок з ID " + request.shelterId() + " не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Притулок з ID " + request.shelterId()));
 
         Animal animal = animalMapper.toEntity(request, shelter);
         Animal savedAnimal = animalRepository.save(animal);
@@ -35,7 +36,7 @@ public class AnimalService {
     @Transactional(readOnly = true)
     public AnimalResponse getAnimalById(Long id) {
         Animal animal = animalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Тварину з ID " + id + " не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину з ID " + id));
         
         return animalMapper.toResponse(animal);
     }
@@ -43,7 +44,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse updateAnimal(Long id, AnimalRequest request) {
         Animal animal = animalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Тварину з ID " + id + " не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину з ID " + id));
 
         animal.setName(request.name());
         animal.setSpecies(request.species());
@@ -62,7 +63,7 @@ public class AnimalService {
     @Transactional
     public void deleteAnimal(Long id) {
         if (!animalRepository.existsById(id)) {
-            throw new RuntimeException("Тварину з ID " + id + " не знайдено");
+            throw AppException.notFound("Тварину з ID " + id);
         }
         animalRepository.deleteById(id);
     }
@@ -70,7 +71,7 @@ public class AnimalService {
     @Transactional
     public void updateAnimalStatus(Long id, AnimalStatus newStatus) {
         Animal animal = animalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Тварину з ID " + id + " не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину з ID " + id));
         animal.setStatus(newStatus);
     }
 }

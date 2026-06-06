@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.common.storage.StorageService;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterRequest;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterResponse;
@@ -25,7 +26,7 @@ public class ShelterService {
     @Transactional
     public ShelterResponse createShelter(Long adminUserId, ShelterRequest request) {
         User adminUser = userRepository.findById(adminUserId)
-                .orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Користувача не знайдено"));
 
         Shelter shelter = shelterMapper.toEntity(request, adminUser);
         Shelter savedShelter = shelterRepository.save(shelter);
@@ -36,7 +37,7 @@ public class ShelterService {
     @Transactional(readOnly = true)
     public ShelterResponse getShelterById(Long id) {
         Shelter shelter = shelterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Притулок з ID " + id + " не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Притулок з ID " + id));
         
         return shelterMapper.toResponse(shelter);
     }
@@ -44,7 +45,7 @@ public class ShelterService {
     @Transactional
     public ShelterResponse updateShelter(Long id, ShelterRequest request) {
         Shelter shelter = shelterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Притулок з ID " + id + " не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Притулок з ID " + id));
 
         shelter.setName(request.name());
         shelter.setDescription(request.description());
@@ -61,7 +62,7 @@ public class ShelterService {
     @Transactional
     public ShelterResponse uploadLogo(Long id, MultipartFile file) {
         Shelter shelter = shelterRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Притулок з ID " + id + " не знайдено"));
+            .orElseThrow(() -> AppException.notFound("Притулок з ID " + id));
 
         if (shelter.getLogoUrl() != null && !shelter.getLogoUrl().isBlank()) {
             storageService.deleteFile(shelter.getLogoUrl());

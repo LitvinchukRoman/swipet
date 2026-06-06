@@ -3,6 +3,8 @@ package ua.edu.ukma.swipet.backend.booking.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 
 import java.time.LocalDateTime;
@@ -31,8 +33,8 @@ public class BookingReservation {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false, columnDefinition = "reservation_status")
     @Builder.Default
     private ReservationStatus status = ReservationStatus.ACTIVE;
 

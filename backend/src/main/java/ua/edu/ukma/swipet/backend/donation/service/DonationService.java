@@ -10,6 +10,7 @@ import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
@@ -46,14 +47,14 @@ public class DonationService {
     @Transactional
     public String createOneTimeDonation(Long userId, DonationRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Користувача не знайдено"));
         Shelter shelter = shelterRepository.findById(request.shelterId())
-                .orElseThrow(() -> new RuntimeException("Притулок не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Притулок не знайдено"));
         
         Animal animal = null;
         if (request.animalId() != null) {
             animal = animalRepository.findById(request.animalId())
-                    .orElseThrow(() -> new RuntimeException("Тварину не знайдено"));
+                    .orElseThrow(() -> AppException.notFound("Тварину не знайдено"));
         }
 
         String description = "Благодійний внесок для притулку " + shelter.getName();
@@ -77,9 +78,9 @@ public class DonationService {
     @Transactional
     public String createGuardianship(Long userId, GuardianshipRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Користувача не знайдено"));
         Animal animal = animalRepository.findById(request.animalId())
-                .orElseThrow(() -> new RuntimeException("Тварину не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину не знайдено"));
 
         VirtualGuardianship guardianship = VirtualGuardianship.builder()
                 .user(user)
@@ -118,7 +119,7 @@ public class DonationService {
             event = Webhook.constructEvent(payload, sigHeader, stripeProperties.webhookSecret());
         } catch (SignatureVerificationException e) {
             log.error("⚠️ Атака на вебхук або невірний підпис: {}", e.getMessage());
-            throw new RuntimeException("Недійсний підпис вебхуку. Доступ заборонено.");
+            throw AppException.unauthorized("Недійсний підпис вебхуку. Доступ заборонено.");
         }
 
         if ("checkout.session.completed".equals(event.getType())) {
@@ -129,7 +130,7 @@ public class DonationService {
             String sessionId = session.getId();
 
             Donation donation = donationRepository.findByExternalTxId(sessionId)
-                .orElseThrow(() -> new RuntimeException("Транзакцію " + sessionId + " не знайдено в БД"));
+                .orElseThrow(() -> AppException.notFound("Транзакцію " + sessionId + " не знайдено в БД"));
 
             if (donation.getStatus() == DonationStatus.SUCCESS) {
                 log.info("Транзакція {} вже була успішно оброблена раніше", sessionId);
@@ -147,10 +148,10 @@ public class DonationService {
     @Transactional
     public void cancelGuardianship(Long userId, Long guardianshipId) {
         VirtualGuardianship guardianship = guardianshipRepository.findById(guardianshipId)
-                .orElseThrow(() -> new RuntimeException("Опікунство не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Опікунство не знайдено"));
 
         if (!guardianship.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Ви не можете відмінити чуже опікунство");
+            throw AppException.forbidden("Ви не можете відмінити чуже опікунство");
         }
 
         guardianship.setIsActive(false);

@@ -9,6 +9,7 @@ import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.entity.AnimalPhoto;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalPhotoRepository;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.common.storage.StorageService;
 
 @Service
@@ -22,7 +23,7 @@ public class PhotoService {
     @Transactional
     public PhotoResponse uploadPhoto(Long animalId, MultipartFile file, Integer sortOrder) {
         Animal animal = animalRepository.findById(animalId)
-                .orElseThrow(() -> new RuntimeException("Тварину не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину не знайдено"));
 
         // Делегуємо фізичне збереження файлу інтерфейсу
         String url = storageService.uploadFile(file);
@@ -44,14 +45,14 @@ public class PhotoService {
     @Transactional
     public void deletePhoto(Long animalId, Long photoId) {
         Animal animal = animalRepository.findById(animalId)
-                .orElseThrow(() -> new RuntimeException("Тварину не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Тварину не знайдено"));
 
         AnimalPhoto photo = animalPhotoRepository.findById(photoId)
-                .orElseThrow(() -> new RuntimeException("Фото не знайдено"));
+                .orElseThrow(() -> AppException.notFound("Фото не знайдено"));
 
         // Перевірка безпеки: чи дійсно це фото належить цій тварині
         if (!photo.getAnimal().getId().equals(animalId)) {
-            throw new RuntimeException("Це фото не належить вказаній тварині");
+            throw AppException.forbidden("Це фото не належить вказаній тварині");
         }
 
         // Видаляємо фізичний файл з S3/MinIO

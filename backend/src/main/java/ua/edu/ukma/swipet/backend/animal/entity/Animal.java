@@ -3,6 +3,8 @@ package ua.edu.ukma.swipet.backend.animal.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 
 import java.time.LocalDateTime;
@@ -29,8 +31,8 @@ public class Animal {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "species", nullable = false, columnDefinition = "animal_species")
     private Species species;
 
     @Column(length = 100)
@@ -39,12 +41,12 @@ public class Animal {
     @Column(name = "age_months", nullable = false)
     private Integer ageMonths;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "size", nullable = false, columnDefinition = "animal_size")
     private Size size;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "gender", nullable = false, columnDefinition = "animal_gender")
     private Gender gender;
 
     @Column(columnDefinition = "TEXT")
@@ -58,8 +60,8 @@ public class Animal {
     @Builder.Default
     private Boolean isSterilized = false;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false, columnDefinition = "animal_status")
     private AnimalStatus status;
 
     @Column(name = "primary_photo_url", columnDefinition = "TEXT")

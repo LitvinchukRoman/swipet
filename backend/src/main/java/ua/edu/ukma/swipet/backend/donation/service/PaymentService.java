@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.PaymentInitResponse;
 
@@ -67,7 +68,7 @@ public class PaymentService {
 
         } catch (StripeException e) {
             log.error("Помилка ініціалізації платежу Stripe: {}", e.getMessage());
-            throw new RuntimeException("Не вдалося створити платіжну сесію. Спробуйте пізніше.");
+            throw AppException.badRequest("Не вдалося створити платіжну сесію. Спробуйте пізніше.");
         }
     }
 }
