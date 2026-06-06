@@ -6,8 +6,10 @@ CREATE TABLE booking_slots (
                                user_id BIGINT,
                                starts_at TIMESTAMP NOT NULL,
                                ends_at TIMESTAMP NOT NULL,
+                               max_guests INT NOT NULL,
                                status booking_status NOT NULL,
                                notes TEXT,
+                               version BIGINT NOT NULL DEFAULT 0,
                                CONSTRAINT fk_booking_shelter FOREIGN KEY (shelter_id) REFERENCES shelters (id) ON DELETE CASCADE,
                                CONSTRAINT fk_booking_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 );

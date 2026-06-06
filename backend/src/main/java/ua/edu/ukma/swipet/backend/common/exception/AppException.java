@@ -15,8 +15,8 @@ public class AppException extends RuntimeException {
         this.code = code;
     }
 
-    public static AppException notFound(String resource) {
-        return new AppException(HttpStatus.NOT_FOUND, "NOT_FOUND", resource + " not found");
+    public static AppException notFound(String message) {
+        return new AppException(HttpStatus.NOT_FOUND, "NOT_FOUND", message);
     }
 
     public static AppException conflict(String message) {

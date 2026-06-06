@@ -23,10 +23,10 @@ public class BookingSlot {
     @JoinColumn(name = "shelter_id", nullable = false)
     private Shelter shelter;
 
-    @Column(name = "start_time", nullable = false)
+    @Column(name = "starts_at", nullable = false)
     private LocalDateTime startTime;
 
-    @Column(name = "end_time", nullable = false)
+    @Column(name = "ends_at", nullable = false)
     private LocalDateTime endTime;
 
     @Column(name = "max_guests", nullable = false)

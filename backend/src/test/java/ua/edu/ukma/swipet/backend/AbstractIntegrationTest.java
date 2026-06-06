@@ -1,6 +1,7 @@
 package ua.edu.ukma.swipet.backend;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -12,17 +13,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * Flyway мігрує схему до старту контексту.
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers
 public abstract class AbstractIntegrationTest {
 
     @SuppressWarnings("resource")
     private static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:16-alpine")
-                    .withDatabaseName("swipet")
-                    .withUsername("swipet")
-                    .withPassword("swipet")
-                    .withReuse(true);
+        new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("swipet")
+            .withUsername("swipet")
+            .withPassword("swipet")
+            .withReuse(true);
 
     static {
         POSTGRES.start();
