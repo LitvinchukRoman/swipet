@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ua.edu.ukma.swipet.backend.AbstractIntegrationTest;
 import ua.edu.ukma.swipet.backend.TestConfig;
+import ua.edu.ukma.swipet.backend.auth.security.WithMockAuthenticatedUser;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
 
@@ -132,7 +133,7 @@ class DonationControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void cancelGuardianship_Success_Returns204() throws Exception {
         // Act & Assert
         mockMvc.perform(delete("/api/v1/donations/guardianship/1"))
@@ -140,7 +141,7 @@ class DonationControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void cancelGuardianship_NotFound_Returns404() throws Exception {
         // Act & Assert
         mockMvc.perform(delete("/api/v1/donations/guardianship/999"))
@@ -148,7 +149,7 @@ class DonationControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getMyGuardianships_Success_Returns200() throws Exception {
         // Act & Assert
         mockMvc.perform(get("/api/v1/donations/my-guardianships"))

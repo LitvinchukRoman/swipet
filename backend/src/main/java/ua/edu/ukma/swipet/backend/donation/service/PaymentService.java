@@ -1,8 +1,11 @@
 package ua.edu.ukma.swipet.backend.donation.service;
 
 import com.stripe.Stripe;
+import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
 import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +72,19 @@ public class PaymentService {
         } catch (StripeException e) {
             log.error("Помилка ініціалізації платежу Stripe: {}", e.getMessage());
             throw AppException.badRequest("Не вдалося створити платіжну сесію. Спробуйте пізніше.");
+        }
+    }
+
+    /**
+     * Верифікує підпис Stripe-вебхука та повертає розпарсену подію.
+     * Винесено окремим методом, щоб ізолювати статичний виклик Stripe SDK (мокабельний у тестах).
+     */
+    public Event verifyWebhook(String payload, String sigHeader) {
+        try {
+            return Webhook.constructEvent(payload, sigHeader, stripeProperties.webhookSecret());
+        } catch (SignatureVerificationException e) {
+            log.error("⚠️ Атака на вебхук або невірний підпис: {}", e.getMessage());
+            throw AppException.unauthorized("Недійсний підпис вебхуку. Доступ заборонено.");
         }
     }
 }

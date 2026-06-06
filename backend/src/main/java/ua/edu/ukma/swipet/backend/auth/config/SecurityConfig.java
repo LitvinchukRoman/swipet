@@ -78,6 +78,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh"
                         ).permitAll()
+                        // Stripe доставляє вебхуки server-to-server без JWT — підпис перевіряється в сервісі
+                        .requestMatchers(HttpMethod.POST, "/api/v1/donations/webhook").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

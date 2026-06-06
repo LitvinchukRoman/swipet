@@ -1,4 +1,7 @@
 -- Test data for integration tests
+-- @Sql runs this before every test method, so reset the affected tables first
+-- to keep the script idempotent across methods (no rollback between them).
+TRUNCATE TABLE users, shelters, animals, booking_slots, virtual_guardianships RESTART IDENTITY CASCADE;
 
 -- Insert test user
 INSERT INTO users (id, email, password_hash, full_name, role) VALUES 
@@ -11,13 +14,21 @@ INSERT INTO shelters (id, admin_user_id, name, description, logo_url, address, c
 (1, 3, 'Test Shelter', 'A test shelter', NULL, '123 Test St', 'Test City', 50.4501, 30.5234, NULL, NULL, true, CURRENT_TIMESTAMP);
 
 -- Insert test animal
-INSERT INTO animals (id, shelter_id, name, species, age, size, gender, description, photo_url, is_available, created_at) VALUES 
-(1, 1, 'Test Animal', 'Dog', 3, 'Medium', 'Male', 'A test animal', NULL, true, CURRENT_TIMESTAMP);
+INSERT INTO animals (id, shelter_id, name, species, age_months, size, gender, description, status, primary_photo_url, created_at) VALUES 
+(1, 1, 'Test Animal', 'DOG', 36, 'MEDIUM', 'MALE', 'A test animal', 'AVAILABLE', NULL, CURRENT_TIMESTAMP);
 
 -- Insert test booking slot
 INSERT INTO booking_slots (id, shelter_id, user_id, starts_at, ends_at, max_guests, status, notes, version) VALUES 
 (1, 1, NULL, CURRENT_TIMESTAMP + INTERVAL '1 day', CURRENT_TIMESTAMP + INTERVAL '1 day 2 hours', 5, 'AVAILABLE', NULL, 0);
 
 -- Insert test guardianship
-INSERT INTO virtual_guardianships (id, user_id, animal_id, amount, is_active, created_at) VALUES 
-(1, 1, 1, 50.00, true, CURRENT_TIMESTAMP);
+INSERT INTO virtual_guardianships (id, user_id, animal_id, monthly_amount, is_active, started_at, next_billing_at) VALUES 
+(1, 1, 1, 50.00, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 month');
+
+-- Explicit-id inserts don't advance BIGSERIAL sequences; sync them so app-side
+-- inserts (e.g. createSlot) don't collide with seeded ids.
+SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT MAX(id) FROM users));
+SELECT setval(pg_get_serial_sequence('shelters', 'id'), (SELECT MAX(id) FROM shelters));
+SELECT setval(pg_get_serial_sequence('animals', 'id'), (SELECT MAX(id) FROM animals));
+SELECT setval(pg_get_serial_sequence('booking_slots', 'id'), (SELECT MAX(id) FROM booking_slots));
+SELECT setval(pg_get_serial_sequence('virtual_guardianships', 'id'), (SELECT MAX(id) FROM virtual_guardianships));

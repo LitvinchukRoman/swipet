@@ -2,6 +2,8 @@ package ua.edu.ukma.swipet.backend.booking.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 
 import java.time.LocalDateTime;
@@ -31,6 +33,11 @@ public class BookingSlot {
 
     @Column(name = "max_guests", nullable = false)
     private Integer maxGuests;
+
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false, columnDefinition = "booking_status")
+    @Builder.Default
+    private BookingStatus status = BookingStatus.AVAILABLE;
 
     @Version
     private Long version;

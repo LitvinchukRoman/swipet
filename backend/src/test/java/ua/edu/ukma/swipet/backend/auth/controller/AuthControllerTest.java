@@ -21,7 +21,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@Sql(statements = {"DELETE FROM refresh_tokens", "DELETE FROM users"})
+// CASCADE прибирає залежні рядки (shelters/animals/donations…), засіяні іншими тестами з RESTRICT-FK.
+@Sql(statements = {"TRUNCATE TABLE users RESTART IDENTITY CASCADE"})
 class AuthControllerTest extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mvc;

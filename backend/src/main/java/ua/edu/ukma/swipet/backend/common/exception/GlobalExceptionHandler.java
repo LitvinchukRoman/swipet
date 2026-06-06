@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -42,6 +43,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("VALIDATION_FAILED", "Request validation failed",
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI(), violations));
+    }
+
+    // Відсутній обов'язковий request-параметр чи заголовок — це помилка клієнта (400), а не 500.
+    @ExceptionHandler(ServletRequestBindingException.class)
+    public ResponseEntity<ErrorResponse> handleBindingException(ServletRequestBindingException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("BAD_REQUEST", ex.getMessage(),
+                        HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
     }
 
     @ExceptionHandler({AuthenticationException.class, BadCredentialsException.class})

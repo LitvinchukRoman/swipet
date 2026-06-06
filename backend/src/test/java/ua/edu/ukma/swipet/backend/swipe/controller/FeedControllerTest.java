@@ -2,10 +2,10 @@ package ua.edu.ukma.swipet.backend.swipe.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import ua.edu.ukma.swipet.backend.AbstractIntegrationTest;
+import ua.edu.ukma.swipet.backend.auth.security.WithMockAuthenticatedUser;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -17,7 +17,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_WithValidLocation_ReturnsAnimalsInRadius() throws Exception {
         // Arrange - Kyiv coordinates
         Double lat = 50.4501;
@@ -34,7 +34,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_WithSpeciesFilter_ReturnsFilteredAnimals() throws Exception {
         // Arrange
         Double lat = 50.4501;
@@ -51,7 +51,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_WithSizeFilter_ReturnsFilteredAnimals() throws Exception {
         // Arrange
         Double lat = 50.4501;
@@ -68,7 +68,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_WithAgeMaxFilter_ReturnsFilteredAnimals() throws Exception {
         // Arrange
         Double lat = 50.4501;
@@ -85,7 +85,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_WithLimit_ReturnsLimitedAnimals() throws Exception {
         // Arrange
         Double lat = 50.4501;
@@ -102,7 +102,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_MissingLatParam_ReturnsBadRequest() throws Exception {
         // Arrange
         Double lng = 30.5234;
@@ -114,7 +114,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getFeed_MissingLngParam_ReturnsBadRequest() throws Exception {
         // Arrange
         Double lat = 50.4501;
@@ -126,7 +126,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getLikedAnimals_WithPagination_ReturnsLikedAnimals() throws Exception {
         // Act & Assert
         mockMvc.perform(get("/api/v1/feed/liked")
@@ -137,7 +137,7 @@ class FeedControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void getLikedAnimals_WithoutPagination_ReturnsDefaultPage() throws Exception {
         // Act & Assert
         mockMvc.perform(get("/api/v1/feed/liked"))

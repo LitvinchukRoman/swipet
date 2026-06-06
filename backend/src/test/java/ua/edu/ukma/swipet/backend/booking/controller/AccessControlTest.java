@@ -6,8 +6,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import ua.edu.ukma.swipet.backend.AbstractIntegrationTest;
+import ua.edu.ukma.swipet.backend.auth.security.WithMockAuthenticatedUser;
 import ua.edu.ukma.swipet.backend.booking.dto.BookingSlotRequest;
 
 import java.time.LocalDateTime;
@@ -44,10 +45,10 @@ class AccessControlTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "admin@example.com", roles = "ADMIN")
     void createSlot_AdminUser_Returns201() throws Exception {
-        // Arrange
+        // Arrange — час не перетинається із засіяним у data.sql слотом (+1 день)
         BookingSlotRequest request = new BookingSlotRequest(
-            LocalDateTime.now().plusDays(1),
-            LocalDateTime.now().plusDays(1).plusHours(2),
+            LocalDateTime.now().plusDays(7),
+            LocalDateTime.now().plusDays(7).plusHours(2),
             5
         );
 
@@ -61,10 +62,10 @@ class AccessControlTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "shelter@example.com", roles = "SHELTER_ADMIN")
     void createSlot_ShelterAdminUser_Returns201() throws Exception {
-        // Arrange
+        // Arrange — час не перетинається із засіяним у data.sql слотом (+1 день)
         BookingSlotRequest request = new BookingSlotRequest(
-            LocalDateTime.now().plusDays(1),
-            LocalDateTime.now().plusDays(1).plusHours(2),
+            LocalDateTime.now().plusDays(8),
+            LocalDateTime.now().plusDays(8).plusHours(2),
             5
         );
 
@@ -76,7 +77,7 @@ class AccessControlTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "user@example.com", roles = "USER")
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
     void bookSlot_RegularUser_Returns201() throws Exception {
         // Arrange
         // Note: This endpoint should be accessible to regular users

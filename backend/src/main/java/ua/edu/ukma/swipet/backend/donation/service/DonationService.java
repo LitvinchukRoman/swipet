@@ -11,7 +11,6 @@ import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
 import ua.edu.ukma.swipet.backend.common.exception.AppException;
-import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.PaymentInitResponse;
@@ -26,8 +25,6 @@ import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
-import com.stripe.net.Webhook;
-import com.stripe.exception.SignatureVerificationException;
 
 import java.time.LocalDateTime;
 
@@ -42,7 +39,6 @@ public class DonationService {
     private final ShelterRepository shelterRepository;
     private final AnimalRepository animalRepository;
     private final PaymentService paymentService;
-    private final StripeProperties stripeProperties;
 
     @Transactional
     public String createOneTimeDonation(Long userId, DonationRequest request) {
@@ -114,13 +110,7 @@ public class DonationService {
 
     @Transactional
     public void processWebhook(String payload, String sigHeader) {
-        Event event;
-        try {
-            event = Webhook.constructEvent(payload, sigHeader, stripeProperties.webhookSecret());
-        } catch (SignatureVerificationException e) {
-            log.error("⚠️ Атака на вебхук або невірний підпис: {}", e.getMessage());
-            throw AppException.unauthorized("Недійсний підпис вебхуку. Доступ заборонено.");
-        }
+        Event event = paymentService.verifyWebhook(payload, sigHeader);
 
         if ("checkout.session.completed".equals(event.getType())) {
 
