@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
 import ua.edu.ukma.swipet.backend.booking.dto.BookingReservationRequest;
 import ua.edu.ukma.swipet.backend.booking.dto.BookingReservationResponse;
 import ua.edu.ukma.swipet.backend.booking.dto.BookingSlotRequest;
@@ -39,9 +41,9 @@ public class BookingController {
     @PostMapping("/slots/{slotId}/reservations")
     @ResponseStatus(HttpStatus.CREATED)
     public BookingReservationResponse bookSlot(
-            @RequestHeader("X-User-Id") Long userId,
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long slotId,
             @Valid @RequestBody BookingReservationRequest request) {
-        return bookingService.bookSlot(userId, slotId, request);
+        return bookingService.bookSlot(currentUser.id(), slotId, request);
     }
 }

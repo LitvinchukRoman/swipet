@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
 import ua.edu.ukma.swipet.backend.swipe.dto.FeedAnimalResponse;
 import ua.edu.ukma.swipet.backend.swipe.dto.SwipeRequest;
 import ua.edu.ukma.swipet.backend.swipe.service.FeedService;
@@ -23,7 +25,7 @@ public class FeedController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<FeedAnimalResponse> getFeed(
-            @RequestHeader("X-User-Id") Long userId, // Тимчасове рішення для тестування
+            @CurrentUser AuthenticatedUser currentUser,
             @RequestParam Double lat,
             @RequestParam Double lng,
             @RequestParam(required = false) Double radiusKm,
@@ -32,25 +34,25 @@ public class FeedController {
             @RequestParam(required = false) Integer ageMax,
             @RequestParam(required = false) Integer limit) {
         
-        return feedService.getFeed(userId, lat, lng, radiusKm, species, size, ageMax, limit);
+        return feedService.getFeed(currentUser.id(), lat, lng, radiusKm, species, size, ageMax, limit);
     }
 
     @PostMapping("/swipe")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Long> recordSwipe(
-            @RequestHeader("X-User-Id") Long userId, // Тимчасове рішення для тестування
+            @CurrentUser AuthenticatedUser currentUser,
             @Valid @RequestBody SwipeRequest request) {
         
-        return swipeService.recordSwipe(userId, request);
+        return swipeService.recordSwipe(currentUser.id(), request);
     }
 
     @GetMapping("/liked")
     @ResponseStatus(HttpStatus.OK)
     public List<ua.edu.ukma.swipet.backend.animal.dto.AnimalResponse> getLikedAnimals(
-        @RequestHeader("X-User-Id") Long userId,
+        @CurrentUser AuthenticatedUser currentUser,
         @RequestParam(required = false, defaultValue = "1") Integer page,
         @RequestParam(required = false, defaultValue = "20") Integer limit) {
 
-        return feedService.getLikedAnimals(userId, page, limit);
+        return feedService.getLikedAnimals(currentUser.id(), page, limit);
     }
 }

@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.VirtualGuardianshipResponse;
@@ -23,38 +25,38 @@ public class DonationController {
     @PostMapping("/one-time")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, String> createOneTimeDonation(
-        @RequestHeader("X-User-Id") Long userId,
+        @CurrentUser AuthenticatedUser currentUser,
         @Valid @RequestBody DonationRequest request) {
 
-        String paymentUrl = donationService.createOneTimeDonation(userId, request);
+        String paymentUrl = donationService.createOneTimeDonation(currentUser.id(), request);
         return Map.of("paymentUrl", paymentUrl);
     }
 
     @PostMapping("/guardianship")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, String> createGuardianship(
-        @RequestHeader("X-User-Id") Long userId,
+        @CurrentUser AuthenticatedUser currentUser,
         @Valid @RequestBody GuardianshipRequest request) {
 
-        String paymentUrl = donationService.createGuardianship(userId, request);
+        String paymentUrl = donationService.createGuardianship(currentUser.id(), request);
         return Map.of("paymentUrl", paymentUrl);
     }
 
     @DeleteMapping("/guardianship/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelGuardianship(
-        @RequestHeader("X-User-Id") Long userId,
+        @CurrentUser AuthenticatedUser currentUser,
         @PathVariable Long id) {
 
-        donationService.cancelGuardianship(userId, id);
+        donationService.cancelGuardianship(currentUser.id(), id);
     }
 
     @GetMapping("/my-guardianships")
     @ResponseStatus(HttpStatus.OK)
     public List<VirtualGuardianshipResponse> getMyGuardianships(
-        @RequestHeader("X-User-Id") Long userId) {
+        @CurrentUser AuthenticatedUser currentUser) {
 
-        return donationService.getMyGuardianships(userId);
+        return donationService.getMyGuardianships(currentUser.id());
     }
 
     @PostMapping("/webhook")
