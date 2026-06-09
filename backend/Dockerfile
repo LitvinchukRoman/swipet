@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
 # --- Stage 1: build ---------------------------------------------------------
 # Pinned digest-friendly tag; Java 25 to match build.gradle toolchain.
 FROM eclipse-temurin:25-jdk-alpine AS builder
