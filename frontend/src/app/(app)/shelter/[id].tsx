@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
+  CalendarDays,
   Cat,
   CheckCircle2,
   Dog,
@@ -52,6 +53,58 @@ export const SPECIES_ICON: Record<
 const { width: SCREEN_W } = Dimensions.get('window');
 const HEADER_H   = 280;
 const AVATAR_SIZE = 88;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Action Button — reusable animated dual-variant CTA component
+// ─────────────────────────────────────────────────────────────────────────────
+function ActionBtn({
+  label,
+  icon,
+  variant = 'primary',
+  onPress,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  variant?: 'primary' | 'outline';
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onIn  = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
+  const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
+
+  const isPrimary = variant === 'primary';
+
+  return (
+    <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut} style={{ flex: 1 }}>
+      <Animated.View
+        style={[
+          {
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+            gap: Spacing[2], height: 52, borderRadius: Radius.lg,
+            transform: [{ scale }],
+          },
+          isPrimary
+            ? { backgroundColor: Colors.primary[500], ...Shadow.orange }
+            : {
+                backgroundColor: Colors.neutral[0],
+                borderWidth: 1.5, borderColor: Colors.neutral[200],
+                ...Shadow.sm,
+              },
+        ]}
+      >
+        {icon}
+        <Text
+          style={{
+            fontSize: 14, fontWeight: '700',
+            color: isPrimary ? Colors.neutral[0] : Colors.neutral[700],
+          }}
+        >
+          {label}
+        </Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Stat pill — small info chip
@@ -581,15 +634,26 @@ export default function ShelterDetailScreen() {
         </Animated.View>
       </Animated.ScrollView>
 
-      {/* ── CTA bar ─────────────────────────────────────────────────────── */}
+      {/* ── CTA dual-action bottom panel ────────────────────────────────── */}
       <View style={[styles.ctaBar, { paddingBottom: insets.bottom + Spacing[3] }]}>
-        <Pressable
-          style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.88 }]}
-          onPress={() => {/* navigate to chat / contact */}}
-        >
-          <PawPrint size={24} color={Colors.neutral[0]} strokeWidth={2.2} />
-          <Text style={styles.ctaBtnText}>Contact Shelter</Text>
-        </Pressable>
+        <ActionBtn
+          label="Book Visit"
+          variant="outline"
+          icon={<CalendarDays size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
+          onPress={() => router.push({
+            pathname: '/(app)/booking/[shelterId]',
+            params: {
+              shelterId:   String(shelter.id),
+              shelterName: shelter.name,
+            },
+          })}
+        />
+        <ActionBtn
+          label="Contact Shelter"
+          variant="primary"
+          icon={<PawPrint size={18} color={Colors.neutral[0]} strokeWidth={1.8} />}
+          onPress={() => {/* navigate to chat / contact flow */}}
+        />
       </View>
     </View>
   );
@@ -896,33 +960,19 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
   },
 
-  // ── Bottom CTA bar
+  // ── Bottom dual-action panel
   ctaBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: Spacing[4],
+    flexDirection: 'row',
+    gap: Spacing[3],
+    paddingHorizontal: Spacing[5],
     paddingTop: Spacing[3],
     backgroundColor: Colors.neutral[0],
     borderTopWidth: 1,
     borderTopColor: Colors.neutral[100],
     ...Shadow.lg,
-  },
-  ctaBtn: {
-    backgroundColor: Colors.primary[500],
-    borderRadius: Radius['2xl'],
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing[2],
-    ...Shadow.orange,
-  },
-  ctaBtnText: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
-    color: Colors.neutral[0],
-    letterSpacing: 0.1,
   },
 });

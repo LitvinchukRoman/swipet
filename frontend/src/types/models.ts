@@ -95,15 +95,17 @@ export interface VirtualGuardianship {
   animal?: Pick<Animal, 'id' | 'name' | 'primaryPhotoUrl' | 'species' | 'breed'>;
 }
 
-/** booking_slots table */
-export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'CANCELLED';
-
+export type BookingSlotStatus = 'AVAILABLE' | 'BOOKED' | 'CANCELLED';
+ 
+/** Matches the DB schema exactly (snake_case) as per API contract */
 export interface BookingSlot {
   id: number;
-  shelterId: number;
-  userId?: number;             // null = вільний слот
-  startsAt: string;            // ISO date string
-  endsAt: string;              // ISO date string
-  status: SlotStatus;
-  notes?: string;
+  shelter_id: number;
+  /** null  → slot is free; number → userId who booked it */
+  user_id: number | null;
+  starts_at: string; // ISO 8601  e.g. "2025-06-10T10:00:00"
+  ends_at: string;
+  status: BookingSlotStatus;
+  notes: string | null;
 }
+ 

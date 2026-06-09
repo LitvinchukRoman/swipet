@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Calendar,
+  CalendarDays, 
   Cat,
   Dog,
   Heart,
@@ -416,6 +417,18 @@ export default function AnimalDetailScreen() {
     router.push(`/(app)/chat/${roomId}`);
   };
 
+  const openBooking = () => {
+  if (!animal) return;
+  router.push({
+    pathname: '/(app)/booking/[shelterId]',
+    params: {
+      shelterId:   String(animal.shelterId),
+      shelterName: animal.shelterName ?? '',
+      animalName:  animal.name,
+    },
+  });
+};
+
   // ── Loading ─────────────────────────────────────────────────────────────
   if (loading) return <LoadingSkeleton />;
 
@@ -632,7 +645,7 @@ export default function AnimalDetailScreen() {
           </Animated.View>
 
           {/* bottom spacing for the fixed bar */}
-          <View style={{ height: 100 }} />
+          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
 
@@ -649,21 +662,27 @@ export default function AnimalDetailScreen() {
         >
           <View
             style={{
-              flexDirection: 'row', gap: Spacing[3],
-              paddingHorizontal: Spacing[5], paddingTop: Spacing[3], paddingBottom: Spacing[2],
+              flexDirection: 'row', gap: Spacing[2],
+              paddingHorizontal: Spacing[4], paddingTop: Spacing[3], paddingBottom: Spacing[2],
             }}
           >
             <ActionBtn
               label="Support"
               variant="outline"
-              icon={<Heart size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
+              icon={<Heart size={16} color={Colors.primary[500]} strokeWidth={1.8} />}
               onPress={() => setDonationVisible(true)}
             />
             <ActionBtn
               label="Message"
               variant="primary"
-              icon={<MessageCircle size={18} color={Colors.neutral[0]} strokeWidth={1.8} />}
+              icon={<MessageCircle size={16} color={Colors.neutral[0]} strokeWidth={1.8} />}
               onPress={openChat}
+            />
+            <ActionBtn
+              label="Book Visit"
+              variant="outline"
+              icon={<CalendarDays size={16} color={Colors.primary[500]} strokeWidth={1.8} />}
+              onPress={openBooking}
             />
           </View>
         </SafeAreaView>

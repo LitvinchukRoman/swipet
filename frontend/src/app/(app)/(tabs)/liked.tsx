@@ -198,19 +198,26 @@ function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
           showRightBorder
         />
         <ActionCell
-          icon={Heart}
+          icon={Star}
           label="Donate"
-          color={Colors.error}
-          bgColor="rgba(239,68,68,0.08)"
+          color={Colors.warning}
+          bgColor="rgba(234,179,8,0.08)"
           onPress={onDonate}
           showRightBorder
         />
         <ActionCell
-          icon={Star}
+          icon={Heart}
           label="Foster"
-          color={Colors.warning}
-          bgColor="rgba(234,179,8,0.08)"
-          onPress={() => {/* TODO: open foster flow */}}
+          color={Colors.error}
+          bgColor="rgba(239,68,68,0.08)"
+          onPress={() => router.push({
+            pathname: '/(app)/booking/[shelterId]',
+            params: {
+              shelterId:   String(animal.shelterId),
+              shelterName: animal.shelterName ?? '',
+              animalName:  animal.name,
+            },
+          })}
           showRightBorder
         />
         <ActionCell
