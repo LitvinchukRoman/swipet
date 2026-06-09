@@ -14,21 +14,31 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Easing,
+  Dimensions,
   Keyboard,
   type KeyboardEvent,
   Modal,
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
+  TouchableOpacity
 } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Reanimated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { donationService } from '@/services/donation';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
+import { donationService } from '@/services/donation';
 
 // ─── Types ────────────────────────────────────
 export type DonationMode = 'ONE_TIME' | 'GUARDIANSHIP';
@@ -43,10 +53,11 @@ export interface DonationSheetProps {
 }
 
 // ─── Constants ────────────────────────────────
+const SCREEN_H = Dimensions.get('window').height;
 const ONE_TIME_PRESETS     = [50, 100, 200];
 const GUARDIANSHIP_PRESETS = [100, 200, 500];
 
-// ─── Spring press hook ────────────────────────
+// ─── Spring press hook (untouched) ────────────
 function usePress() {
   const scale = useRef(new Animated.Value(1)).current;
   const onIn  = () => Animated.spring(scale, { toValue: 0.94, useNativeDriver: true, damping: 12, stiffness: 300 }).start();
@@ -54,7 +65,7 @@ function usePress() {
   return { scale, onIn, onOut };
 }
 
-// ─── PresetBtn ────────────────────────────────
+// ─── PresetBtn (untouched) ────────────────────
 function PresetBtn({
   amount,
   selected,
@@ -83,9 +94,7 @@ function PresetBtn({
 
   return (
     <Pressable onPress={onSelect} onPressIn={onIn} onPressOut={onOut} style={{ flex: 1 }}>
-      {/* Outer: scale — useNativeDriver: true */}
       <Animated.View style={{ transform: [{ scale }] }}>
-        {/* Inner: color — useNativeDriver: false */}
         <Animated.View
           style={{
             borderWidth: 1.5,
@@ -114,7 +123,7 @@ function PresetBtn({
   );
 }
 
-// ─── ModeTab ──────────────────────────────────
+// ─── ModeTab (untouched) ──────────────────────
 function ModeTab({
   label,
   icon,
@@ -139,9 +148,7 @@ function ModeTab({
 
   return (
     <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut} style={{ flex: 1 }}>
-      {/* Outer: scale — useNativeDriver: true */}
       <Animated.View style={{ transform: [{ scale }] }}>
-        {/* Inner: color — useNativeDriver: false */}
         <Animated.View
           style={{
             backgroundColor: bg,
@@ -162,7 +169,7 @@ function ModeTab({
   );
 }
 
-// ─── SuccessView ──────────────────────────────
+// ─── SuccessView (untouched) ──────────────────
 function SuccessView({ mode, amount, onClose }: { mode: DonationMode; amount: number; onClose: () => void }) {
   const scale      = useRef(new Animated.Value(0.4)).current;
   const opacity    = useRef(new Animated.Value(0)).current;
@@ -225,36 +232,36 @@ export function DonationSheet({
   const [loading,     setLoading]     = useState(false);
   const [success,     setSuccess]     = useState(false);
 
-  const baseY           = useRef(new Animated.Value(600)).current;
-  const keyboardOffset  = useRef(new Animated.Value(0)).current;
-  const combinedY       = useRef(Animated.add(baseY, keyboardOffset)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-
-  // ── Open / close ──────────────────────────────────────
-  const open = useCallback(() => {
-    Animated.parallel([
-      Animated.spring(baseY, { toValue: 0, useNativeDriver: false, damping: 22, stiffness: 200 }),
-      Animated.timing(backdropOpacity, { toValue: 1, duration: Duration.normal, useNativeDriver: true }),
-    ]).start();
-  }, [baseY, backdropOpacity]);
+  // ── Reanimated State (Замінив Animated на Reanimated для жестів) ──
+  const [isMounted, setIsMounted] = useState(visible);
+  const translateY = useSharedValue(SCREEN_H);
+  const keyboardOffset = useSharedValue(0);
+  const backdropOp = useSharedValue(0);
 
   const close = useCallback(() => {
     Keyboard.dismiss();
-    keyboardOffset.setValue(0);
-    Animated.parallel([
-      Animated.timing(baseY, { toValue: 600, duration: Duration.slow, useNativeDriver: false, easing: Easing.out(Easing.cubic) }),
-      Animated.timing(backdropOpacity, { toValue: 0, duration: Duration.normal, useNativeDriver: true }),
-    ]).start(() => {
-      setSuccess(false);
-      setCustomAmt('');
-      setSelectedAmt(100);
-      setMode(initialMode);
-      onClose();
+    keyboardOffset.value = withTiming(0);
+    translateY.value = withTiming(SCREEN_H, { duration: 250 });
+    backdropOp.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(setIsMounted)(false);
+        runOnJS(setSuccess)(false);
+        runOnJS(setCustomAmt)('');
+        runOnJS(setSelectedAmt)(100);
+        runOnJS(setMode)(initialMode);
+        runOnJS(onClose)();
+      }
     });
-  }, [baseY, keyboardOffset, backdropOpacity, initialMode, onClose]);
+  }, [initialMode, onClose]);
 
   useEffect(() => {
-    if (visible) open(); else close();
+    if (visible) {
+      setIsMounted(true);
+      translateY.value = withSpring(0, { damping: 22, stiffness: 200 });
+      backdropOp.value = withTiming(1, { duration: 250 });
+    } else if (isMounted) {
+      close();
+    }
   }, [visible]);
 
   // ── Keyboard listeners ────────────────────────────────
@@ -263,24 +270,39 @@ export function DonationSheet({
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const onShow = (e: KeyboardEvent) => {
-      Animated.timing(keyboardOffset, {
-        toValue: -e.endCoordinates.height,
-        duration: Platform.OS === 'ios' ? e.duration : 200,
-        useNativeDriver: false,
-      }).start();
+      keyboardOffset.value = withTiming(-e.endCoordinates.height, { duration: Platform.OS === 'ios' ? e.duration : 200 });
     };
     const onHide = (e: KeyboardEvent) => {
-      Animated.timing(keyboardOffset, {
-        toValue: 0,
-        duration: Platform.OS === 'ios' ? e.duration : 200,
-        useNativeDriver: false,
-      }).start();
+      keyboardOffset.value = withTiming(0, { duration: Platform.OS === 'ios' ? e.duration : 200 });
     };
 
     const showSub = Keyboard.addListener(showEvent, onShow);
     const hideSub = Keyboard.addListener(hideEvent, onHide);
     return () => { showSub.remove(); hideSub.remove(); };
   }, [keyboardOffset]);
+
+  // ── Жест свайпу вниз ──────────────────────────────────
+  const pan = Gesture.Pan()
+    .onChange((e) => {
+      if (e.translationY > 0) {
+        translateY.value = e.translationY;
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 150 || e.velocityY > 500) {
+        runOnJS(close)();
+      } else {
+        translateY.value = withSpring(0, { damping: 22, stiffness: 200 });
+      }
+    });
+
+  const animSheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value + keyboardOffset.value }],
+  }));
+
+  const animBackdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOp.value,
+  }));
 
   // Reset amount on mode switch
   useEffect(() => {
@@ -310,9 +332,6 @@ export function DonationSheet({
 
       setSuccess(true);
 
-      // Показуємо SuccessView 1.6с, потім закриваємо шит і відкриваємо
-      // Stripe Checkout у системному браузері.
-      // Після оплати Stripe redirectне на /payment-success або /payment-cancel.
       setTimeout(async () => {
         close();
         await WebBrowser.openBrowserAsync(paymentUrl, {
@@ -329,232 +348,245 @@ export function DonationSheet({
     }
   };
 
-  if (!visible) return null;
+  if (!isMounted) return null;
 
   return (
-    <Modal transparent animationType="none" visible={visible} onRequestClose={close} statusBarTranslucent>
-      {/* ── Backdrop ─────────────────────────────────────── */}
-      <Animated.View
-        pointerEvents="box-none"
-        style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: Colors.overlay.dark,
-          opacity: backdropOpacity,
-        }}
-      >
-        <Pressable style={{ flex: 1 }} onPress={close} />
-      </Animated.View>
-
-      {/* ── Sheet ────────────────────────────────────────── */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          bottom: 0, left: 0, right: 0,
-          transform: [{ translateY: combinedY }],
-          backgroundColor: Colors.neutral[0],
-          borderTopLeftRadius: Radius['2xl'],
-          borderTopRightRadius: Radius['2xl'],
-          paddingBottom: insets.bottom + Spacing[4],
-          ...Shadow.md,
-        }}
-      >
-        {/* Drag handle */}
-        <View style={{ alignItems: 'center', paddingTop: Spacing[3], paddingBottom: Spacing[1] }}>
-          <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.neutral[200] }} />
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[3] }}
+    <Modal transparent animationType="none" visible={isMounted} onRequestClose={close} statusBarTranslucent>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        {/* ── Backdrop ─────────────────────────────────────── */}
+        <Reanimated.View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: Colors.overlay.dark },
+            animBackdropStyle,
+          ]}
         >
-          {success ? (
-            <SuccessView mode={mode} amount={finalAmount} onClose={close} />
-          ) : (
-            <>
-              {/* ── Header ──────────────────────────────── */}
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: Spacing[5] }}>
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: Colors.primary[500], letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                    Support
-                  </Text>
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.neutral[900], letterSpacing: -0.3 }}>
-                    {animalName}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <Shield size={12} color={Colors.success} strokeWidth={2} />
-                    <Text style={{ fontSize: 12, color: Colors.neutral[400] }}>
-                      Secure payment · 100% goes to shelter
+          <Pressable style={{ flex: 1 }} onPress={close} />
+        </Reanimated.View>
+
+        {/* ── Sheet ────────────────────────────────────────── */}
+        <Reanimated.View
+          style={[
+            {
+              position: 'absolute',
+              bottom: 0, left: 0, right: 0,
+              backgroundColor: Colors.neutral[0],
+              borderTopLeftRadius: Radius['2xl'],
+              borderTopRightRadius: Radius['2xl'],
+              paddingBottom: insets.bottom + Spacing[4],
+              maxHeight: SCREEN_H * 0.95,
+              ...Shadow.md,
+            },
+            animSheetStyle,
+          ]}
+        >
+          {/* Обгортаємо смужку в GestureDetector для свайпу */}
+          <GestureDetector gesture={pan}>
+            <View style={{ alignItems: 'center', paddingTop: Spacing[3], paddingBottom: Spacing[4], backgroundColor: 'transparent' }}>
+              <View style={{ width: 40, height: 5, borderRadius: 2.5, backgroundColor: Colors.neutral[200] }} />
+            </View>
+          </GestureDetector>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[1] }}
+          >
+            {success ? (
+              <SuccessView mode={mode} amount={finalAmount} onClose={close} />
+            ) : (
+              <>
+                {/* ── Header ──────────────────────────────── */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: Spacing[5] }}>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: Colors.primary[500], letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                      Support
                     </Text>
+                    <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.neutral[900], letterSpacing: -0.3 }}>
+                      {animalName}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <Shield size={12} color={Colors.success} strokeWidth={2} />
+                      <Text style={{ fontSize: 12, color: Colors.neutral[400] }}>
+                        Secure payment · 100% goes to shelter
+                      </Text>
+                    </View>
                   </View>
+                  <Pressable
+                    onPress={close}
+                    style={({ pressed }) => ({
+                      width: 36, height: 36, borderRadius: 18,
+                      backgroundColor: pressed ? Colors.neutral[100] : Colors.neutral[50],
+                      alignItems: 'center', justifyContent: 'center',
+                    })}
+                  >
+                    <X size={18} color={Colors.neutral[500]} strokeWidth={2} />
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={close}
-                  style={({ pressed }) => ({
-                    width: 36, height: 36, borderRadius: 18,
-                    backgroundColor: pressed ? Colors.neutral[100] : Colors.neutral[50],
-                    alignItems: 'center', justifyContent: 'center',
-                  })}
-                >
-                  <X size={18} color={Colors.neutral[500]} strokeWidth={2} />
-                </Pressable>
-              </View>
 
-              {/* ── Mode tabs ───────────────────────────── */}
-              <View
-                style={{
-                  flexDirection: 'row', gap: Spacing[2],
-                  backgroundColor: Colors.neutral[100],
-                  borderRadius: Radius.lg, padding: Spacing[1],
-                  marginBottom: Spacing[5],
-                }}
-              >
-                <ModeTab
-                  label="One-time" description="Single donation"
-                  active={mode === 'ONE_TIME'} onPress={() => setMode('ONE_TIME')}
-                  icon={<Zap size={16} color={mode === 'ONE_TIME' ? Colors.neutral[0] : Colors.neutral[400]} strokeWidth={1.8} />}
-                />
-                <ModeTab
-                  label="Monthly" description="Become guardian"
-                  active={mode === 'GUARDIANSHIP'} onPress={() => setMode('GUARDIANSHIP')}
-                  icon={<Repeat2 size={16} color={mode === 'GUARDIANSHIP' ? Colors.neutral[0] : Colors.neutral[400]} strokeWidth={1.8} />}
-                />
-              </View>
-
-              {/* ── Guardianship banner ──────────────────── */}
-              {mode === 'GUARDIANSHIP' && (
+                {/* ── Mode tabs ───────────────────────────── */}
                 <View
                   style={{
-                    backgroundColor: Colors.primary[50], borderRadius: Radius.md,
-                    padding: Spacing[3], flexDirection: 'row', alignItems: 'flex-start',
-                    gap: Spacing[2], marginBottom: Spacing[5],
-                    borderWidth: 1, borderColor: Colors.primary[100],
+                    flexDirection: 'row', gap: Spacing[2],
+                    backgroundColor: Colors.neutral[100],
+                    borderRadius: Radius.lg, padding: Spacing[1],
+                    marginBottom: Spacing[5],
                   }}
                 >
-                  <Sparkles size={16} color={Colors.primary[500]} strokeWidth={1.8} />
-                  <Text style={{ flex: 1, fontSize: 13, color: Colors.primary[700], lineHeight: 19 }}>
-                    As a virtual guardian you'll get monthly updates about {animalName} and be listed as their sponsor.
-                  </Text>
-                </View>
-              )}
-
-              {/* ── Amount label ─────────────────────────── */}
-              <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.neutral[500], marginBottom: Spacing[2] }}>
-                {mode === 'ONE_TIME' ? 'Choose amount' : 'Monthly amount'}
-              </Text>
-
-              {/* ── Presets ──────────────────────────────── */}
-              <View style={{ flexDirection: 'row', gap: Spacing[2], marginBottom: Spacing[3] }}>
-                {presets.map((amt, i) => (
-                  <PresetBtn
-                    key={amt} amount={amt} popular={i === 1}
-                    selected={selectedAmt === amt && !customAmt}
-                    onSelect={() => { setSelectedAmt(amt); setCustomAmt(''); }}
+                  <ModeTab
+                    label="One-time" description="Single donation"
+                    active={mode === 'ONE_TIME'} onPress={() => setMode('ONE_TIME')}
+                    icon={<Zap size={16} color={mode === 'ONE_TIME' ? Colors.neutral[0] : Colors.neutral[400]} strokeWidth={1.8} />}
                   />
-                ))}
-              </View>
-
-              {/* ── Custom input ─────────────────────────── */}
-              <View
-                style={{
-                  flexDirection: 'row', alignItems: 'center',
-                  borderWidth: 1.5,
-                  borderColor: customAmt ? Colors.primary[400] : Colors.neutral[200],
-                  borderRadius: Radius.lg, paddingHorizontal: Spacing[4],
-                  height: 52, marginBottom: Spacing[6],
-                  backgroundColor: customAmt ? Colors.primary[50] : Colors.neutral[50],
-                }}
-              >
-                <Text style={{ fontSize: 18, fontWeight: '700', color: Colors.neutral[400], marginRight: Spacing[1] }}>₴</Text>
-                <TextInput
-                  value={customAmt}
-                  onChangeText={(t) => {
-                    const digits = t.replace(/[^0-9]/g, '');
-                    setCustomAmt(digits);
-                    if (digits) setSelectedAmt(null);
-                  }}
-                  placeholder="Custom amount"
-                  placeholderTextColor={Colors.neutral[400]}
-                  keyboardType="number-pad"
-                  style={{
-                    flex: 1, fontSize: 16, fontWeight: '600', color: Colors.neutral[900],
-                    ...(Platform.OS === 'web' ? ({ outline: 'none' } as any) : {}),
-                  }}
-                />
-                {customAmt ? (
-                  <Pressable onPress={() => setCustomAmt('')} hitSlop={8}>
-                    <X size={16} color={Colors.neutral[400]} strokeWidth={2} />
-                  </Pressable>
-                ) : null}
-              </View>
-
-              {/* ── Total row ────────────────────────────── */}
-              <View
-                style={{
-                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                  backgroundColor: Colors.neutral[50], borderRadius: Radius.lg,
-                  padding: Spacing[4], marginBottom: Spacing[5],
-                  borderWidth: 1, borderColor: Colors.neutral[150],
-                }}
-              >
-                <View>
-                  <Text style={{ fontSize: 12, color: Colors.neutral[400] }}>
-                    {mode === 'ONE_TIME' ? 'You donate' : 'Monthly charge'}
-                  </Text>
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.neutral[900], marginTop: 2 }}>
-                    ₴{finalAmount || '—'}
-                    {mode === 'GUARDIANSHIP' && finalAmount
-                      ? <Text style={{ fontSize: 14, fontWeight: '500', color: Colors.neutral[400] }}>/mo</Text>
-                      : null}
-                  </Text>
+                  <ModeTab
+                    label="Monthly" description="Become guardian"
+                    active={mode === 'GUARDIANSHIP'} onPress={() => setMode('GUARDIANSHIP')}
+                    icon={<Repeat2 size={16} color={mode === 'GUARDIANSHIP' ? Colors.neutral[0] : Colors.neutral[400]} strokeWidth={1.8} />}
+                  />
                 </View>
-                <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Shield size={12} color={Colors.success} strokeWidth={2} />
-                    <Text style={{ fontSize: 11, color: Colors.success, fontWeight: '600' }}>Secured</Text>
-                  </View>
-                  <Text style={{ fontSize: 11, color: Colors.neutral[400] }}>Cancel anytime</Text>
-                </View>
-              </View>
 
-              {/* ── CTA ──────────────────────────────────── */}
-              <Pressable
-                onPress={handleSubmit}
-                disabled={loading || !finalAmount}
-                style={({ pressed }) => ({
-                  backgroundColor: !finalAmount ? Colors.neutral[200] : pressed ? Colors.primary[600] : Colors.primary[500],
-                  borderRadius: Radius.lg, height: 56,
-                  alignItems: 'center', justifyContent: 'center',
-                  marginBottom: Spacing[3],
-                  opacity: loading ? 0.75 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                  ...(!finalAmount ? {} : Shadow.orange),
-                })}
-              >
-                {loading ? (
-                  <ActivityIndicator color={Colors.neutral[0]} />
-                ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing[2] }}>
-                    <Heart size={18} color={Colors.neutral[0]} fill={Colors.neutral[0]} strokeWidth={0} />
-                    <Text style={{ color: Colors.neutral[0], fontSize: 16, fontWeight: '700' }}>
-                      {mode === 'ONE_TIME'
-                        ? `Donate ₴${finalAmount || '—'}`
-                        : `Subscribe ₴${finalAmount || '—'}/mo`}
+                {/* ── Guardianship banner ──────────────────── */}
+                {mode === 'GUARDIANSHIP' && (
+                  <View
+                    style={{
+                      backgroundColor: Colors.primary[50], borderRadius: Radius.md,
+                      padding: Spacing[3], flexDirection: 'row', alignItems: 'flex-start',
+                      gap: Spacing[2], marginBottom: Spacing[5],
+                      borderWidth: 1, borderColor: Colors.primary[100],
+                    }}
+                  >
+                    <Sparkles size={16} color={Colors.primary[500]} strokeWidth={1.8} />
+                    <Text style={{ flex: 1, fontSize: 13, color: Colors.primary[700], lineHeight: 19 }}>
+                      As a virtual guardian you'll get monthly updates about {animalName} and be listed as their sponsor.
                     </Text>
                   </View>
                 )}
-              </Pressable>
 
-              {/* Disclaimer */}
-              <Text style={{ fontSize: 11, color: Colors.neutral[400], textAlign: 'center', lineHeight: 16, marginBottom: Spacing[2] }}>
-                By tapping you agree to our{' '}
-                <Text style={{ color: Colors.primary[500] }}>Terms of Service</Text>.
-                {mode === 'GUARDIANSHIP' ? ' You can cancel your subscription at any time.' : ''}
-              </Text>
-            </>
-          )}
-        </ScrollView>
-      </Animated.View>
+                {/* ── Amount label ─────────────────────────── */}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.neutral[500], marginBottom: Spacing[2] }}>
+                  {mode === 'ONE_TIME' ? 'Choose amount' : 'Monthly amount'}
+                </Text>
+
+                {/* ── Presets ──────────────────────────────── */}
+                <View style={{ flexDirection: 'row', gap: Spacing[2], marginBottom: Spacing[3] }}>
+                  {presets.map((amt, i) => (
+                    <PresetBtn
+                      key={amt} amount={amt} popular={i === 1}
+                      selected={selectedAmt === amt && !customAmt}
+                      onSelect={() => { setSelectedAmt(amt); setCustomAmt(''); }}
+                    />
+                  ))}
+                </View>
+
+                {/* ── Custom input ─────────────────────────── */}
+                <View
+                  style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    borderWidth: 1.5,
+                    borderColor: customAmt ? Colors.primary[400] : Colors.neutral[200],
+                    borderRadius: Radius.lg, paddingHorizontal: Spacing[4],
+                    height: 52, marginBottom: Spacing[6],
+                    backgroundColor: customAmt ? Colors.primary[50] : Colors.neutral[50],
+                  }}
+                >
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: Colors.neutral[400], marginRight: Spacing[1] }}>₴</Text>
+                  <TextInput
+                    value={customAmt}
+                    onChangeText={(t) => {
+                      const digits = t.replace(/[^0-9]/g, '');
+                      setCustomAmt(digits);
+                      if (digits) setSelectedAmt(null);
+                    }}
+                    placeholder="Custom amount"
+                    placeholderTextColor={Colors.neutral[400]}
+                    keyboardType="number-pad"
+                    style={{
+                      flex: 1, fontSize: 16, fontWeight: '600', color: Colors.neutral[900],
+                      ...(Platform.OS === 'web' ? ({ outline: 'none' } as any) : {}),
+                    }}
+                  />
+                  {customAmt ? (
+                    <Pressable onPress={() => setCustomAmt('')} hitSlop={8}>
+                      <X size={16} color={Colors.neutral[400]} strokeWidth={2} />
+                    </Pressable>
+                  ) : null}
+                </View>
+
+                {/* ── Total row ────────────────────────────── */}
+                <View
+                  style={{
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                    backgroundColor: Colors.neutral[50], borderRadius: Radius.lg,
+                    padding: Spacing[4], marginBottom: Spacing[5],
+                    borderWidth: 1, borderColor: Colors.neutral[150],
+                  }}
+                >
+                  <View>
+                    <Text style={{ fontSize: 12, color: Colors.neutral[400] }}>
+                      {mode === 'ONE_TIME' ? 'You donate' : 'Monthly charge'}
+                    </Text>
+                    <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.neutral[900], marginTop: 2 }}>
+                      ₴{finalAmount || '—'}
+                      {mode === 'GUARDIANSHIP' && finalAmount
+                        ? <Text style={{ fontSize: 14, fontWeight: '500', color: Colors.neutral[400] }}>/mo</Text>
+                        : null}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Shield size={12} color={Colors.success} strokeWidth={2} />
+                      <Text style={{ fontSize: 11, color: Colors.success, fontWeight: '600' }}>Secured</Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: Colors.neutral[400] }}>Cancel anytime</Text>
+                  </View>
+                </View>
+
+                {/* ── CTA ──────────────────────────────────── */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleSubmit}
+                  disabled={loading || !finalAmount}
+                  style={[
+                    {
+                      borderRadius: Radius.lg,
+                      height: 56,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: Spacing[3],
+                    },
+                    // Динамічно міняємо колір і додаємо тінь тільки якщо є сума
+                    !finalAmount 
+                      ? { backgroundColor: Colors.neutral[200] } 
+                      : { backgroundColor: Colors.primary[500], ...Shadow.orange },
+                    // Якщо йде завантаження — робимо кнопку трохи прозорою
+                    loading && { opacity: 0.75 }
+                  ]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={Colors.neutral[0]} />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing[2] }}>
+                      <Heart size={18} color={Colors.neutral[0]} fill={Colors.neutral[0]} />
+                      <Text style={{ color: Colors.neutral[0], fontSize: 16, fontWeight: '700' }}>
+                        {mode === 'ONE_TIME'
+                          ? `Donate ₴${finalAmount || '—'}`
+                          : `Subscribe ₴${finalAmount || '—'}/mo`}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* Disclaimer */}
+                <Text style={{ fontSize: 11, color: Colors.neutral[400], textAlign: 'center', lineHeight: 16, marginBottom: Spacing[2] }}>
+                  By tapping you agree to our{' '}
+                  <Text style={{ color: Colors.primary[500] }}>Terms of Service</Text>.
+                  {mode === 'GUARDIANSHIP' ? ' You can cancel your subscription at any time.' : ''}
+                </Text>
+              </>
+            )}
+          </ScrollView>
+        </Reanimated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

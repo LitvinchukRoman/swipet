@@ -1,3 +1,4 @@
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { PawPrint, SlidersHorizontal } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,9 +9,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SwipeDeck } from '@/components/SwipeDeck';
 import { Toast, type ToastType } from '@/components/common/Toast';
+import { FilterBottomSheet } from '@/components/common/FilterBottomSheet';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { useFeedStore } from '@/store/feed';
-import type { Animal, SwipeDirection } from '@/types/models';
+import type { Animal, FeedFilters, SwipeDirection } from '@/types/models';
 
 // ─── Types ────────────────────────────────────
 interface ToastState {
@@ -21,23 +23,42 @@ interface ToastState {
 
 // ─── Component ───────────────────────────────
 export default function FeedScreen() {
-  const { cards, currentIndex, isLoading, loadFeed, swipe } = useFeedStore();
-  const [toast, setToast] = useState<ToastState>({
-    visible: false,
-    message: '',
-    type: 'info',
-  });
+  const { cards, currentIndex, isLoading, filters, loadFeed, swipe, setCoords, setFilters } =
+    useFeedStore();
+
+  const [toast, setToast] = useState<ToastState>({ visible: false, message: '', type: 'info' });
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [locationError, setLocationError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Load on mount
+  // ── SC-FEED-001: геолокація при монтуванні ──────────────────────────────
   useEffect(() => {
-    loadFeed();
+    (async () => {
+      // 1. Запитати дозвіл
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError(true);
+        return;
+      }
+
+      // 2. Отримати координати
+      const { coords } = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const feedCoords = { lat: coords.latitude, lng: coords.longitude };
+
+      // 3. Зберегти в store і завантажити стрічку
+      setCoords(feedCoords);
+      loadFeed(feedCoords);
+    })();
+
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
-  // ── Toast helper
+  // ── Toast helper ─────────────────────────────────────────────────────────
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     setToast({ visible: true, message, type });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -47,7 +68,7 @@ export default function FeedScreen() {
     );
   }, []);
 
-  // ── Swipe handler
+  // ── Swipe handler ─────────────────────────────────────────────────────────
   const handleSwipe = useCallback(
     (animal: Animal, direction: SwipeDirection) => {
       swipe(animal, direction);
@@ -58,8 +79,18 @@ export default function FeedScreen() {
     [swipe, showToast],
   );
 
-  const isDone = !isLoading && currentIndex >= cards.length;
+  // ── SC-FEED-011: застосування фільтрів ───────────────────────────────────
+  const handleApplyFilters = useCallback(
+    (newFilters: FeedFilters) => {
+      setFilters(newFilters);
+      loadFeed(undefined, newFilters);
+    },
+    [setFilters, loadFeed],
+  );
+
+  const isDone    = !isLoading && currentIndex >= cards.length;
   const remaining = Math.max(cards.length - currentIndex, 0);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -81,21 +112,29 @@ export default function FeedScreen() {
             </Animated.View>
           )}
           <TouchableOpacity
-            onPress={() => {/* TODO: open filter sheet */}}
+            onPress={() => setFilterOpen(true)}
             activeOpacity={0.75}
             style={styles.filterBtn}
           >
             <SlidersHorizontal size={20} color={Colors.neutral[600]} strokeWidth={2} />
+            {/* active filter badge */}
+            {activeFilterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ── Content ─────────────────────────── */}
-      {isLoading ? (
+      {locationError ? (
+        <LocationError onRetry={() => Location.requestForegroundPermissionsAsync()} />
+      ) : isLoading ? (
         <LoadingState />
       ) : isDone ? (
         <EmptyState
-          onCta={() => {/* TODO: open filter sheet */}}
+          onCta={() => setFilterOpen(true)}
           ctaLabel="Update Filters"
         />
       ) : (
@@ -109,6 +148,14 @@ export default function FeedScreen() {
 
       {/* ── Toast overlay ───────────────────── */}
       <Toast visible={toast.visible} message={toast.message} type={toast.type} />
+
+      {/* ── Filter sheet ────────────────────── */}
+      <FilterBottomSheet
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        initialFilters={filters}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -126,14 +173,40 @@ function LoadingState() {
   );
 }
 
+// ─── Location error state ─────────────────────
+function LocationError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View style={styles.loading}>
+      <Text style={{ fontSize: 40, marginBottom: Spacing[4] }}>📍</Text>
+      <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.neutral[800], textAlign: 'center' }}>
+        Location access needed
+      </Text>
+      <Text style={{ fontSize: 14, color: Colors.neutral[400], textAlign: 'center', marginTop: Spacing[2], lineHeight: 21, paddingHorizontal: Spacing[8] }}>
+        Swipet uses your location to show animals nearby. Please allow access in Settings.
+      </Text>
+      <TouchableOpacity
+        onPress={onRetry}
+        activeOpacity={0.8}
+        style={{
+          marginTop: Spacing[6],
+          backgroundColor: Colors.primary[500],
+          borderRadius: Radius.lg,
+          paddingHorizontal: Spacing[8],
+          paddingVertical: Spacing[3],
+        }}
+      >
+        <Text style={{ color: Colors.neutral[0], fontWeight: '700', fontSize: 15 }}>Try again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // ─── Styles ──────────────────────────────────
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: Colors.neutral[50],
   },
-
-  // ── Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -187,8 +260,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // ── Loading
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.primary[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeText: {
+    color: Colors.neutral[0],
+    fontSize: 10,
+    fontWeight: FontWeight.bold,
+  },
   loading: {
     flex: 1,
     alignItems: 'center',

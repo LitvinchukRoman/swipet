@@ -3,18 +3,24 @@ import type { Animal, FeedFilters, SwipeDirection } from '@/types/models';
 import { delay, MOCK_ANIMALS } from './mock';
 // import { api } from './api'; // ← розкоментувати коли бекенд готовий
 
+export interface FeedCoords {
+  lat: number;
+  lng: number;
+}
+
 /**
  * Feed API (ТЗ 3.5). Зараз повертає мок-дані.
  * Коли бекенд запрацює — замінити тіла методів на виклики `api`.
  */
 export const feedService = {
-  // GET /feed
-  getFeed: async (filters?: FeedFilters): Promise<Animal[]> => {
-    // TODO: return api.get('/feed', { params: filters }).then(r => r.data.animals);
+  // GET /feed?lat=&lng=&radiusKm=&species=&size=&ageMax=
+  getFeed: async (coords: FeedCoords, filters?: FeedFilters): Promise<Animal[]> => {
+    // TODO: return api.get('/feed', { params: { ...coords, ...filters } }).then(r => r.data.animals);
     let result = [...MOCK_ANIMALS];
     if (filters?.species) result = result.filter((a) => a.species === filters.species);
-    if (filters?.size) result = result.filter((a) => a.size === filters.size);
-    if (filters?.ageMax != null) result = result.filter((a) => a.ageMonths <= filters.ageMax! * 12);
+    if (filters?.size)    result = result.filter((a) => a.size    === filters.size);
+    if (filters?.ageMax != null)
+      result = result.filter((a) => a.ageMonths <= filters.ageMax! * 12);
     return delay(result);
   },
 
