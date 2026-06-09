@@ -64,6 +64,30 @@ export interface FeedFilters {
   radiusKm?: number;
 }
 
+// ─── Shelter admin (дашборд) — ТЗ 3.3 / 3.5 ─────────────────────────────────
+
+/** Рядок аналітики — дзеркалить backend AnimalAnalyticsResponse (GET /shelters/me/analytics). */
+export interface AnimalAnalyticsRow {
+  animalId: number;
+  animalName: string;
+  date: string;          // ISO date "2025-06-09"
+  viewsCount: number;
+  swipesRight: number;
+  swipesLeft: number;
+  chatOpens: number;
+}
+
+/** Агрегована статистика по одній тварині (для quick-stats у дашборді). */
+export interface AnimalStats {
+  animalId: number;
+  views: number;
+  likes: number;          // swipes right
+  passes: number;         // swipes left
+  chatOpens: number;
+  /** % лайків серед усіх свайпів */
+  likeRate: number;
+}
+
 // ─── Donations & Guardianship — ТЗ розділи 2.1, 3.7 ─────────────────────────
 
 export type DonationType   = 'ONE_TIME' | 'SUBSCRIPTION';

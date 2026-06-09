@@ -33,6 +33,13 @@ public class AnimalController {
         return animalService.getAnimalById(id);
     }
 
+    /** Список тварин притулку: GET /api/v1/animals?shelterId={id} (дашборд адміна / профіль притулку). */
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public java.util.List<AnimalResponse> getAnimalsByShelter(@RequestParam Long shelterId) {
+        return animalService.getAnimalsByShelter(shelterId);
+    }
+
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")

@@ -1,14 +1,12 @@
 -- Bootstrap для swipet PostgreSQL інстансу.
 --
 -- В docker-compose POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD створює
--- базовий superuser/db, тому тут робимо лише операції, які потрібні поверх:
---   * створюємо окремого read-only user-а для майбутньої аналітики
---   * вмикаємо потрібні extension-и
+-- базовий superuser/db. Цей скрипт entrypoint виконує ОДНОРАЗОВО при першому
+-- старті порожнього volume, УЖЕ підключеним до $POSTGRES_DB як $POSTGRES_USER.
 --
--- Файл монтується у /docker-entrypoint-initdb.d/, виконується one-shot
--- при першому старті порожнього volume.
-
-\connect :"POSTGRES_DB" :"POSTGRES_USER";
+-- ВАЖЛИВО: psql-змінні :"POSTGRES_DB" / :"POSTGRES_USER" тут НЕдоступні
+-- (entrypoint їх не передає), тому окремий \connect не потрібен, а ім'я БД
+-- для GRANT беремо через current_database().
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -21,7 +19,12 @@ BEGIN
     END IF;
 END $$;
 
-GRANT CONNECT ON DATABASE :"POSTGRES_DB" TO swipet_readonly;
+-- GRANT CONNECT потребує літерального імені БД → підставляємо поточну динамічно.
+DO $$
+BEGIN
+    EXECUTE format('GRANT CONNECT ON DATABASE %I TO swipet_readonly', current_database());
+END $$;
+
 GRANT USAGE ON SCHEMA public TO swipet_readonly;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT ON TABLES TO swipet_readonly;

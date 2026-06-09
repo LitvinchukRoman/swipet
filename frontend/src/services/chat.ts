@@ -1,34 +1,88 @@
-import type { ChatMessage, ChatRoom } from '@/types/models';
+import { api } from './api';
+import type { ChatMessage, ChatRoom, Species } from '@/types/models';
 
-import { delay, MOCK_CHAT_ROOMS, MOCK_MESSAGES } from './mock';
-// import { api } from './api'; // ← розкоментувати коли бекенд готовий
+// Chat REST API (ТЗ 3.6) — підключено до живого бекенду (ChatController /api/v1/chats).
+// Real-time (socket) — окремо у lib/socket.ts + chat-service. Авторизація — Bearer (інтерсептор).
+// Списки приходять як Spring Page<T> → дані у `data.content`.
 
-/**
- * Chat REST API (ТЗ 3.6). Real-time частина (Socket.io) — окремо у chat-service.
- * Зараз повертає мок-дані.
- */
+// Backend DTO: ChatRoomResponse.
+interface ChatRoomDTO {
+  id: number;
+  shelterId: number;
+  shelterName: string;
+  animalId: number;
+  animalName: string;
+  animalPrimaryPhotoUrl?: string;
+  lastMessageAt?: string;
+  // ⚠️ бекенд поки НЕ повертає текст останнього повідомлення та лічильник непрочитаних
+  lastMessage?: string;
+  unreadCount?: number;
+}
+
+// Backend DTO: ChatMessageResponse.
+interface ChatMessageDTO {
+  id: number;
+  roomId: number;
+  senderId: number;
+  content: string;
+  sentAt: string;
+  isRead: boolean;
+}
+
+interface Page<T> {
+  content: T[];
+}
+
+function mapRoom(d: ChatRoomDTO): ChatRoom {
+  return {
+    id: d.id,
+    animal: {
+      id: d.animalId,
+      name: d.animalName,
+      primaryPhotoUrl: d.animalPrimaryPhotoUrl,
+      species: 'OTHER' as Species, // бекенд не віддає вид у списку кімнат
+    },
+    shelter: { id: d.shelterId, name: d.shelterName },
+    lastMessage: d.lastMessage,
+    lastMessageAt: d.lastMessageAt,
+    unreadCount: d.unreadCount ?? 0,
+  };
+}
+
+function mapMessage(d: ChatMessageDTO): ChatMessage {
+  return {
+    id: d.id,
+    roomId: d.roomId,
+    senderId: d.senderId,
+    content: d.content,
+    isRead: d.isRead,
+    sentAt: d.sentAt,
+  };
+}
+
 export const chatService = {
-  // GET /chat/rooms
-  getRooms: async (): Promise<ChatRoom[]> => {
-    // TODO: return api.get('/chat/rooms').then(r => r.data.rooms);
-    return delay(MOCK_CHAT_ROOMS);
-  },
+  /** Список кімнат. GET /chats/rooms */
+  getRooms: (): Promise<ChatRoom[]> =>
+    api
+      .get<Page<ChatRoomDTO>>('/chats/rooms', { params: { page: 1, size: 20 } })
+      .then((r) => r.data.content.map(mapRoom)),
 
-  // GET /chat/rooms/:id/messages
-  getMessages: async (roomId: number): Promise<ChatMessage[]> => {
-    // TODO: return api.get(`/chat/rooms/${roomId}/messages`).then(r => r.data.messages);
-    return delay(MOCK_MESSAGES[roomId] ?? []);
-  },
+  /** Історія кімнати (новіші першими → розвертаємо). GET /chats/rooms/:id/messages */
+  getMessages: (roomId: number): Promise<ChatMessage[]> =>
+    api
+      .get<Page<ChatMessageDTO>>(`/chats/rooms/${roomId}/messages`, { params: { page: 1, size: 20 } })
+      .then((r) => r.data.content.map(mapMessage).reverse()),
 
-  // POST /chat/rooms
-  createRoom: async (animalId: number, shelterId: number): Promise<{ roomId: number }> => {
-    // TODO: return api.post('/chat/rooms', { animalId, shelterId }).then(r => r.data);
-    return delay({ roomId: 101 }, 200);
-  },
+  /** Створити/отримати кімнату. POST /chats/rooms?shelterId&animalId (userId — з JWT) */
+  createRoom: (animalId: number, shelterId: number): Promise<{ roomId: number }> =>
+    api
+      .post<ChatRoomDTO>('/chats/rooms', null, { params: { shelterId, animalId } })
+      .then((r) => ({ roomId: r.data.id })),
 
-  // POST /chat/rooms/:id/read
-  markRead: async (roomId: number): Promise<void> => {
-    // TODO: return api.post(`/chat/rooms/${roomId}/read`);
-    return delay(undefined, 100);
-  },
+  /**
+   * Позначити прочитаним. REST-ендпоінта на бекенді НЕМАЄ —
+   * read-квитанції йдуть через socket-подію `mark_read` (chat-service).
+   * Лишаємо no-op для сумісності інтерфейсу.
+   */
+  markRead: (_roomId: number): Promise<void> => Promise.resolve(),
 };

@@ -28,6 +28,14 @@ public class ShelterController {
         return shelterService.createShelter(currentUser.id(), request);
     }
 
+    /** Притулок поточного адміна (GET /api/v1/shelters/me). Має йти ДО /{id}. */
+    @GetMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
+    public ShelterResponse getMyShelter(@CurrentUser AuthenticatedUser currentUser) {
+        return shelterService.getMyShelter(currentUser.id());
+    }
+
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ShelterResponse getShelter(@PathVariable Long id) {

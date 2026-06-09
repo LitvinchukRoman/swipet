@@ -1,38 +1,107 @@
-import type { Animal, FeedFilters, SwipeDirection } from '@/types/models';
-
-import { delay, MOCK_ANIMALS } from './mock';
-// import { api } from './api'; // ← розкоментувати коли бекенд готовий
+import { api } from './api';
+import type { Animal, AnimalSize, FeedFilters, Species, SwipeDirection } from '@/types/models';
 
 export interface FeedCoords {
   lat: number;
   lng: number;
 }
 
-/**
- * Feed API (ТЗ 3.5). Зараз повертає мок-дані.
- * Коли бекенд запрацює — замінити тіла методів на виклики `api`.
- */
+// Feed API (ТЗ 3.5) — підключено до живого бекенду (FeedController /api/v1/feed).
+
+// Backend DTO: FeedAnimalResponse (картка стрічки — лише essentials).
+interface FeedAnimalDTO {
+  id: number;
+  name: string;
+  species: string;
+  ageMonths: number;
+  size: string;
+  primaryPhotoUrl?: string;
+  shelterName: string;
+  distanceKm?: number;
+}
+
+// Backend DTO: AnimalResponse (повна анкета — для /feed/liked).
+interface AnimalDTO {
+  id: number;
+  shelterId: number;
+  name: string;
+  species: string;
+  breed?: string;
+  ageMonths: number;
+  size: string;
+  gender: string;
+  description?: string;
+  isVaccinated: boolean;
+  isSterilized: boolean;
+  status: string;
+  primaryPhotoUrl?: string;
+}
+
+/** FeedAnimalResponse → Animal (поля, яких немає у картці — дефолти; деталі тягне animalService.getById). */
+function mapFeedAnimal(d: FeedAnimalDTO): Animal {
+  return {
+    id: d.id,
+    name: d.name,
+    species: d.species as Species,
+    ageMonths: d.ageMonths,
+    size: d.size as AnimalSize,
+    gender: 'MALE',
+    isVaccinated: false,
+    isSterilized: false,
+    status: 'AVAILABLE',
+    primaryPhotoUrl: d.primaryPhotoUrl,
+    photos: d.primaryPhotoUrl ? [d.primaryPhotoUrl] : [],
+    shelterId: 0,
+    shelterName: d.shelterName,
+    distanceKm: d.distanceKm,
+  };
+}
+
+/** AnimalResponse → Animal (повна анкета). */
+function mapAnimal(d: AnimalDTO): Animal {
+  return {
+    id: d.id,
+    name: d.name,
+    species: d.species as Species,
+    breed: d.breed,
+    ageMonths: d.ageMonths,
+    size: d.size as AnimalSize,
+    gender: d.gender as Animal['gender'],
+    description: d.description,
+    isVaccinated: d.isVaccinated,
+    isSterilized: d.isSterilized,
+    status: d.status as Animal['status'],
+    primaryPhotoUrl: d.primaryPhotoUrl,
+    photos: d.primaryPhotoUrl ? [d.primaryPhotoUrl] : [],
+    shelterId: d.shelterId,
+    shelterName: '',
+  };
+}
+
 export const feedService = {
-  // GET /feed?lat=&lng=&radiusKm=&species=&size=&ageMax=
-  getFeed: async (coords: FeedCoords, filters?: FeedFilters): Promise<Animal[]> => {
-    // TODO: return api.get('/feed', { params: { ...coords, ...filters } }).then(r => r.data.animals);
-    let result = [...MOCK_ANIMALS];
-    if (filters?.species) result = result.filter((a) => a.species === filters.species);
-    if (filters?.size)    result = result.filter((a) => a.size    === filters.size);
-    if (filters?.ageMax != null)
-      result = result.filter((a) => a.ageMonths <= filters.ageMax! * 12);
-    return delay(result);
-  },
+  /** Стрічка карток. GET /feed?lat&lng&radiusKm&species&size&ageMax&limit */
+  getFeed: (coords: FeedCoords, filters?: FeedFilters): Promise<Animal[]> =>
+    api
+      .get<FeedAnimalDTO[]>('/feed', {
+        params: {
+          lat: coords.lat,
+          lng: coords.lng,
+          radiusKm: filters?.radiusKm,
+          species: filters?.species,
+          size: filters?.size,
+          // фільтр приходить у роках → бекенд чекає місяці
+          ageMax: filters?.ageMax != null ? filters.ageMax * 12 : undefined,
+        },
+      })
+      .then((r) => r.data.map(mapFeedAnimal)),
 
-  // POST /feed/swipe
-  swipe: async (animalId: number, direction: SwipeDirection): Promise<{ swipeId: number }> => {
-    // TODO: return api.post('/feed/swipe', { animalId, direction }).then(r => r.data);
-    return delay({ swipeId: Date.now() }, 150);
-  },
+  /** Записати свайп. POST /feed/swipe */
+  swipe: (animalId: number, direction: SwipeDirection): Promise<{ swipeId: number }> =>
+    api.post<{ swipeId: number }>('/feed/swipe', { animalId, direction }).then((r) => r.data),
 
-  // GET /feed/liked
-  getLiked: async (): Promise<Animal[]> => {
-    // TODO: return api.get('/feed/liked').then(r => r.data.animals);
-    return delay(MOCK_ANIMALS.slice(0, 2));
-  },
+  /** Лайкнуті тварини. GET /feed/liked */
+  getLiked: (page = 1, limit = 20): Promise<Animal[]> =>
+    api
+      .get<AnimalDTO[]>('/feed/liked', { params: { page, limit } })
+      .then((r) => r.data.map(mapAnimal)),
 };

@@ -326,13 +326,12 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await authService.register({ fullName: fullName.trim(), email: email.trim(), password });
-      Alert.alert(
-        '🎉 Account created!',
-        'You can now sign in.',
-        [{ text: 'Sign in', onPress: () => router.replace('/(auth)/login') }]
-      );
+      // Прямий редірект — Alert на react-native-web не виконує onPress.
+      router.replace('/(auth)/login');
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message ?? 'Registration failed. Please try again.');
+      // Інлайн-помилка під email (Alert на web не показується).
+      const msg = err?.response?.data?.message ?? 'Registration failed. Please try again.';
+      setErrors({ email: msg });
       shake();
     } finally {
       setLoading(false);

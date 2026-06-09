@@ -31,7 +31,8 @@ interface ClientToServerEvents {
 
 export type ChatSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL ?? 'http://localhost';
+// Дефолт — HTTPS (див. api.ts): веб по https://localhost, інакше mixed content.
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL ?? 'https://localhost';
 
 let socket: ChatSocket | null = null;
 let currentToken: string | null = null;

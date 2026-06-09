@@ -55,4 +55,7 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     );
 
     List<Animal> findAllByStatus(AnimalStatus animalStatus);
+
+    /** Усі тварини конкретного притулку (для дашборду адміна), новіші першими. */
+    List<Animal> findByShelter_IdOrderByCreatedAtDesc(Long shelterId);
 }

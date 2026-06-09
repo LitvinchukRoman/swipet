@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
 import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
+import ua.edu.ukma.swipet.backend.analytics.service.AnalyticsService;
 import ua.edu.ukma.swipet.backend.swipe.dto.FeedAnimalResponse;
 import ua.edu.ukma.swipet.backend.swipe.dto.SwipeRequest;
 import ua.edu.ukma.swipet.backend.swipe.service.FeedService;
@@ -21,6 +22,7 @@ public class FeedController {
 
     private final FeedService feedService;
     private final SwipeService swipeService;
+    private final AnalyticsService analyticsService;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -33,8 +35,14 @@ public class FeedController {
             @RequestParam(required = false) String size,
             @RequestParam(required = false) Integer ageMax,
             @RequestParam(required = false) Integer limit) {
-        
-        return feedService.getFeed(currentUser.id(), lat, lng, radiusKm, species, size, ageMax, limit);
+
+        List<FeedAnimalResponse> feed =
+                feedService.getFeed(currentUser.id(), lat, lng, radiusKm, species, size, ageMax, limit);
+
+        // AL-005: кожна показана картка = перегляд
+        analyticsService.incrementViews(feed.stream().map(FeedAnimalResponse::id).toList());
+
+        return feed;
     }
 
     @PostMapping("/swipe")

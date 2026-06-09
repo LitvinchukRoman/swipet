@@ -10,6 +10,10 @@ import ua.edu.ukma.swipet.backend.chat.entity.ChatRoom;
 public class ChatMapper {
 
     public ChatRoomResponse toRoomResponse(ChatRoom room) {
+        return toRoomResponse(room, null, 0L);
+    }
+
+    public ChatRoomResponse toRoomResponse(ChatRoom room, String lastMessage, Long unreadCount) {
         return new ChatRoomResponse(
                 room.getId(),
                 room.getShelter().getId(),
@@ -17,7 +21,9 @@ public class ChatMapper {
                 room.getAnimal().getId(),
                 room.getAnimal().getName(),
                 room.getAnimal().getPrimaryPhotoUrl(),
-                room.getLastMessageAt()
+                room.getLastMessageAt(),
+                lastMessage,
+                unreadCount
         );
     }
 

@@ -21,6 +21,7 @@ import ua.edu.ukma.swipet.backend.chat.repository.ChatRoomRepository;
 import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
+import ua.edu.ukma.swipet.backend.analytics.service.AnalyticsService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -35,12 +36,14 @@ public class ChatService {
     private final ShelterRepository shelterRepository;
     private final AnimalRepository animalRepository;
     private final ChatMapper chatMapper;
+    private final AnalyticsService analyticsService;
 
     @Transactional
     public ChatRoomResponse getOrCreateRoom(Long userId, Long shelterId, Long animalId) {
         Optional<ChatRoom> existingRoom = chatRoomRepository.findByUser_IdAndShelter_IdAndAnimal_Id(userId, shelterId, animalId);
         
         if (existingRoom.isPresent()) {
+            analyticsService.incrementChatOpen(animalId); // chat_opens — відкрито чат
             return chatMapper.toRoomResponse(existingRoom.get());
         }
 
@@ -58,6 +61,7 @@ public class ChatService {
                 .build();
 
         ChatRoom savedRoom = chatRoomRepository.save(newRoom);
+        analyticsService.incrementChatOpen(animalId); // chat_opens — відкрито чат
         return chatMapper.toRoomResponse(savedRoom);
     }
 
@@ -86,7 +90,15 @@ public class ChatService {
     public Page<ChatRoomResponse> getUserRooms(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page > 0 ? page - 1 : 0, size);
         return chatRoomRepository.findByUserIdWithPagination(userId, pageable)
-                .map(chatMapper::toRoomResponse);
+                .map(room -> {
+                    String lastMessage = chatMessageRepository
+                            .findFirstByRoom_IdOrderBySentAtDesc(room.getId())
+                            .map(ChatMessage::getContent)
+                            .orElse(null);
+                    long unread = chatMessageRepository
+                            .countByRoom_IdAndIsReadFalseAndSender_IdNot(room.getId(), userId);
+                    return chatMapper.toRoomResponse(room, lastMessage, unread);
+                });
     }
 
     @Transactional(readOnly = true)

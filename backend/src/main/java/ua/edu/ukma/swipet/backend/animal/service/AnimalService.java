@@ -37,8 +37,16 @@ public class AnimalService {
     public AnimalResponse getAnimalById(Long id) {
         Animal animal = animalRepository.findById(id)
                 .orElseThrow(() -> AppException.notFound("Тварину з ID " + id));
-        
+
         return animalMapper.toResponse(animal);
+    }
+
+    /** Список тварин притулку — для дашборду адміна. */
+    @Transactional(readOnly = true)
+    public java.util.List<AnimalResponse> getAnimalsByShelter(Long shelterId) {
+        return animalRepository.findByShelter_IdOrderByCreatedAtDesc(shelterId).stream()
+                .map(animalMapper::toResponse)
+                .toList();
     }
 
     @Transactional

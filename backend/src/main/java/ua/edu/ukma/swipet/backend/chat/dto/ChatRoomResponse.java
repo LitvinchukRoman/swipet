@@ -9,5 +9,7 @@ public record ChatRoomResponse(
         Long animalId,
         String animalName,
         String animalPrimaryPhotoUrl,
-        LocalDateTime lastMessageAt
+        LocalDateTime lastMessageAt,
+        String lastMessage,
+        Long unreadCount
 ) {}

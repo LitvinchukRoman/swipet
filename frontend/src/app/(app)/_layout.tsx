@@ -38,6 +38,22 @@ export default function AppLayout() {
         name="guardianship"
         options={{ headerShown: true, title: 'My Wards' }}
       />
+      <Stack.Screen
+        name="shelter/register"
+        options={{ headerShown: true, title: 'Реєстрація притулку' }}
+      />
+      <Stack.Screen
+        name="shelter/analytics"
+        options={{ headerShown: true, title: 'Аналітика' }}
+      />
+      <Stack.Screen
+        name="shelter/animal/new"
+        options={{ headerShown: true, title: 'Тварина' }}
+      />
+      <Stack.Screen
+        name="shelter/booking/slots"
+        options={{ headerShown: true, title: 'Слоти візитів' }}
+      />
     </Stack>
   );
 }

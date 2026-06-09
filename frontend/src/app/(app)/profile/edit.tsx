@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
+import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 
 // ─────────────────────────────────────────────
@@ -58,13 +59,8 @@ export default function EditProfileScreen() {
           name: 'avatar.jpg',
         } as any);
       }
-      // TODO: POST /me/avatar  multipart/form-data → { avatarUrl }
-      // const { data } = await api.post('/me/avatar', formData, {
-      //   headers: { 'Content-Type': 'multipart/form-data' },
-      // });
-      // await updateUser({ avatarUrl: data.avatarUrl });
-
-      await updateUser({ avatarUrl: asset.uri }); // mock until backend ready
+      const avatarUrl = await userService.uploadAvatar(formData);
+      await updateUser({ avatarUrl });
     } catch {
       Alert.alert('Upload failed', 'Could not update your photo. Please try again.');
     } finally {
@@ -80,9 +76,11 @@ export default function EditProfileScreen() {
     }
     setSaving(true);
     try {
-      // TODO: PATCH /me  { fullName, phone } → updated user
-      // await userService.updateMe({ fullName: fullName.trim(), phone: phone.trim() || undefined });
-      await updateUser({ fullName: fullName.trim(), phone: phone.trim() || undefined });
+      const updated = await userService.updateMe({
+        fullName: fullName.trim(),
+        phone: phone.trim() || undefined,
+      });
+      await updateUser(updated);
       router.back();
     } catch {
       Alert.alert('Save failed', 'Could not save changes. Please try again.');

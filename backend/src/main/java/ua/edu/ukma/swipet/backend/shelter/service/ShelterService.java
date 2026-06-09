@@ -38,7 +38,16 @@ public class ShelterService {
     public ShelterResponse getShelterById(Long id) {
         Shelter shelter = shelterRepository.findById(id)
                 .orElseThrow(() -> AppException.notFound("Притулок з ID " + id));
-        
+
+        return shelterMapper.toResponse(shelter);
+    }
+
+    /** Притулок поточного адміна (за adminUserId з JWT) — для дашборду. */
+    @Transactional(readOnly = true)
+    public ShelterResponse getMyShelter(Long adminUserId) {
+        Shelter shelter = shelterRepository.findByAdminUser_Id(adminUserId)
+                .orElseThrow(() -> AppException.notFound("У цього користувача немає притулку"));
+
         return shelterMapper.toResponse(shelter);
     }
 

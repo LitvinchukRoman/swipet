@@ -5,12 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.edu.ukma.swipet.backend.analytics.service.AnalyticsService;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.swipe.dto.SwipeRequest;
 import ua.edu.ukma.swipet.backend.swipe.entity.Swipe;
+import ua.edu.ukma.swipet.backend.swipe.entity.SwipeDirection;
 import ua.edu.ukma.swipet.backend.swipe.repository.SwipeRepository;
 
 import java.util.Map;
@@ -22,8 +24,9 @@ public class SwipeService {
 
     private final SwipeRepository swipeRepository;
     private final AnimalRepository animalRepository;
+    private final AnalyticsService analyticsService;
 
-    
+
     private final ua.edu.ukma.swipet.backend.auth.repository.UserRepository userRepository;
 
     @Transactional
@@ -54,6 +57,9 @@ public class SwipeService {
 
             throw AppException.conflict("Ви вже відреагували на цю анкету");
         }
+
+        // Аналітика притулку: свайп вправо/вліво
+        analyticsService.incrementSwipe(request.animalId(), request.direction() == SwipeDirection.RIGHT);
 
         return Map.of("swipeId", savedSwipe.getId());
     }

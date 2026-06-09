@@ -1,61 +1,64 @@
-import {api} from './api';
-import type { BookingSlot } from '@/types/models';
+import { api } from './api';
 
-// ─── Mock ─────────────────────────────────────
-// Set to false when backend is ready
-const USE_MOCK = true;
+// Booking API (ТЗ 3.8) — підключено до живого бекенду (BookingController).
+// ⚠️ Реальна модель — на МІСТКІСТЬ (maxGuests + bookedCount), а не single-user booked/free.
+// Канонічний сервіс слотів для ОБОХ екранів: користувацький booking/[shelterId] та admin shelter/booking/slots.
+//
+// Ендпоінти:
+//   GET  /shelters/{shelterId}/slots                 → список слотів (без фільтра по даті)
+//   POST /shelters/{shelterId}/slots   (SHELTER_ADMIN)→ створити слот
+//   POST /slots/{slotId}/reservations                → забронювати (без скасування на бекенді)
 
-function mockSlotsForDate(shelterId: number, date: string): BookingSlot[] {
-  return [
-    { id: 1, shelter_id: shelterId, user_id: null, starts_at: `${date}T09:00:00`, ends_at: `${date}T10:00:00`, status: 'AVAILABLE',  notes: null },
-    { id: 2, shelter_id: shelterId, user_id: null, starts_at: `${date}T10:00:00`, ends_at: `${date}T11:00:00`, status: 'AVAILABLE',  notes: null },
-    { id: 3, shelter_id: shelterId, user_id: 99,   starts_at: `${date}T11:00:00`, ends_at: `${date}T12:00:00`, status: 'BOOKED',     notes: null },
-    { id: 4, shelter_id: shelterId, user_id: null, starts_at: `${date}T13:00:00`, ends_at: `${date}T14:00:00`, status: 'AVAILABLE',  notes: null },
-    { id: 5, shelter_id: shelterId, user_id: null, starts_at: `${date}T14:30:00`, ends_at: `${date}T15:30:00`, status: 'AVAILABLE',  notes: null },
-    { id: 6, shelter_id: shelterId, user_id: null, starts_at: `${date}T16:00:00`, ends_at: `${date}T17:00:00`, status: 'AVAILABLE',  notes: null },
-  ];
+/** Дзеркалить backend BookingSlotResponse. */
+export interface Slot {
+  id: number;
+  shelterId: number;
+  startTime: string; // ISO LocalDateTime "2025-06-10T10:00:00"
+  endTime: string;
+  maxGuests: number;
+  bookedCount: number;
 }
 
-// ─── Service ──────────────────────────────────
+export interface SlotPayload {
+  startTime: string;
+  endTime: string;
+  maxGuests: number;
+}
+
+export interface Reservation {
+  id: number;
+  slotId: number;
+  userId: number;
+  notes?: string;
+  status: string;
+  slotStartTime: string;
+  slotEndTime: string;
+}
+
+/** Скільки місць лишилось у слоті. */
+export function spotsLeft(slot: Slot): number {
+  return Math.max(0, slot.maxGuests - slot.bookedCount);
+}
+
+/** "10 чер, 10:00–11:00" з пари ISO-час. */
+export function formatSlotTime(startIso: string, endIso: string): string {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  const date = start.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+  const t = (d: Date) => d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  return `${date}, ${t(start)}–${t(end)}`;
+}
+
 export const bookingService = {
-  /**
-   * GET /api/v1/booking/slots?shelterId={id}&date={YYYY-MM-DD}
-   * Returns all slots for a shelter on a given date (no pagination).
-   */
-  async getSlots(shelterId: number, date: string): Promise<BookingSlot[]> {
-    if (USE_MOCK) {
-      await new Promise((r) => setTimeout(r, 650));
-      return mockSlotsForDate(shelterId, date);
-    }
-    const { data } = await api.get('/booking/slots', {
-      params: { shelterId, date },
-    });
-    return data.slots;
-  },
+  /** Слоти притулку. GET /shelters/{shelterId}/slots */
+  getSlots: (shelterId: number): Promise<Slot[]> =>
+    api.get<Slot[]>(`/shelters/${shelterId}/slots`).then((r) => r.data),
 
-  /**
-   * POST /api/v1/booking/slots/:id/book
-   * Body: { notes? }   →  Response: { booking: BookingSlot }
-   */
-  async bookSlot(slotId: number, notes?: string): Promise<BookingSlot> {
-    if (USE_MOCK) {
-      await new Promise((r) => setTimeout(r, 750));
-      return {} as BookingSlot; // optimistic update handled by store
-    }
-    const { data } = await api.post(`/booking/slots/${slotId}/book`, {
-      ...(notes?.trim() ? { notes: notes.trim() } : {}),
-    });
-    return data.booking;
-  },
+  /** Створити слот (admin). POST /shelters/{shelterId}/slots */
+  createSlot: (shelterId: number, payload: SlotPayload): Promise<Slot> =>
+    api.post<Slot>(`/shelters/${shelterId}/slots`, payload).then((r) => r.data),
 
-  /**
-   * DELETE /api/v1/booking/slots/:id/book  →  204 No Content
-   */
-  async cancelBooking(slotId: number): Promise<void> {
-    if (USE_MOCK) {
-      await new Promise((r) => setTimeout(r, 550));
-      return;
-    }
-    await api.delete(`/booking/slots/${slotId}/book`);
-  },
+  /** Забронювати слот. POST /slots/{slotId}/reservations */
+  bookSlot: (slotId: number, notes?: string): Promise<Reservation> =>
+    api.post<Reservation>(`/slots/${slotId}/reservations`, { notes }).then((r) => r.data),
 };

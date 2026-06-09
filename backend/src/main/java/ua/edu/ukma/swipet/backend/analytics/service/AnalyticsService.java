@@ -31,19 +31,53 @@ public class AnalyticsService {
 
     @Transactional
     public void incrementView(Long animalId) {
+        bump(animalId, stat -> stat.setViewsCount(stat.getViewsCount() + 1));
+    }
+
+    /** Інкремент переглядів для цілої стрічки (AL-005) — в одній транзакції. */
+    @Transactional
+    public void incrementViews(List<Long> animalIds) {
+        if (animalIds == null) return;
+        for (Long animalId : animalIds) {
+            bump(animalId, stat -> stat.setViewsCount(stat.getViewsCount() + 1));
+        }
+    }
+
+    /** Інкремент свайпу вправо/вліво. */
+    @Transactional
+    public void incrementSwipe(Long animalId, boolean liked) {
+        bump(animalId, stat -> {
+            if (liked) {
+                stat.setSwipesRight(stat.getSwipesRight() + 1);
+            } else {
+                stat.setSwipesLeft(stat.getSwipesLeft() + 1);
+            }
+        });
+    }
+
+    /** Інкремент відкриттів чату (chat_opens). */
+    @Transactional
+    public void incrementChatOpen(Long animalId) {
+        bump(animalId, stat -> stat.setChatOpens(stat.getChatOpens() + 1));
+    }
+
+    /**
+     * Знаходить (або створює) денний запис аналітики тварини та застосовує мутатор.
+     * Для нового запису всі лічильники стартують з 0 (Builder.Default), далі мутатор їх піднімає.
+     */
+    private void bump(Long animalId, java.util.function.Consumer<AnimalAnalytics> mutator) {
         LocalDate today = LocalDate.now();
         AnimalAnalyticsId id = new AnimalAnalyticsId(animalId, today);
 
         analyticsRepository.findById(id).ifPresentOrElse(
-                stat -> stat.setViewsCount(stat.getViewsCount() + 1),
+                mutator,
                 () -> {
                     Animal animalProxy = animalRepository.getReferenceById(animalId);
-                    
                     AnimalAnalytics newStat = AnimalAnalytics.builder()
                             .id(id)
                             .animal(animalProxy)
-                            .viewsCount(1)
                             .build();
+                    mutator.accept(newStat);
                     analyticsRepository.save(newStat);
                 }
         );
