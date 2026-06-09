@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import {
   CheckCircle,
   Heart,
@@ -190,7 +191,7 @@ function SuccessView({ mode, amount, onClose }: { mode: DonationMode; amount: nu
         <Text style={{ fontSize: 14, color: Colors.neutral[500], textAlign: 'center', lineHeight: 21 }}>
           {mode === 'GUARDIANSHIP'
             ? `Your ₴${amount}/month subscription is now active. You'll be notified about updates.`
-            : `₴${amount} is on its way. Redirecting to payment...`}
+            : `₴${amount} is on its way. Opening secure payment...`}
         </Text>
       </View>
       <Pressable
@@ -224,9 +225,9 @@ export function DonationSheet({
   const [loading,     setLoading]     = useState(false);
   const [success,     setSuccess]     = useState(false);
 
-  const baseY          = useRef(new Animated.Value(600)).current;
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
-  const combinedY      = useRef(Animated.add(baseY, keyboardOffset)).current;
+  const baseY           = useRef(new Animated.Value(600)).current;
+  const keyboardOffset  = useRef(new Animated.Value(0)).current;
+  const combinedY       = useRef(Animated.add(baseY, keyboardOffset)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
 
   // ── Open / close ──────────────────────────────────────
@@ -238,19 +239,10 @@ export function DonationSheet({
   }, [baseY, backdropOpacity]);
 
   const close = useCallback(() => {
-    // 1. Dismiss keyboard and instantly reset its offset
-    //    so the sheet starts sliding from its resting position.
     Keyboard.dismiss();
     keyboardOffset.setValue(0);
-
-    // 2. Slide sheet out + fade backdrop
     Animated.parallel([
-      Animated.timing(baseY, {
-        toValue: 600,
-        duration: Duration.slow,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.cubic),
-      }),
+      Animated.timing(baseY, { toValue: 600, duration: Duration.slow, useNativeDriver: false, easing: Easing.out(Easing.cubic) }),
       Animated.timing(backdropOpacity, { toValue: 0, duration: Duration.normal, useNativeDriver: true }),
     ]).start(() => {
       setSuccess(false);
@@ -266,9 +258,6 @@ export function DonationSheet({
   }, [visible]);
 
   // ── Keyboard listeners ────────────────────────────────
-  //  iOS:     keyboardWillShow/Hide → animates in sync with system keyboard
-  //  Android: keyboardDidShow/Hide  → fires after keyboard is already visible
-  //
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -280,7 +269,6 @@ export function DonationSheet({
         useNativeDriver: false,
       }).start();
     };
-
     const onHide = (e: KeyboardEvent) => {
       Animated.timing(keyboardOffset, {
         toValue: 0,
@@ -291,10 +279,7 @@ export function DonationSheet({
 
     const showSub = Keyboard.addListener(showEvent, onShow);
     const hideSub = Keyboard.addListener(hideEvent, onHide);
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
+    return () => { showSub.remove(); hideSub.remove(); };
   }, [keyboardOffset]);
 
   // Reset amount on mode switch
@@ -306,6 +291,7 @@ export function DonationSheet({
   const presets     = mode === 'ONE_TIME' ? ONE_TIME_PRESETS : GUARDIANSHIP_PRESETS;
   const finalAmount = customAmt ? parseInt(customAmt, 10) : selectedAmt ?? 0;
 
+  // ── Submit ────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!finalAmount || finalAmount < 10) {
       Alert.alert('Invalid amount', 'Minimum donation is ₴10');
@@ -321,11 +307,21 @@ export function DonationSheet({
         const res = await donationService.createGuardianship({ animalId, monthlyAmount: finalAmount });
         paymentUrl = res.paymentUrl;
       }
+
       setSuccess(true);
-      setTimeout(() => {
+
+      // Показуємо SuccessView 1.6с, потім закриваємо шит і відкриваємо
+      // Stripe Checkout у системному браузері.
+      // Після оплати Stripe redirectне на /payment-success або /payment-cancel.
+      setTimeout(async () => {
         close();
-        router.push({ pathname: '/(app)/payment-webview', params: { url: paymentUrl } });
-      }, 1800);
+        await WebBrowser.openBrowserAsync(paymentUrl, {
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+          showTitle: false,
+          enableBarCollapsing: true,
+        });
+      }, 1600);
+
     } catch (err: any) {
       Alert.alert('Payment error', err?.response?.data?.message ?? 'Something went wrong. Please try again.');
     } finally {
@@ -350,14 +346,10 @@ export function DonationSheet({
       </Animated.View>
 
       {/* ── Sheet ────────────────────────────────────────── */}
-      {/* No KeyboardAvoidingView — keyboard handled via listeners above */}
       <Animated.View
         style={{
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
-          // combinedY = baseY + keyboardOffset
-          // baseY: 600 (hidden) → 0 (visible)
-          // keyboardOffset: 0 → -keyboardHeight when keyboard shows
           transform: [{ translateY: combinedY }],
           backgroundColor: Colors.neutral[0],
           borderTopLeftRadius: Radius['2xl'],
