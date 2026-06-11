@@ -31,6 +31,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
+import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 import { useFeedStore } from '@/store/feed';
 
@@ -50,7 +51,7 @@ export default function ProfileScreen() {
   const [uploading, setUploading] = useState(false);
 
   // ── Avatar upload (web + mobile) ─────────
-  const handleAvatarPress = async () => {
+   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
@@ -63,7 +64,7 @@ export default function ProfileScreen() {
       quality: 0.85,
     });
     if (result.canceled) return;
-
+ 
     const asset = result.assets[0];
     setUploading(true);
     try {
@@ -79,13 +80,12 @@ export default function ProfileScreen() {
           name: 'avatar.jpg',
         } as any);
       }
-      // TODO: POST /me/avatar  multipart/form-data → { avatarUrl }
-      // const { data } = await api.post('/me/avatar', formData, {
-      //   headers: { 'Content-Type': 'multipart/form-data' },
-      // });
-      // await updateUser({ avatarUrl: data.avatarUrl });
-
-      await updateUser({ avatarUrl: asset.uri }); // mock until backend ready
+ 
+      // POST /users/me/avatar → { avatarUrl }
+      // PATCH /users/me       → updated user
+      const avatarUrl = await userService.uploadAvatar(formData);
+      const updated   = await userService.updateMe({ avatarUrl });
+      await updateUser(updated);
     } catch {
       Alert.alert('Upload failed', 'Could not update your photo. Please try again.');
     } finally {
