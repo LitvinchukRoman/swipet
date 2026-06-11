@@ -28,6 +28,7 @@ function mapUser(d: UserDTO): User {
 export interface UpdateProfilePayload {
   fullName?: string;
   phone?: string;
+  avatarUrl?: string; // ← додано
 }
 
 export const userService = {

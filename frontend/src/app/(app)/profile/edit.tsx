@@ -24,9 +24,9 @@ import { useAuthStore } from '@/store/auth';
 // ─────────────────────────────────────────────
 export default function EditProfileScreen() {
   const { user, updateUser } = useAuthStore();
-  const [fullName, setFullName]   = useState(user?.fullName ?? '');
-  const [phone,    setPhone]      = useState(user?.phone    ?? '');
-  const [saving,   setSaving]     = useState(false);
+  const [fullName,  setFullName]  = useState(user?.fullName ?? '');
+  const [phone,     setPhone]     = useState(user?.phone    ?? '');
+  const [saving,    setSaving]    = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // ── Avatar upload ─────────────────────────
@@ -60,7 +60,10 @@ export default function EditProfileScreen() {
         } as any);
       }
       const avatarUrl = await userService.uploadAvatar(formData);
-      await updateUser({ avatarUrl });
+
+      const updated = await userService.updateMe({ avatarUrl });
+
+      await updateUser(updated);
     } catch {
       Alert.alert('Upload failed', 'Could not update your photo. Please try again.');
     } finally {
