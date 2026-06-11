@@ -21,6 +21,7 @@ interface AuthState {
   setAuth: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
   clearAuth: () => Promise<void>;
   setAccessToken: (token: string) => Promise<void>;
+  setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   updateUser: (patch: Partial<User>) => Promise<void>;
   loadFromStorage: () => Promise<void>;
 }
@@ -58,6 +59,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAccessToken: async (token) => {
     await storage.setItem(KEYS.ACCESS, token);
     set({ accessToken: token });
+  },
+
+  // Persist BOTH tokens after a refresh. The backend rotates the refresh token
+  // on every /auth/refresh, so failing to store the new one revokes the session
+  // on the next refresh.
+  setTokens: async (accessToken, refreshToken) => {
+    await Promise.all([
+      storage.setItem(KEYS.ACCESS, accessToken),
+      storage.setItem(KEYS.REFRESH, refreshToken),
+    ]);
+    set({ accessToken, refreshToken });
   },
 
   updateUser: async (patch) => {
