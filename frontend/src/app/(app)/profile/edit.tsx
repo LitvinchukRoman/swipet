@@ -2,7 +2,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
+import { notify } from '@/lib/notify';
 import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 
@@ -33,7 +33,7 @@ export default function EditProfileScreen() {
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
+      notify('Permission needed', 'Please allow photo library access in Settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -65,7 +65,7 @@ export default function EditProfileScreen() {
 
       await updateUser(updated);
     } catch {
-      Alert.alert('Upload failed', 'Could not update your photo. Please try again.');
+      notify('Upload failed', 'Could not update your photo. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -74,7 +74,7 @@ export default function EditProfileScreen() {
   // ── Save profile ──────────────────────────
   const handleSave = async () => {
     if (!fullName.trim()) {
-      Alert.alert('Name required', 'Full name cannot be empty.');
+      notify('Name required', 'Full name cannot be empty.');
       return;
     }
     setSaving(true);
@@ -86,7 +86,7 @@ export default function EditProfileScreen() {
       await updateUser(updated);
       router.back();
     } catch {
-      Alert.alert('Save failed', 'Could not save changes. Please try again.');
+      notify('Save failed', 'Could not save changes. Please try again.');
     } finally {
       setSaving(false);
     }

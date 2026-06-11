@@ -14,6 +14,7 @@ public record StorageProperties(
             String secretKey,
             String bucket,
             String publicUrl,
+            String region,
             boolean autoCreateBucket
     ) { }
 }

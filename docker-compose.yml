@@ -134,11 +134,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # EXPO_PUBLIC_* are inlined at build time, so they must be build args.
+      args:
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-https://localhost/api/v1}
+        EXPO_PUBLIC_SOCKET_URL: ${EXPO_PUBLIC_SOCKET_URL:-https://localhost}
     container_name: swipet-frontend
     restart: unless-stopped
-    environment:
-      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost/api/v1}
-      EXPO_PUBLIC_SOCKET_URL: ${EXPO_PUBLIC_SOCKET_URL:-http://localhost}
     expose:
       - "8081"
     ports:

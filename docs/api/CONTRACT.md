@@ -32,7 +32,7 @@ All non-2xx responses follow:
   "timestamp": "2026-05-28T19:11:23.412Z",
   "path": "/api/v1/auth/register",
   "violations": [                     // present for VALIDATION_FAILED
-    { "field": "password", "message": "Password must be 8..100 chars" }
+    { "field": "password", "message": "Password must be 8..72 chars" }
   ]
 }
 ```
@@ -72,7 +72,7 @@ Reg. body:
 ```
 
 `409 CONFLICT` if email is taken. Password must contain at least one letter
-and one digit, length 8..100.
+and one digit, length 8..72 (72 = BCrypt's byte limit).
 
 ### POST `/login`
 Body: `{ email, password }`. `200 OK` returns the same `TokenResponse` as

@@ -7,6 +7,13 @@ RUN npm ci
 
 COPY . .
 
+# Expo inlines EXPO_PUBLIC_* at *build* time, so they must be present here
+# (a runtime `environment:` in compose has no effect on a static export).
+ARG EXPO_PUBLIC_API_URL=https://localhost/api/v1
+ARG EXPO_PUBLIC_SOCKET_URL=https://localhost
+ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
+ENV EXPO_PUBLIC_SOCKET_URL=$EXPO_PUBLIC_SOCKET_URL
+
 # Build static web export
 RUN npx expo export
 

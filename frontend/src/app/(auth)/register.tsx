@@ -18,25 +18,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authService } from '@/services/auth';
 import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
+import { analyzePassword, validatePassword, type Strength } from '@/lib/password';
 
 // ─── Password strength ───────────────────────────────────────────────────────
-type Strength = 'empty' | 'weak' | 'fair' | 'good' | 'strong';
-
-function analyzePassword(pw: string): { strength: Strength; score: number; hint: string } {
-  if (!pw) return { strength: 'empty', score: 0, hint: '' };
-  let score = 0;
-  const hints: string[] = [];
-  if (pw.length >= 8)           score++; else hints.push('8+ characters');
-  if (pw.length >= 12)          score++;
-  if (/[A-Z]/.test(pw))         score++; else hints.push('uppercase letter');
-  if (/[0-9]/.test(pw))         score++; else hints.push('a number');
-  if (/[^A-Za-z0-9]/.test(pw))  score++; else hints.push('special character');
-
-  const strength: Strength =
-    score <= 1 ? 'weak' : score === 2 ? 'fair' : score === 3 ? 'good' : 'strong';
-  const hint = hints.length ? `Add ${hints[0]}` : '';
-  return { strength, score, hint };
-}
+// Strength analysis + the hard validation rule both live in `@/lib/password`,
+// which mirrors the backend contract so the two never diverge.
 
 const STRENGTH_CFG: Record<Strength, { label: string; color: string; width: number }> = {
   empty:  { label: '',        color: Colors.neutral[200],    width: 0   },
@@ -312,8 +298,8 @@ export default function RegisterScreen() {
     if (!fullName.trim())                              e.fullName   = 'Full name is required';
     if (!email.trim())                                 e.email      = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(email.trim()))       e.email      = 'Enter a valid email';
-    if (!password)                                     e.password   = 'Password is required';
-    else if (password.length < 8)                      e.password   = 'At least 8 characters';
+    const pwError = validatePassword(password);
+    if (pwError)                                       e.password   = pwError;
     if (password !== confirmPwd)                       e.confirmPwd = 'Passwords do not match';
     if (!agreed)                                       e.agreed     = 'Please accept the terms';
     setErrors(e);

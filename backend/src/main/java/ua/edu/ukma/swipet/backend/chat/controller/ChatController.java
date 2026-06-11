@@ -34,7 +34,7 @@ public class ChatController {
             @CurrentUser AuthenticatedUser currentUser,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return chatService.getUserRooms(currentUser.id(), page, size);
+        return chatService.getUserRooms(currentUser.id(), currentUser.role(), page, size);
     }
 
     @GetMapping("/rooms/{roomId}/messages")

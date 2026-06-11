@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import ua.edu.ukma.swipet.backend.analytics.service.AnalyticsService;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
@@ -36,6 +37,9 @@ class SwipeServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private AnalyticsService analyticsService;
 
     @InjectMocks
     private SwipeService swipeService;

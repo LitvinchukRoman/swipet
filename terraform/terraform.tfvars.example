@@ -1,0 +1,44 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is gitignored.
+
+aws_region  = "eu-central-1" # Frankfurt
+project     = "swipet"
+environment = "test"
+
+# Lock down access — put YOUR public IP here, e.g. ["203.0.113.7/32"].
+# 0.0.0.0/0 leaves SSH + app ports open to the whole internet.
+admin_cidrs = ["0.0.0.0/0"]
+
+instance_type = "t3.small"
+
+# CORS / Socket.io origins. Use your Expo dev URL or "*" for quick tests.
+frontend_url = "*"
+
+# ---- Docker Hub -------------------------------------------------------------
+# Namespace that owns the public images (<user>/swipet-backend). The push token
+# is a GitHub Secret (DOCKERHUB_TOKEN); the EC2 host pulls public images anon.
+dockerhub_username = "your-dockerhub-user"
+
+# ---- DNS (Route53) ----------------------------------------------------------
+hosted_zone_name  = "naukma.com"
+backend_subdomain = "swipet"      # -> https://swipet.naukma.com  (backend)
+chat_subdomain    = "chat.swipet" # -> https://chat.swipet.naukma.com (chat)
+
+# ---- HTTPS (Caddy, auto-renewing certs) -------------------------------------
+# Default: Caddy obtains AND auto-renews certs via ACME/Let's Encrypt for the
+# two subdomains (HTTP-01). Needs port 80 reachable + public DNS — both set up
+# here. Recommended for renewal notices:
+acme_email = "you@example.com"
+
+# Optional: serve your STATIC wildcard *.naukma.com cert instead of ACME.
+# Trade-off: it will NOT auto-renew — re-apply on rotation. Leave commented to
+# keep auto-renewing certs.
+# tls_cert_path = "~/NaUKMA/certs/naukma.com.fullchain.pem"
+# tls_key_path  = "~/NaUKMA/certs/naukma.com.key.pem"
+
+# ---- CI/CD (GitHub OIDC) ----------------------------------------------------
+github_repo                 = "LitvinchukRoman/swipet"
+create_github_oidc_provider = true # set false if the account already has one
+
+# Optional Stripe test keys (donations stay inert with placeholders).
+# stripe_api_key        = "sk_test_..."
+# stripe_webhook_secret = "whsec_..."

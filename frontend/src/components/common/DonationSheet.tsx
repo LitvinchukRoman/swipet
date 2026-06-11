@@ -12,7 +12,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   Keyboard,
@@ -38,6 +37,7 @@ import Reanimated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
+import { notify } from '@/lib/notify';
 import { donationService } from '@/services/donation';
 
 // ─── Types ────────────────────────────────────
@@ -316,7 +316,7 @@ export function DonationSheet({
   // ── Submit ────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!finalAmount || finalAmount < 10) {
-      Alert.alert('Invalid amount', 'Minimum donation is ₴10');
+      notify('Invalid amount', 'Minimum donation is ₴10');
       return;
     }
     setLoading(true);
@@ -342,7 +342,7 @@ export function DonationSheet({
       }, 1600);
 
     } catch (err: any) {
-      Alert.alert('Payment error', err?.response?.data?.message ?? 'Something went wrong. Please try again.');
+      notify('Payment error', err?.response?.data?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

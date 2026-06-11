@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
+import ua.edu.ukma.swipet.backend.auth.entity.Role;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
 import ua.edu.ukma.swipet.backend.chat.dto.ChatMessageResponse;
@@ -87,18 +88,28 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ChatRoomResponse> getUserRooms(Long userId, int page, int size) {
+    public Page<ChatRoomResponse> getUserRooms(Long userId, Role role, int page, int size) {
         Pageable pageable = PageRequest.of(page > 0 ? page - 1 : 0, size);
-        return chatRoomRepository.findByUserIdWithPagination(userId, pageable)
-                .map(room -> {
-                    String lastMessage = chatMessageRepository
-                            .findFirstByRoom_IdOrderBySentAtDesc(room.getId())
-                            .map(ChatMessage::getContent)
-                            .orElse(null);
-                    long unread = chatMessageRepository
-                            .countByRoom_IdAndIsReadFalseAndSender_IdNot(room.getId(), userId);
-                    return chatMapper.toRoomResponse(room, lastMessage, unread);
-                });
+
+        // Притулок-адмін бачить чати, адресовані його притулку, а не ті, де він "user".
+        Page<ChatRoom> rooms;
+        if (role == Role.SHELTER_ADMIN) {
+            rooms = shelterRepository.findByAdminUser_Id(userId)
+                    .map(shelter -> chatRoomRepository.findByShelterIdWithPagination(shelter.getId(), pageable))
+                    .orElseGet(() -> Page.empty(pageable));
+        } else {
+            rooms = chatRoomRepository.findByUserIdWithPagination(userId, pageable);
+        }
+
+        return rooms.map(room -> {
+            String lastMessage = chatMessageRepository
+                    .findFirstByRoom_IdOrderBySentAtDesc(room.getId())
+                    .map(ChatMessage::getContent)
+                    .orElse(null);
+            long unread = chatMessageRepository
+                    .countByRoom_IdAndIsReadFalseAndSender_IdNot(room.getId(), userId);
+            return chatMapper.toRoomResponse(room, lastMessage, unread);
+        });
     }
 
     @Transactional(readOnly = true)

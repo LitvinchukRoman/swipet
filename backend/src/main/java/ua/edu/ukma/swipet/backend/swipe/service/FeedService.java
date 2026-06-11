@@ -24,9 +24,11 @@ public class FeedService {
             Long userId, Double lat, Double lng, Double radiusKm, 
             String species, String size, Integer ageMax, Integer limit) {
         
-        // Встановлюємо дефолтні значення, якщо клієнт їх не передав
-        double searchRadius = radiusKm != null ? radiusKm : 50.0;
-        int fetchLimit = limit != null ? limit : 20;
+        // Встановлюємо дефолтні значення, якщо клієнт їх не передав.
+        // limit клампимо в [1..100]: негативний LIMIT валить SQL (500), а
+        // надто великий — захист від важких запитів.
+        double searchRadius = radiusKm != null && radiusKm > 0 ? radiusKm : 50.0;
+        int fetchLimit = (limit != null && limit > 0) ? Math.min(limit, 100) : 20;
 
         return animalRepository.findFeedAnimals(
                 userId, lat, lng, searchRadius, species, size, ageMax, fetchLimit

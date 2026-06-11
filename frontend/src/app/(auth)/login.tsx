@@ -3,7 +3,6 @@ import { Eye, EyeOff, Lock, Mail, PawPrint } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   KeyboardAvoidingView,
@@ -272,7 +271,9 @@ export default function LoginScreen() {
       await setAuth(data.user, data.accessToken, data.refreshToken);
       router.replace('/(app)/(tabs)');
     } catch (err: any) {
-      Alert.alert('Login failed', err?.response?.data?.message ?? 'Invalid email or password');
+      // Інлайн-помилка під полем пароля (Alert на react-native-web не показується).
+      const msg = err?.response?.data?.message ?? 'Invalid email or password';
+      setErrors({ password: msg });
       shake();
     } finally {
       setLoading(false);

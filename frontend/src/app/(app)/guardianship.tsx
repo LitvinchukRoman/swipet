@@ -13,7 +13,6 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Easing,
   FlatList,
@@ -26,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { donationService } from '@/services/donation';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
+import { confirm, notify } from '@/lib/notify';
 import type { VirtualGuardianship } from '@/types/models';
 
 // ─── useFadeSlide ─────────────────────────────────────────────────────────────
@@ -171,15 +171,14 @@ function GuardianshipCard({
   const daysUntil   = Math.ceil((nextBilling.getTime() - Date.now()) / 86_400_000);
   const startedDate = new Date(item.startedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
-  const handleCancel = () => {
-    Alert.alert(
+  const handleCancel = async () => {
+    // confirm() — web-safe (window.confirm на web; Alert з кнопками на native).
+    // Прямий Alert.alert з кнопками на web — no-op, тож скасування не спрацьовувало.
+    const ok = await confirm(
       'Cancel guardianship?',
       `You'll stop supporting ${item.animal?.name ?? 'this animal'} and won't be charged next month.`,
-      [
-        { text: 'Keep it', style: 'cancel' },
-        { text: 'Cancel', style: 'destructive', onPress: () => onCancel(item.id) },
-      ]
     );
+    if (ok) onCancel(item.id);
   };
 
   return (
@@ -429,7 +428,7 @@ export default function GuardianshipScreen() {
         prev.map(g => g.id === id ? { ...g, isActive: false } : g)
       );
     } catch {
-      Alert.alert('Error', 'Could not cancel guardianship. Please try again.');
+      notify('Error', 'Could not cancel guardianship. Please try again.');
     }
   };
 

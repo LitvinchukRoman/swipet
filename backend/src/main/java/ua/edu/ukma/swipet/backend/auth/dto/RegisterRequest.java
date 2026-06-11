@@ -12,7 +12,9 @@ public record RegisterRequest(
         String email,
 
         @NotBlank
-        @Size(min = 8, max = 100, message = "Password must be 8..100 chars")
+        // Max 72: BCrypt silently caps (and actually throws) above 72 bytes,
+        // so accepting longer passwords would crash the encoder with a 500.
+        @Size(min = 8, max = 72, message = "Password must be 8..72 chars")
         @Pattern(
                 regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
                 message = "Password must contain at least one letter and one digit"

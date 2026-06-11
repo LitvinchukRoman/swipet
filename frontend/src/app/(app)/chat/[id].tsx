@@ -79,19 +79,26 @@ export default function ChatRoomScreen() {
     let cancelled = false;
 
     // Базова історія через REST (працює навіть якщо сокет недоступний — демо/офлайн)
-    chatService.getMessages(roomId).then((msgs) => {
-      if (cancelled) return;
-      setMessages(
-        msgs.map((m) => ({
-          id: m.id,
-          senderId: m.senderId,
-          content: m.content,
-          sentAt: m.sentAt,
-        })),
-      );
-      setLoading(false);
-      scrollToEnd(false);
-    });
+    chatService
+      .getMessages(roomId)
+      .then((msgs) => {
+        if (cancelled) return;
+        setMessages(
+          msgs.map((m) => ({
+            id: m.id,
+            senderId: m.senderId,
+            content: m.content,
+            sentAt: m.sentAt,
+          })),
+        );
+        scrollToEnd(false);
+      })
+      // Без catch помилка REST-історії лишала б екран навічно на спінері;
+      // сокет нижче все одно може догрузити повідомлення.
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     if (!token) return; // немає токена → лишаємось на REST-режимі
 

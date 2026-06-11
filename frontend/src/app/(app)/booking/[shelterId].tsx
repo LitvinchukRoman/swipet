@@ -13,7 +13,6 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -39,6 +38,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBookingStore } from '@/store/booking';
 import { spotsLeft, type Slot } from '@/services/booking';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
+import { notify } from '@/lib/notify';
 
 // ─── Helpers ──────────────────────────────────
 /** Ключ дати без зсуву таймзони — беремо префікс ISO LocalDateTime. */
@@ -314,7 +314,7 @@ function BookingSheet({
       setSuccess(true);
       setTimeout(onClose, 1800);
     } catch (e: any) {
-      Alert.alert('Booking failed', e?.message ?? 'Please try again.');
+      notify('Booking failed', e?.message ?? 'Please try again.');
     } finally {
       setLoading(false);
     }

@@ -8,10 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -50,6 +52,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBindingException(ServletRequestBindingException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("BAD_REQUEST", ex.getMessage(),
+                        HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
+    }
+
+    // Невалідний тип параметра шляху/запиту (напр. /animals/abc) — це 400, а не 500.
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
+        String msg = "Invalid value for parameter '" + ex.getName() + "'";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("BAD_REQUEST", msg,
+                        HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
+    }
+
+    // Нечитабельне/невалідне тіло запиту (зламаний JSON, невідоме значення enum) — це 400, а не 500.
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("BAD_REQUEST", "Malformed or invalid request body",
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
     }
 

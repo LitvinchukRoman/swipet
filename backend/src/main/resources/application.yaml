@@ -50,6 +50,8 @@ swipet:
       secret-key: ${MINIO_SECRET_KEY:minioadmin}
       bucket: ${MINIO_BUCKET:swipet-media}
       public-url: ${MINIO_PUBLIC_URL:}
+      # Empty for local MinIO; set to the AWS region (e.g. eu-central-1) for real S3.
+      region: ${MINIO_REGION:}
       auto-create-bucket: ${MINIO_AUTO_CREATE_BUCKET:true}
   cors:
     allowed-origins: ${FRONTEND_URL:http://localhost:8081,http://localhost:19006}

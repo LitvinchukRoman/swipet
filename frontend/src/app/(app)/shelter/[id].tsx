@@ -388,14 +388,19 @@ export default function ShelterDetailScreen() {
   const contentAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    animalService.getShelter(Number(id)).then((s) => {
-      setShelter(s);
-      setLoading(false);
-      Animated.stagger(120, [
-        Animated.spring(heroAnim,    { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
-        Animated.spring(contentAnim, { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
-      ]).start();
-    });
+    animalService
+      .getShelter(Number(id))
+      .then((s) => {
+        setShelter(s);
+        Animated.stagger(120, [
+          Animated.spring(heroAnim,    { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
+          Animated.spring(contentAnim, { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
+        ]).start();
+      })
+      // Без catch помилка лишала б екран навічно на завантаженні замість
+      // досяжного стану "Shelter not found".
+      .catch(() => setShelter(null))
+      .finally(() => setLoading(false));
   }, [id]);
 
   // ── Loading ──────────────────────────────────────────────────────────────

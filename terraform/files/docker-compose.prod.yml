@@ -1,0 +1,93 @@
+# Swipet test deployment — runs on the EC2 host.
+# Postgres runs here as a container (no RDS), object storage -> S3.
+# Values come from /opt/swipet/.env, which user_data renders from Terraform
+# outputs + SSM secrets.
+name: swipet
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: swipet-postgres
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: ${PGDATA}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    # Not published on the host — only reachable on the compose network.
+
+  backend:
+    image: ${BACKEND_IMAGE}
+    container_name: swipet-backend
+    restart: unless-stopped
+    mem_limit: 1024m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      STORAGE_BACKEND: minio
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      MINIO_REGION: ${MINIO_REGION}
+      # Bucket is provisioned by Terraform; do NOT let the app try to create it
+      # or set a public-read policy against real S3 (Block Public Access).
+      MINIO_AUTO_CREATE_BUCKET: "false"
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      interval: 15s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
+
+  chat-service:
+    image: ${CHAT_IMAGE}
+    container_name: swipet-chat-service
+    restart: unless-stopped
+    mem_limit: 256m
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      CORE_API_URL: http://backend:8080
+      FRONTEND_URL: ${FRONTEND_URL}
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3001/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:

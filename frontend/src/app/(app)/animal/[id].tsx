@@ -401,14 +401,19 @@ export default function AnimalDetailScreen() {
   const actions = useFadeSlide(320);
 
   useEffect(() => {
-    animalService.getById(Number(id)).then(a => {
-      setAnimal(a);
-      setLoading(false);
-      // trigger entrance chain
-      setTimeout(() => {
-        header.run(); stats.run(); about.run(); shelter.run(); actions.run();
-      }, 50);
-    });
+    animalService
+      .getById(Number(id))
+      .then(a => {
+        setAnimal(a);
+        // trigger entrance chain
+        setTimeout(() => {
+          header.run(); stats.run(); about.run(); shelter.run(); actions.run();
+        }, 50);
+      })
+      // Без catch promise rejection (404 / мережа / NaN id) лишав би екран
+      // навічно на скелетоні, а стан "Animal not found" — недосяжним.
+      .catch(() => setAnimal(null))
+      .finally(() => setLoading(false));
   }, [id]);
 
   const openChat = async () => {

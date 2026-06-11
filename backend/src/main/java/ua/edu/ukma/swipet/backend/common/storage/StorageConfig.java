@@ -26,11 +26,16 @@ public class StorageConfig {
     @ConditionalOnProperty(prefix = "swipet.storage", name = "backend", havingValue = "minio", matchIfMissing = true)
     public MinioClient minioClient(StorageProperties props) {
         StorageProperties.Minio m = props.minio();
-        log.info("Configuring MinIO client at {} (bucket={})", m.endpoint(), m.bucket());
-        return MinioClient.builder()
+        log.info("Configuring MinIO client at {} (bucket={}, region={})", m.endpoint(), m.bucket(), m.region());
+        MinioClient.Builder builder = MinioClient.builder()
                 .endpoint(m.endpoint())
-                .credentials(m.accessKey(), m.secretKey())
-                .build();
+                .credentials(m.accessKey(), m.secretKey());
+        // AWS S3 signs SigV4 per-region. Without this the client defaults to
+        // us-east-1 and real S3 in any other region rejects the request.
+        if (m.region() != null && !m.region().isBlank()) {
+            builder.region(m.region());
+        }
+        return builder.build();
     }
 
     /**

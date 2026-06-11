@@ -32,8 +32,9 @@ export default function FeedScreen() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── SC-FEED-001: геолокація при монтуванні ──────────────────────────────
-  useEffect(() => {
-    (async () => {
+  const initLocation = useCallback(async () => {
+    setLocationError(false);
+    try {
       // 1. Запитати дозвіл
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -41,22 +42,34 @@ export default function FeedScreen() {
         return;
       }
 
-      // 2. Отримати координати
-      const { coords } = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      // 2. Отримати координати. getCurrentPositionAsync може ВИСНУТИ
+      //    (на десктопі без GPS дозвіл є, але позиція не приходить) або
+      //    відхилитись. Без таймауту/catch користувач застрягав би на
+      //    оманливому "all caught up" EmptyState без помилки чи ретраю —
+      //    тож обмежуємо очікування і показуємо retryable LocationError.
+      const position = (await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('location-timeout')), 10000),
+        ),
+      ])) as Location.LocationObject;
 
-      const feedCoords = { lat: coords.latitude, lng: coords.longitude };
+      const feedCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
 
       // 3. Зберегти в store і завантажити стрічку
       setCoords(feedCoords);
       loadFeed(feedCoords);
-    })();
+    } catch {
+      setLocationError(true);
+    }
+  }, [setCoords, loadFeed]);
 
+  useEffect(() => {
+    initLocation();
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
-  }, []);
+  }, [initLocation]);
 
   // ── Toast helper ─────────────────────────────────────────────────────────
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
@@ -129,7 +142,7 @@ export default function FeedScreen() {
 
       {/* ── Content ─────────────────────────── */}
       {locationError ? (
-        <LocationError onRetry={() => Location.requestForegroundPermissionsAsync()} />
+        <LocationError onRetry={initLocation} />
       ) : isLoading ? (
         <LoadingState />
       ) : isDone ? (
