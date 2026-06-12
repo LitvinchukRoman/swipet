@@ -32,37 +32,48 @@ export default function FeedScreen() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── SC-FEED-001: геолокація при монтуванні ──────────────────────────────
-  const initLocation = useCallback(async () => {
-    setLocationError(false);
-    try {
-      // 1. Запитати дозвіл
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationError(true);
-        return;
-      }
+  // Фолбек якщо локацію отримати не вдалось
+const FALLBACK_COORDS = { lat: 50.4501, lng: 30.5234 }; // Київ
 
-      // 2. Отримати координати. getCurrentPositionAsync може ВИСНУТИ
-      //    (на десктопі без GPS дозвіл є, але позиція не приходить) або
-      //    відхилитись. Без таймауту/catch користувач застрягав би на
-      //    оманливому "all caught up" EmptyState без помилки чи ретраю —
-      //    тож обмежуємо очікування і показуємо retryable LocationError.
-      const position = (await Promise.race([
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('location-timeout')), 10000),
-        ),
-      ])) as Location.LocationObject;
-
-      const feedCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
-
-      // 3. Зберегти в store і завантажити стрічку
-      setCoords(feedCoords);
-      loadFeed(feedCoords);
-    } catch {
+const initLocation = useCallback(async () => {
+  setLocationError(false);
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      // Лише відмова в дозволі → показуємо помилку
       setLocationError(true);
+      return;
     }
-  }, [setCoords, loadFeed]);
+
+    let feedCoords = FALLBACK_COORDS;
+
+    try {
+      // 1. Спочатку пробуємо закешовану позицію — повертається миттєво
+      const last = await Location.getLastKnownPositionAsync({ maxAge: 300_000 });
+      if (last) {
+        feedCoords = { lat: last.coords.latitude, lng: last.coords.longitude };
+      } else {
+        // 2. Запитуємо свіжу позицію з таймаутом
+        const pos = (await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 8000),
+          ),
+        ])) as Location.LocationObject;
+
+        feedCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      }
+    } catch {
+      // kCLErrorLocationUnknown / timeout → не блокуємо юзера,
+      // завантажуємо стрічку з фолбек координатами
+    }
+
+    setCoords(feedCoords);
+    loadFeed(feedCoords);
+  } catch {
+    setLocationError(true);
+  }
+}, [setCoords, loadFeed]);
 
   useEffect(() => {
     initLocation();
