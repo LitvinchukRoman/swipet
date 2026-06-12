@@ -1,28 +1,19 @@
-import * as Location from 'expo-location';
-import { router, Stack } from 'expo-router';
-import { MapPin } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
+import { notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
-import { shelterService } from '@/services/shelter';
+import { adminService } from '@/services/admin';
 
-// Дефолт — центр Києва, щоб форма була одразу робочою (можна змінити вручну або «Моя локація»).
 const DEFAULT_LAT = '50.4501';
 const DEFAULT_LNG = '30.5234';
 
-export default function ShelterRegisterScreen() {
+export default function AdminShelterNewScreen() {
+  const [adminEmail, setAdminEmail] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
@@ -32,52 +23,17 @@ export default function ShelterRegisterScreen() {
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
 
-  const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Геолокація: на web — браузерний API (надійно у secure context), на native — expo-location.
-  const useMyLocation = async () => {
-    setLocating(true);
-    setError(null);
-    try {
-      if (Platform.OS === 'web') {
-        if (!('geolocation' in navigator)) {
-          setError('Браузер не підтримує геолокацію — введіть координати вручну.');
-          return;
-        }
-        await new Promise<void>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              setLat(String(pos.coords.latitude));
-              setLng(String(pos.coords.longitude));
-              resolve();
-            },
-            (err) => reject(new Error(err.message)),
-            { enableHighAccuracy: false, timeout: 10000 },
-          );
-        });
-      } else {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Дозвіл на геолокацію не надано — введіть координати вручну.');
-          return;
-        }
-        const pos = await Location.getCurrentPositionAsync({});
-        setLat(String(pos.coords.latitude));
-        setLng(String(pos.coords.longitude));
-      }
-    } catch (e: any) {
-      setError(`Не вдалося отримати геолокацію (${e?.message ?? 'помилка'}). Введіть вручну.`);
-    } finally {
-      setLocating(false);
-    }
-  };
-
   const submit = async () => {
     setError(null);
-    if (!name.trim() || !address.trim() || !city.trim()) {
-      setError('Заповніть назву, адресу та місто.');
+    if (!adminEmail.trim() || !name.trim() || !address.trim() || !city.trim()) {
+      setError('Заповніть email адміна, назву, адресу та місто.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(adminEmail.trim())) {
+      setError('Невірний формат email адміна.');
       return;
     }
     const latNum = parseFloat(lat);
@@ -89,7 +45,8 @@ export default function ShelterRegisterScreen() {
 
     setSaving(true);
     try {
-      await shelterService.registerShelter({
+      await adminService.createShelter({
+        adminEmail: adminEmail.trim(),
         name: name.trim(),
         description: description.trim() || undefined,
         address: address.trim(),
@@ -99,13 +56,13 @@ export default function ShelterRegisterScreen() {
         phone: phone.trim() || undefined,
         websiteUrl: websiteUrl.trim() || undefined,
       });
-      // Прямий редірект (Alert на web не виконує onPress).
-      router.replace('/(app)/shelter/dashboard');
+      notify('Готово', `Притулок створено. ${adminEmail.trim()} тепер адміністратор притулку.`);
+      router.back();
     } catch (err: any) {
       const msg =
         err?.response?.data?.violations?.[0]?.message ??
         err?.response?.data?.message ??
-        'Не вдалося зареєструвати притулок.';
+        'Не вдалося створити притулок.';
       setError(msg);
     } finally {
       setSaving(false);
@@ -114,8 +71,26 @@ export default function ShelterRegisterScreen() {
 
   return (
     <SafeAreaView style={st.safe} edges={['bottom']}>
-      <Stack.Screen options={{ title: 'Реєстрація притулку' }} />
       <ScrollView contentContainerStyle={st.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={st.hintCard}>
+          <Mail size={16} color={Colors.primary[600]} strokeWidth={2} />
+          <Text style={st.hintText}>
+            Користувач із цим email стане адміністратором притулку. Деталі профілю (опис, лого, контакти) він заповнить сам.
+          </Text>
+        </View>
+
+        <Field label="Email адміна притулку">
+          <TextInput
+            value={adminEmail}
+            onChangeText={setAdminEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="user@example.com"
+            placeholderTextColor={Colors.neutral[300]}
+            style={st.input}
+          />
+        </Field>
+
         <Field label="Назва притулку">
           <TextInput value={name} onChangeText={setName} placeholder="Напр. Сіріус" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
@@ -140,7 +115,6 @@ export default function ShelterRegisterScreen() {
           <TextInput value={websiteUrl} onChangeText={setWebsiteUrl} autoCapitalize="none" keyboardType="url" placeholder="https://…" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        {/* Координати: ручне введення + кнопка авто */}
         <View style={st.coordsRow}>
           <Field label="Широта (lat)" flex>
             <TextInput value={lat} onChangeText={setLat} keyboardType="numbers-and-punctuation" style={st.input} />
@@ -150,18 +124,9 @@ export default function ShelterRegisterScreen() {
           </Field>
         </View>
 
-        <TouchableOpacity style={st.locationBtn} onPress={useMyLocation} activeOpacity={0.8} disabled={locating}>
-          {locating ? (
-            <ActivityIndicator size="small" color={Colors.primary[500]} />
-          ) : (
-            <MapPin size={18} color={Colors.primary[500]} strokeWidth={2} />
-          )}
-          <Text style={st.locationText}>{locating ? 'Визначення…' : 'Заповнити моєю локацією'}</Text>
-        </TouchableOpacity>
-
         {error ? <Text style={st.error}>{error}</Text> : null}
 
-        <Button label="Зареєструвати притулок" onPress={submit} loading={saving} />
+        <Button label="Створити притулок" onPress={submit} loading={saving} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -179,22 +144,39 @@ function Field({ label, children, flex }: { label: string; children: React.React
 const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.neutral[50] },
   content: { padding: Spacing[4], gap: Spacing[3], paddingBottom: Spacing[10] },
+
+  hintCard: {
+    flexDirection: 'row',
+    gap: Spacing[2],
+    alignItems: 'flex-start',
+    backgroundColor: Colors.primary[50],
+    borderRadius: Radius.lg,
+    padding: Spacing[3],
+    borderWidth: 1,
+    borderColor: Colors.primary[100],
+  },
+  hintText: { flex: 1, fontSize: FontSize.sm, color: Colors.primary[700], lineHeight: 19 },
+
   field: { gap: Spacing[1] },
   fieldLabel: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, color: Colors.neutral[500], textTransform: 'uppercase', letterSpacing: 0.5 },
   coordsRow: { flexDirection: 'row', gap: Spacing[3] },
   input: {
-    backgroundColor: Colors.neutral[0], borderWidth: 1, borderColor: Colors.neutral[200], borderRadius: Radius.lg,
-    paddingHorizontal: Spacing[4], paddingVertical: Spacing[3], fontSize: FontSize.base, color: Colors.neutral[900],
+    backgroundColor: Colors.neutral[0],
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
+    fontSize: FontSize.base,
+    color: Colors.neutral[900],
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  locationBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing[2],
-    backgroundColor: Colors.neutral[0], borderWidth: 1.5, borderColor: Colors.primary[200], borderStyle: 'dashed',
-    borderRadius: Radius.lg, paddingVertical: Spacing[3],
-  },
-  locationText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.primary[500] },
   error: {
-    color: Colors.error, fontSize: FontSize.sm, fontWeight: FontWeight.medium,
-    backgroundColor: '#FEF2F2', borderRadius: Radius.md, padding: Spacing[3],
+    color: Colors.error,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.medium,
+    backgroundColor: '#FEF2F2',
+    borderRadius: Radius.md,
+    padding: Spacing[3],
   },
 });

@@ -7,8 +7,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useAuthStore } from '@/store/auth';
 
+// Кожна роль має «домашню» оболонку (групу маршрутів).
+const HOME_BY_ROLE = {
+  ADMIN: '/(admin)/(tabs)',
+  SHELTER_ADMIN: '/(shelter)/(tabs)',
+  USER: '/(app)/(tabs)',
+} as const;
+
 export default function RootLayout() {
-  const { accessToken, isLoading, loadFromStorage } = useAuthStore();
+  const { accessToken, user, isLoading, loadFromStorage } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -16,17 +23,30 @@ export default function RootLayout() {
     loadFromStorage();
   }, []);
 
+  // Маршрутизація за роллю: тримаємо користувача у його оболонці.
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const group = segments[0];
+    const inAuthGroup = group === '(auth)';
 
-    if (!accessToken && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (accessToken && inAuthGroup) {
-      router.replace('/(app)/(tabs)');
+    if (!accessToken) {
+      if (!inAuthGroup) router.replace('/(auth)/login');
+      return;
     }
-  }, [accessToken, isLoading, segments]);
+
+    const role = user?.role ?? 'USER';
+    const homePath = HOME_BY_ROLE[role] ?? HOME_BY_ROLE.USER;
+
+    const inHomeGroup =
+      (role === 'ADMIN' && group === '(admin)') ||
+      (role === 'SHELTER_ADMIN' && group === '(shelter)') ||
+      (role === 'USER' && group === '(app)');
+
+    if (inAuthGroup || !inHomeGroup) {
+      router.replace(homePath);
+    }
+  }, [accessToken, user?.role, isLoading, segments]);
 
   if (isLoading) {
     return (

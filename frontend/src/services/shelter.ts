@@ -82,6 +82,8 @@ function mapShelter(d: ShelterResponseDTO): Shelter {
     logoUrl: d.logoUrl,
     address: d.address,
     city: d.city,
+    locationLat: d.locationLat,
+    locationLng: d.locationLng,
     phone: d.phone,
     websiteUrl: d.websiteUrl,
     isVerified: d.isVerified,
@@ -173,4 +175,12 @@ export const shelterService = {
   /** Оновити притулок. PATCH /shelters/:id */
   updateShelter: (id: number, payload: ShelterPayload): Promise<Shelter> =>
     api.patch<ShelterResponseDTO>(`/shelters/${id}`, payload).then((r) => mapShelter(r.data)),
+
+  /** Завантажити лого притулку. POST /shelters/:id/logo (multipart) */
+  uploadLogo: (id: number, file: FormData): Promise<Shelter> =>
+    api
+      .post<ShelterResponseDTO>(`/shelters/${id}/logo`, file, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => mapShelter(r.data)),
 };

@@ -1,13 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import {
-  ChevronRight,
-  Heart,
-  LayoutDashboard,
-  LogOut,
-  Pencil,
-  Star,
-} from 'lucide-react-native';
+import { ChevronRight, Heart, LogOut, Pencil, Star } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
 import {
@@ -194,23 +187,6 @@ const handleLogout = () => {
             />
           </View>
         </Animated.View>
-
-        {/* ── Shelter admin section ────────── */}
-        {user?.role === 'SHELTER_ADMIN' && (
-          <Animated.View entering={FadeInDown.delay(200).springify().damping(18)}>
-            <SectionLabel title="Shelter" />
-            <View style={styles.sectionCard}>
-              <MenuRow
-                icon={LayoutDashboard}
-                iconColor={Colors.info}
-                iconBg="rgba(59,130,246,0.08)"
-                label="Shelter Dashboard"
-                onPress={() => router.push('/(app)/shelter/dashboard')}
-                isLast
-              />
-            </View>
-          </Animated.View>
-        )}
 
         {/* ── Logout — always visible above tab bar ── */}
         <Animated.View

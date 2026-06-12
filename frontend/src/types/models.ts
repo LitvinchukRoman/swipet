@@ -32,6 +32,8 @@ export interface Shelter {
   logoUrl?: string;
   address: string;
   city: string;
+  locationLat?: number;
+  locationLng?: number;
   phone?: string;
   websiteUrl?: string;
   isVerified: boolean;

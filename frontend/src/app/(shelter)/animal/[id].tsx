@@ -5,7 +5,6 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Camera, Check } from 'lucide-react-native';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -18,10 +17,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
-import { SIZE_LABEL, SPECIES_LABEL, GENDER_LABEL } from '@/lib/format';
+import { GENDER_LABEL, SIZE_LABEL, SPECIES_LABEL } from '@/lib/format';
 import { notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { shelterService, type AnimalPayload } from '@/services/shelter';
+import { useShelterStore } from '@/store/shelter';
 import type { AnimalSize, Gender, Species } from '@/types/models';
 
 const SPECIES: Species[] = ['DOG', 'CAT', 'RABBIT', 'OTHER'];
@@ -29,21 +29,24 @@ const SIZES: AnimalSize[] = ['SMALL', 'MEDIUM', 'LARGE'];
 const GENDERS: Gender[] = ['MALE', 'FEMALE'];
 
 export default function AnimalFormScreen() {
-  const params = useLocalSearchParams<{ shelterId: string; animalId?: string }>();
-  const shelterId = Number(params.shelterId);
-  const editingId = params.animalId ? Number(params.animalId) : undefined;
-  const isEdit = editingId != null;
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const isEdit = id !== 'new';
+  const editingId = isEdit ? Number(id) : undefined;
 
-  const [name, setName] = useState('');
-  const [species, setSpecies] = useState<Species>('DOG');
-  const [breed, setBreed] = useState('');
-  const [ageMonths, setAgeMonths] = useState('');
-  const [size, setSize] = useState<AnimalSize>('MEDIUM');
-  const [gender, setGender] = useState<Gender>('MALE');
-  const [description, setDescription] = useState('');
-  const [isVaccinated, setIsVaccinated] = useState(false);
-  const [isSterilized, setIsSterilized] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const shelter = useShelterStore((st) => st.shelter);
+  const reload = useShelterStore((st) => st.load);
+  const existing = useShelterStore((st) => (editingId != null ? st.animals.find((a) => a.id === editingId) : undefined));
+
+  const [name, setName] = useState(existing?.name ?? '');
+  const [species, setSpecies] = useState<Species>(existing?.species ?? 'DOG');
+  const [breed, setBreed] = useState(existing?.breed ?? '');
+  const [ageMonths, setAgeMonths] = useState(existing?.ageMonths != null ? String(existing.ageMonths) : '');
+  const [size, setSize] = useState<AnimalSize>(existing?.size ?? 'MEDIUM');
+  const [gender, setGender] = useState<Gender>(existing?.gender ?? 'MALE');
+  const [description, setDescription] = useState(existing?.description ?? '');
+  const [isVaccinated, setIsVaccinated] = useState(existing?.isVaccinated ?? false);
+  const [isSterilized, setIsSterilized] = useState(existing?.isSterilized ?? false);
+  const [photoUri, setPhotoUri] = useState<string | null>(existing?.primaryPhotoUrl ?? null);
 
   const [saving, setSaving] = useState(false);
 
@@ -62,7 +65,6 @@ export default function AnimalFormScreen() {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
-  // Фото у multipart: на web — через Blob, на native — через { uri, type, name }.
   const uploadPhoto = async (animalId: number, uri: string) => {
     const form = new FormData();
     if (Platform.OS === 'web') {
@@ -75,6 +77,10 @@ export default function AnimalFormScreen() {
   };
 
   const handleSave = async () => {
+    if (!shelter) {
+      notify('Помилка', 'Притулок не завантажено');
+      return;
+    }
     if (!name.trim()) {
       notify('Помилка', 'Вкажіть кличку тварини');
       return;
@@ -86,7 +92,7 @@ export default function AnimalFormScreen() {
     }
 
     const payload: AnimalPayload = {
-      shelterId,
+      shelterId: shelter.id,
       name: name.trim(),
       species,
       breed: breed.trim() || undefined,
@@ -104,17 +110,17 @@ export default function AnimalFormScreen() {
         ? await shelterService.updateAnimal(editingId!, payload)
         : await shelterService.createAnimal(payload);
 
-      // Завантажуємо лише щойно вибране локальне фото (remote http-URL у режимі редагування — пропускаємо)
+      // Вантажимо лише щойно вибране локальне фото (remote http-URL у режимі редагування — пропускаємо)
       if (photoUri && !photoUri.startsWith('http')) {
         await uploadPhoto(animal.id, photoUri).catch(() => {
           notify('Увага', 'Анкету збережено, але фото не завантажилось.');
         });
       }
 
+      await reload();
       router.back();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Не вдалося зберегти анкету';
-      notify('Помилка', msg);
+      notify('Помилка', err?.response?.data?.message ?? 'Не вдалося зберегти анкету');
     } finally {
       setSaving(false);
     }
@@ -123,12 +129,7 @@ export default function AnimalFormScreen() {
   return (
     <SafeAreaView style={st.safe} edges={['bottom']}>
       <Stack.Screen options={{ title: isEdit ? 'Редагувати тварину' : 'Нова тварина' }} />
-      <ScrollView
-        contentContainerStyle={st.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Фото */}
+      <ScrollView contentContainerStyle={st.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Pressable style={st.photoWrap} onPress={pickPhoto}>
           {photoUri ? (
             <Image source={{ uri: photoUri }} style={st.photo} contentFit="cover" />
@@ -167,30 +168,18 @@ export default function AnimalFormScreen() {
         </Field>
 
         <Field label="Опис характеру">
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Розкажіть про тваринку…"
-            placeholderTextColor={Colors.neutral[300]}
-            multiline
-            style={[st.input, st.textArea]}
-          />
+          <TextInput value={description} onChangeText={setDescription} placeholder="Розкажіть про тваринку…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
         </Field>
 
         <ToggleRow label="Вакцинований" value={isVaccinated} onValueChange={setIsVaccinated} />
         <ToggleRow label="Стерилізований" value={isSterilized} onValueChange={setIsSterilized} />
 
-        <Button
-          label={isEdit ? 'Зберегти зміни' : 'Додати тварину'}
-          onPress={handleSave}
-          loading={saving}
-        />
+        <Button label={isEdit ? 'Зберегти зміни' : 'Додати тварину'} onPress={handleSave} loading={saving} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
 function Field({ label, children, flex }: { label: string; children: React.ReactNode; flex?: boolean }) {
   return (
     <View style={[st.field, flex && { flex: 1 }]}>
@@ -250,9 +239,16 @@ const st = StyleSheet.create({
   photoWrap: { alignSelf: 'center', marginBottom: Spacing[2] },
   photo: { width: 160, height: 120, borderRadius: Radius.xl },
   photoEmpty: {
-    width: 160, height: 120, borderRadius: Radius.xl,
-    backgroundColor: Colors.primary[50], borderWidth: 1.5, borderColor: Colors.primary[200],
-    borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4,
+    width: 160,
+    height: 120,
+    borderRadius: Radius.xl,
+    backgroundColor: Colors.primary[50],
+    borderWidth: 1.5,
+    borderColor: Colors.primary[200],
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   photoLabel: { fontSize: FontSize.sm, color: Colors.primary[500], fontWeight: FontWeight.semibold },
 
@@ -262,25 +258,36 @@ const st = StyleSheet.create({
 
   input: {
     backgroundColor: Colors.neutral[0],
-    borderWidth: 1, borderColor: Colors.neutral[200], borderRadius: Radius.lg,
-    paddingHorizontal: Spacing[4], paddingVertical: Spacing[3],
-    fontSize: FontSize.base, color: Colors.neutral[900],
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
+    fontSize: FontSize.base,
+    color: Colors.neutral[900],
   },
   textArea: { minHeight: 90, textAlignVertical: 'top' },
 
   pickerBox: {
     backgroundColor: Colors.neutral[0],
-    borderWidth: 1, borderColor: Colors.neutral[200], borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     ...(Platform.OS === 'android' ? {} : { paddingHorizontal: Spacing[2] }),
   },
   picker: { color: Colors.neutral[900] },
 
   toggleRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.neutral[0], borderRadius: Radius.lg,
-    paddingHorizontal: Spacing[4], paddingVertical: Spacing[3],
-    borderWidth: 1, borderColor: Colors.neutral[150],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
+    borderWidth: 1,
+    borderColor: Colors.neutral[150],
   },
   toggleLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2] },
   toggleLabel: { fontSize: FontSize.base, color: Colors.neutral[800], fontWeight: FontWeight.medium },

@@ -1,22 +1,16 @@
 import { Picker } from '@react-native-picker/picker';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack } from 'expo-router';
 import { CalendarPlus, Clock, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { notify } from '@/lib/notify';
+import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { bookingService, formatSlotTime, type Slot } from '@/services/booking';
+import { useShelterStore } from '@/store/shelter';
 
 const DURATIONS = [30, 60, 90, 120];
 
@@ -34,8 +28,7 @@ function tomorrowDate(): string {
 }
 
 export default function SlotsScreen() {
-  const { shelterId: shelterIdParam } = useLocalSearchParams<{ shelterId: string }>();
-  const shelterId = Number(shelterIdParam);
+  const shelterId = useShelterStore((st) => st.shelter?.id);
 
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +41,7 @@ export default function SlotsScreen() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
+    if (!shelterId) return;
     try {
       setSlots(await bookingService.getSlots(shelterId));
       setError(false);
@@ -63,6 +57,7 @@ export default function SlotsScreen() {
   }, [load]);
 
   const create = async () => {
+    if (!shelterId) return;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       notify('Помилка', 'Дата у форматі РРРР-ММ-ДД');
       return;
@@ -206,8 +201,14 @@ const st = StyleSheet.create({
   formRow: { flexDirection: 'row', gap: Spacing[3] },
   fieldLabel: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, color: Colors.neutral[500], textTransform: 'uppercase', letterSpacing: 0.5 },
   input: {
-    backgroundColor: Colors.neutral[50], borderWidth: 1, borderColor: Colors.neutral[200], borderRadius: Radius.lg,
-    paddingHorizontal: Spacing[3], paddingVertical: Spacing[3], fontSize: FontSize.base, color: Colors.neutral[900],
+    backgroundColor: Colors.neutral[50],
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[3],
+    fontSize: FontSize.base,
+    color: Colors.neutral[900],
   },
   pickerBox: { backgroundColor: Colors.neutral[50], borderWidth: 1, borderColor: Colors.neutral[200], borderRadius: Radius.lg, justifyContent: 'center' },
   picker: { color: Colors.neutral[900] },
@@ -215,9 +216,14 @@ const st = StyleSheet.create({
   listHeading: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.neutral[900], marginTop: Spacing[4] },
 
   slotRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing[3],
-    backgroundColor: Colors.neutral[0], borderRadius: Radius.xl,
-    padding: Spacing[3], marginTop: Spacing[3], ...Shadow.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius.xl,
+    padding: Spacing[3],
+    marginTop: Spacing[3],
+    ...Shadow.sm,
   },
   slotIcon: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.primary[50], alignItems: 'center', justifyContent: 'center' },
   slotTime: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.neutral[900] },

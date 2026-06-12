@@ -11,7 +11,7 @@ import { shelterService } from '@/services/shelter';
 import type { AnimalAnalyticsRow } from '@/types/models';
 
 const SCREEN_W = Dimensions.get('window').width;
-const CHART_W = SCREEN_W - Spacing[4] * 2 - Spacing[4] * 2; // екран − поля − падінг картки
+const CHART_W = SCREEN_W - Spacing[4] * 2 - Spacing[4] * 2;
 const CHART_H = 180;
 const PAD = 28;
 
@@ -26,13 +26,9 @@ export default function AnalyticsScreen() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    shelterService
-      .getMyAnalytics()
-      .then(setRows)
-      .catch(() => setError(true));
+    shelterService.getMyAnalytics().then(setRows).catch(() => setError(true));
   }, []);
 
-  // Агрегуємо по датах (сума по всіх тваринах за день)
   const daily = useMemo<DayPoint[]>(() => {
     if (!rows) return [];
     const byDate = new Map<string, DayPoint>();
@@ -82,7 +78,6 @@ export default function AnalyticsScreen() {
     <SafeAreaView style={st.safe} edges={['bottom']}>
       <Stack.Screen options={{ title: 'Аналітика' }} />
       <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false}>
-        {/* Підсумкові картки */}
         <View style={st.statsGrid}>
           <StatCard icon={<Eye size={18} color={Colors.info} strokeWidth={2} />} value={totals.views} label="Переглядів" />
           <StatCard icon={<Heart size={18} color={Colors.primary[500]} strokeWidth={2} />} value={totals.likes} label="Лайків" />
@@ -90,7 +85,6 @@ export default function AnalyticsScreen() {
           <StatCard icon={<MessageCircle size={18} color={Colors.warning} strokeWidth={2} />} value={totals.chats} label="Чатів" />
         </View>
 
-        {/* Графік */}
         <View style={st.chartCard}>
           <Text style={st.chartTitle}>Перегляди vs лайки</Text>
           <View style={st.legendRow}>
@@ -104,7 +98,6 @@ export default function AnalyticsScreen() {
   );
 }
 
-// ─── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number | string; label: string }) {
   return (
     <View style={st.statCard}>
@@ -124,7 +117,6 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-// ─── SVG line chart (views + likes) ─────────────────────────────────────────────
 function LineChart({ data }: { data: DayPoint[] }) {
   const maxY = Math.max(1, ...data.map((d) => Math.max(d.views, d.likes)));
   const innerW = CHART_W - PAD * 2;
@@ -136,7 +128,6 @@ function LineChart({ data }: { data: DayPoint[] }) {
   const pathFor = (key: 'views' | 'likes') =>
     data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i)} ${yFor(d[key])}`).join(' ');
 
-  // горизонтальні сітки (3 лінії)
   const gridYs = [0, 0.5, 1].map((f) => PAD + innerH - innerH * f);
 
   return (
@@ -144,7 +135,6 @@ function LineChart({ data }: { data: DayPoint[] }) {
       {gridYs.map((y, i) => (
         <Line key={i} x1={PAD} y1={y} x2={CHART_W - PAD} y2={y} stroke={Colors.neutral[150]} strokeWidth={1} />
       ))}
-      {/* max label */}
       <SvgText x={4} y={PAD + 4} fontSize={10} fill={Colors.neutral[400]}>{maxY}</SvgText>
 
       <Path d={pathFor('views')} stroke={Colors.info} strokeWidth={2.5} fill="none" />
@@ -157,7 +147,6 @@ function LineChart({ data }: { data: DayPoint[] }) {
         <Circle key={`l${i}`} cx={xFor(i)} cy={yFor(d.likes)} r={3} fill={Colors.primary[500]} />
       ))}
 
-      {/* перша й остання дата на осі X */}
       {data.length > 0 && (
         <>
           <SvgText x={PAD} y={CHART_H - 6} fontSize={9} fill={Colors.neutral[400]}>
@@ -180,7 +169,10 @@ const st = StyleSheet.create({
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[3] },
   statCard: {
     width: (CHART_W + Spacing[4] * 2 - Spacing[3]) / 2 - Spacing[3] / 2,
-    backgroundColor: Colors.neutral[0], borderRadius: Radius.xl, padding: Spacing[4], ...Shadow.sm,
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius.xl,
+    padding: Spacing[4],
+    ...Shadow.sm,
   },
   statIcon: { marginBottom: Spacing[2] },
   statValue: { fontSize: FontSize['2xl'], fontWeight: FontWeight.extrabold, color: Colors.neutral[900] },
