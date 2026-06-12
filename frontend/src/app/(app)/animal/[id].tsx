@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Calendar,
-  CalendarDays, 
+  CalendarDays,
   Cat,
   Dog,
   Heart,
@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   Sparkles,
   Venus,
-  House
+  House,
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -54,19 +54,17 @@ const PHOTO_H = SCREEN_W * 1.05;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-/** One-shot fade + translateY entrance */
 function useFadeSlide(delay = 0, fromY = 20) {
   const opacity    = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(fromY)).current;
   const run = () =>
     Animated.parallel([
-      Animated.timing(opacity,    { toValue: 1, duration: Duration.slow,  delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
-      Animated.timing(translateY, { toValue: 0, duration: Duration.slow,  delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(opacity,    { toValue: 1, duration: Duration.slow, delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(translateY, { toValue: 0, duration: Duration.slow, delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
     ]).start();
   return { anim: { opacity, transform: [{ translateY }] }, run };
 }
 
-/** Spring pop for interactive elements */
 function useSpringPop() {
   const scale = useRef(new Animated.Value(1)).current;
   const pop = () =>
@@ -104,7 +102,7 @@ function Badge({
   );
 }
 
-// ─── Species icon map ────────────────────────────────────────────────────────
+// ─── Species icon map ─────────────────────────────────────────────────────────
 const SPECIES_ICON: Record<
   Species,
   ComponentType<{ size: number; color: string; strokeWidth?: number }>
@@ -137,50 +135,32 @@ function StatTile({
   );
 }
 
-// ─── Heart button (like/unlike) ──────────────────────────────────────────────
+// ─── Heart button ─────────────────────────────────────────────────────────────
 function HeartButton({ size = 44, darkMode = false }: { size?: number; darkMode?: boolean }) {
   const [liked, setLiked] = useState(false);
-
-  // scale — useNativeDriver: true → окремий Animated.View
-  const scale = useRef(new Animated.Value(1)).current;
-
-  // backgroundColor — useNativeDriver: false → окремий Animated.View
+  const scale  = useRef(new Animated.Value(1)).current;
   const bgAnim = useRef(new Animated.Value(0)).current;
 
   const toggle = () => {
     const next = !liked;
     setLiked(next);
-
     Animated.sequence([
       Animated.spring(scale, { toValue: 1.22, useNativeDriver: true, damping: 4, stiffness: 300 }),
       Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
     ]).start();
-
-    Animated.timing(bgAnim, {
-      toValue: next ? 1 : 0,
-      duration: Duration.normal,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(bgAnim, { toValue: next ? 1 : 0, duration: Duration.normal, useNativeDriver: false }).start();
   };
 
   const bg = bgAnim.interpolate({
     inputRange:  [0, 1],
     outputRange: darkMode
-      ? ['rgba(0,0,0,0.35)', 'rgba(239,68,68,0.55)']   // топ бар — темний фон
-      : ['#F5F5F4',          '#FEE2E2'],                 // звичайний — світлий фон
+      ? ['rgba(0,0,0,0.35)', 'rgba(239,68,68,0.55)']
+      : ['#F5F5F4',          '#FEE2E2'],
   });
 
   return (
     <Pressable onPress={toggle} hitSlop={8}>
-      {/* JS-driver шар — тільки backgroundColor */}
-      <Animated.View
-        style={{
-          width: size, height: size, borderRadius: size / 2,
-          alignItems: 'center', justifyContent: 'center',
-          backgroundColor: bg,
-        }}
-      >
-        {/* Native-driver шар — тільки scale */}
+      <Animated.View style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: bg }}>
         <Animated.View style={{ transform: [{ scale }] }}>
           <Heart
             size={size * 0.5}
@@ -194,7 +174,7 @@ function HeartButton({ size = 44, darkMode = false }: { size?: number; darkMode?
   );
 }
 
-// ─── Photo carousel ──────────────────────────────────────────────────────────
+// ─── Photo carousel ───────────────────────────────────────────────────────────
 function PhotoCarousel({ photos }: { photos: string[] }) {
   const [index, setIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -230,21 +210,12 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
         )}
       />
 
-      {/* dot indicators */}
       {photos.length > 1 && (
         <Animated.View
           style={{
-            position: 'absolute',
-            bottom: 18,
-            left: 0,
-            right: 0,
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 6,
-            opacity: fadeAnim,
-            // ensure it sits above FlatList on web
-            zIndex: 10,
+            position: 'absolute', bottom: 18, left: 0, right: 0,
+            flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+            gap: 6, opacity: fadeAnim, zIndex: 10,
           }}
           pointerEvents="none"
         >
@@ -252,8 +223,7 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
             <View
               key={i}
               style={{
-                height: 6,
-                borderRadius: 3,
+                height: 6, borderRadius: 3,
                 width: i === index ? 22 : 6,
                 backgroundColor: i === index ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
               }}
@@ -262,15 +232,13 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
         </Animated.View>
       )}
 
-      {/* photo count pill */}
       {photos.length > 1 && (
         <View
           style={{
             position: 'absolute', bottom: 42, right: 16,
             backgroundColor: 'rgba(0,0,0,0.45)',
             paddingHorizontal: 10, paddingVertical: 4,
-            borderRadius: Radius.full,
-            zIndex: 10,
+            borderRadius: Radius.full, zIndex: 10,
           }}
           pointerEvents="none"
         >
@@ -286,13 +254,7 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
 // ─── Section heading ──────────────────────────────────────────────────────────
 function SectionHeading({ label }: { label: string }) {
   return (
-    <Text
-      style={{
-        fontSize: 17, fontWeight: '700',
-        color: Colors.neutral[900],
-        marginBottom: Spacing[3],
-      }}
-    >
+    <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.neutral[900], marginBottom: Spacing[3] }}>
       {label}
     </Text>
   );
@@ -313,34 +275,20 @@ function ActionBtn({
   const scale = useRef(new Animated.Value(1)).current;
   const onIn  = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
   const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
-
   const isPrimary = variant === 'primary';
 
   return (
     <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut} style={{ flex: 1 }}>
       <Animated.View
         style={[
-          {
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-            gap: Spacing[2], height: 52, borderRadius: Radius.lg,
-            transform: [{ scale }],
-          },
+          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing[2], height: 52, borderRadius: Radius.lg, transform: [{ scale }] },
           isPrimary
             ? { backgroundColor: Colors.primary[500], ...Shadow.orange }
-            : {
-                backgroundColor: Colors.neutral[0],
-                borderWidth: 1.5, borderColor: Colors.neutral[200],
-                ...Shadow.sm,
-              },
+            : { backgroundColor: Colors.neutral[0], borderWidth: 1.5, borderColor: Colors.neutral[200], ...Shadow.sm },
         ]}
       >
         {icon}
-        <Text
-          style={{
-            fontSize: 14, fontWeight: '700',
-            color: isPrimary ? Colors.neutral[0] : Colors.neutral[700],
-          }}
-        >
+        <Text style={{ fontSize: 14, fontWeight: '700', color: isPrimary ? Colors.neutral[0] : Colors.neutral[700] }}>
           {label}
         </Text>
       </Animated.View>
@@ -360,12 +308,7 @@ function SkeletonBlock({ h, w = '100%', radius = 12 }: { h: number; w?: any; rad
     ).start();
   }, []);
   return (
-    <Animated.View
-      style={{
-        height: h, width: w, borderRadius: radius,
-        backgroundColor: Colors.neutral[200], opacity: anim,
-      }}
-    />
+    <Animated.View style={{ height: h, width: w, borderRadius: radius, backgroundColor: Colors.neutral[200], opacity: anim }} />
   );
 }
 
@@ -393,7 +336,6 @@ export default function AnimalDetailScreen() {
   const [loading,         setLoading]         = useState(true);
   const [donationVisible, setDonationVisible] = useState(false);
 
-  // section entrance animations
   const header  = useFadeSlide(0);
   const stats   = useFadeSlide(80);
   const about   = useFadeSlide(160);
@@ -405,39 +347,42 @@ export default function AnimalDetailScreen() {
       .getById(Number(id))
       .then(a => {
         setAnimal(a);
-        // trigger entrance chain
         setTimeout(() => {
           header.run(); stats.run(); about.run(); shelter.run(); actions.run();
         }, 50);
       })
-      // Без catch promise rejection (404 / мережа / NaN id) лишав би екран
-      // навічно на скелетоні, а стан "Animal not found" — недосяжним.
       .catch(() => setAnimal(null))
       .finally(() => setLoading(false));
   }, [id]);
 
+  // ── openChat — передає shelterName і animalName як params ─────────────────
   const openChat = async () => {
     if (!animal) return;
     const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
-    router.push(`/(app)/chat/${roomId}`);
+    router.push({
+      pathname: '/(app)/chat/[id]',
+      params: {
+        id: roomId,
+        shelterName: animal.shelterName,
+        animalName:  animal.name,
+      },
+    });
   };
 
   const openBooking = () => {
-  if (!animal) return;
-  router.push({
-    pathname: '/(app)/booking/[shelterId]',
-    params: {
-      shelterId:   String(animal.shelterId),
-      shelterName: animal.shelterName ?? '',
-      animalName:  animal.name,
-    },
-  });
-};
+    if (!animal) return;
+    router.push({
+      pathname: '/(app)/booking/[shelterId]',
+      params: {
+        shelterId:   String(animal.shelterId),
+        shelterName: animal.shelterName ?? '',
+        animalName:  animal.name,
+      },
+    });
+  };
 
-  // ── Loading ─────────────────────────────────────────────────────────────
   if (loading) return <LoadingSkeleton />;
 
-  // ── Not found ───────────────────────────────────────────────────────────
   if (!animal) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
@@ -448,7 +393,6 @@ export default function AnimalDetailScreen() {
 
   const photos = animal.photos?.length ? animal.photos : [animal.primaryPhotoUrl ?? ''];
 
-  // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
       <ScrollView showsVerticalScrollIndicator={false} bounces>
@@ -457,7 +401,6 @@ export default function AnimalDetailScreen() {
         <View>
           <PhotoCarousel photos={photos} />
 
-          {/* floating top bar — back + share + heart */}
           <SafeAreaView
             edges={['top']}
             style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
@@ -467,7 +410,6 @@ export default function AnimalDetailScreen() {
               className="flex-row items-center justify-between px-4 pt-2"
               pointerEvents="box-none"
             >
-              {/* back */}
               <Pressable
                 onPress={() => router.back()}
                 style={({ pressed }) => ({
@@ -480,7 +422,6 @@ export default function AnimalDetailScreen() {
               </Pressable>
 
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                {/* share */}
                 <Pressable
                   style={({ pressed }) => ({
                     width: 40, height: 40, borderRadius: 20,
@@ -490,7 +431,6 @@ export default function AnimalDetailScreen() {
                 >
                   <Share2 size={18} color="#fff" strokeWidth={2} />
                 </Pressable>
-                {/* heart — same 40x40 as share, dark bg to match top bar */}
                 <HeartButton size={40} darkMode />
               </View>
             </View>
@@ -501,24 +441,16 @@ export default function AnimalDetailScreen() {
         <View
           style={{
             backgroundColor: Colors.neutral[0],
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
+            borderTopLeftRadius: 28, borderTopRightRadius: 28,
             marginTop: -28,
-            paddingTop: Spacing[6],
-            paddingHorizontal: Spacing[5],
-            paddingBottom: Spacing[6],
+            paddingTop: Spacing[6], paddingHorizontal: Spacing[5], paddingBottom: Spacing[6],
           }}
         >
           {/* ── Name + species row ─────────────────────── */}
           <Animated.View style={header.anim}>
             <View className="flex-row items-start justify-between">
               <View style={{ flex: 1, gap: 4 }}>
-                <Text
-                  style={{
-                    fontSize: 30, fontWeight: '800',
-                    color: Colors.neutral[900], letterSpacing: -0.5,
-                  }}
-                >
+                <Text style={{ fontSize: 30, fontWeight: '800', color: Colors.neutral[900], letterSpacing: -0.5 }}>
                   {animal.name}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
@@ -537,7 +469,6 @@ export default function AnimalDetailScreen() {
                 </View>
               </View>
 
-              {/* age badge */}
               <View
                 style={{
                   backgroundColor: Colors.primary[50],
@@ -552,7 +483,6 @@ export default function AnimalDetailScreen() {
               </View>
             </View>
 
-            {/* badges row */}
             <View className="flex-row flex-wrap gap-2 mt-4">
               <Badge label={SIZE_LABEL[animal.size]} icon={<Ruler size={14} color={Colors.neutral[500]} strokeWidth={1.8} />} />
               {animal.isVaccinated && (
@@ -578,27 +508,21 @@ export default function AnimalDetailScreen() {
             />
             <StatTile
               icon={animal.gender === 'MALE'
-                ? <Mars   size={20} color={Colors.primary[500]} strokeWidth={1.8} />
-                : <Venus  size={20} color={Colors.primary[500]} strokeWidth={1.8} />
+                ? <Mars  size={20} color={Colors.primary[500]} strokeWidth={1.8} />
+                : <Venus size={20} color={Colors.primary[500]} strokeWidth={1.8} />
               }
               label="Gender"
               value={GENDER_LABEL[animal.gender]}
             />
           </Animated.View>
 
-          {/* ── Divider ───────────────────────────────── */}
           <View style={{ height: 1, backgroundColor: Colors.neutral[100], marginVertical: Spacing[6] }} />
 
           {/* ── About ─────────────────────────────────── */}
           {animal.description ? (
             <Animated.View style={about.anim}>
               <SectionHeading label="About me" />
-              <Text
-                style={{
-                  fontSize: 15, color: Colors.neutral[500],
-                  lineHeight: 24,
-                }}
-              >
+              <Text style={{ fontSize: 15, color: Colors.neutral[500], lineHeight: 24 }}>
                 {animal.description}
               </Text>
               <View style={{ height: 1, backgroundColor: Colors.neutral[100], marginVertical: Spacing[6] }} />
@@ -621,7 +545,6 @@ export default function AnimalDetailScreen() {
                 borderColor: Colors.neutral[150],
               })}
             >
-              {/* icon */}
               <View
                 style={{
                   width: 48, height: 48, borderRadius: 16,
@@ -644,12 +567,10 @@ export default function AnimalDetailScreen() {
                 </View>
               </View>
 
-              {/* chevron */}
               <Text style={{ fontSize: 18, color: Colors.neutral[300] }}>›</Text>
             </Pressable>
           </Animated.View>
 
-          {/* bottom spacing for the fixed bar */}
           <View style={{ height: 120 }} />
         </View>
       </ScrollView>
@@ -692,7 +613,8 @@ export default function AnimalDetailScreen() {
           </View>
         </SafeAreaView>
       </Animated.View>
-      {/* ── Donation Sheet ───────────────────────── */}
+
+      {/* ── Donation Sheet ───────────────────────────── */}
       {animal && (
         <DonationSheet
           visible={donationVisible}

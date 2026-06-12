@@ -54,17 +54,22 @@ export default function LikedScreen() {
 
   const listPaddingBottom = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_MARGIN_B + Spacing[4];
 
-  // Завантажуємо вподобані з сервера при відкритті вкладки
   useEffect(() => {
     loadLiked();
   }, []);
 
   const openChat = async (animal: Animal) => {
     const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
-    router.push(`/(app)/chat/${roomId}`);
+    router.push({
+      pathname: '/(app)/chat/[id]',
+      params: {
+        id:          String(roomId),
+        shelterName: animal.shelterName ?? '',
+        animalName:  animal.name,
+      },
+    });
   };
 
-  // Перший завантаження — показуємо великий спінер замість порожнього списку
   if (isLikedLoading && liked.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-stone-50" edges={['top']}>
@@ -111,7 +116,6 @@ export default function LikedScreen() {
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={[styles.listContent, { paddingBottom: listPaddingBottom }]}
         showsVerticalScrollIndicator={false}
-        // Pull-to-refresh синхронізує з бекендом
         refreshControl={
           <RefreshControl
             refreshing={isLikedLoading}
