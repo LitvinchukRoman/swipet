@@ -9,9 +9,12 @@ import {
   MessageCircle,
   Star,
 } from 'lucide-react-native';
+import { useEffect } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -42,18 +45,42 @@ const TAB_BAR_MARGIN_B = 12;
 //  Screen
 // ─────────────────────────────────────────────
 export default function LikedScreen() {
-  const liked  = useFeedStore((s) => s.liked);
-  const insets = useSafeAreaInsets();
+  const liked           = useFeedStore((s) => s.liked);
+  const loadLiked       = useFeedStore((s) => s.loadLiked);
+  const isLikedLoading  = useFeedStore((s) => s.isLikedLoading);
+  const insets          = useSafeAreaInsets();
 
-  // null = closed, Animal = open for that animal
   const [donationAnimal, setDonationAnimal] = useState<Animal | null>(null);
 
   const listPaddingBottom = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_MARGIN_B + Spacing[4];
+
+  // Завантажуємо вподобані з сервера при відкритті вкладки
+  useEffect(() => {
+    loadLiked();
+  }, []);
 
   const openChat = async (animal: Animal) => {
     const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
     router.push(`/(app)/chat/${roomId}`);
   };
+
+  // Перший завантаження — показуємо великий спінер замість порожнього списку
+  if (isLikedLoading && liked.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-stone-50" edges={['top']}>
+        <View className="flex-row items-end justify-between px-5 pb-3 pt-3">
+          <View>
+            <Text className="text-3xl font-extrabold tracking-tight text-stone-900">Favorites</Text>
+            <Text className="mt-0.5 text-sm text-stone-400">Animals you've connected with</Text>
+          </View>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing[3] }}>
+          <ActivityIndicator size="large" color={Colors.primary[500]} />
+          <Text style={{ color: Colors.neutral[400], fontSize: FontSize.base }}>Loading your favorites…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-stone-50" edges={['top']}>
@@ -82,11 +109,17 @@ export default function LikedScreen() {
       <FlatList
         data={liked}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: listPaddingBottom },
-        ]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: listPaddingBottom }]}
         showsVerticalScrollIndicator={false}
+        // Pull-to-refresh синхронізує з бекендом
+        refreshControl={
+          <RefreshControl
+            refreshing={isLikedLoading}
+            onRefresh={loadLiked}
+            tintColor={Colors.primary[500]}
+            colors={[Colors.primary[500]]}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <EmptyState
@@ -141,7 +174,6 @@ function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
         activeOpacity={0.88}
         style={styles.infoRow}
       >
-        {/* Photo + species badge */}
         <View style={styles.photoWrap}>
           <Image
             source={{ uri: animal.primaryPhotoUrl }}
@@ -154,16 +186,13 @@ function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
           </View>
         </View>
 
-        {/* Text info */}
         <View className="ml-4 flex-1">
           <Text className="text-lg font-bold text-stone-900" numberOfLines={1}>
             {animal.name}
           </Text>
-
           <Text className="mt-0.5 text-sm text-stone-500" numberOfLines={1}>
             {[animal.breed, formatAge(animal.ageMonths)].filter(Boolean).join(' · ')}
           </Text>
-
           <View className="mt-2 flex-row items-center gap-1">
             <Building2 size={12} color={Colors.neutral[400]} strokeWidth={1.8} />
             <Text className="flex-1 text-xs text-stone-400" numberOfLines={1}>
@@ -210,14 +239,16 @@ function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
           label="Foster"
           color={Colors.error}
           bgColor="rgba(239,68,68,0.08)"
-          onPress={() => router.push({
-            pathname: '/(app)/booking/[shelterId]',
-            params: {
-              shelterId:   String(animal.shelterId),
-              shelterName: animal.shelterName ?? '',
-              animalName:  animal.name,
-            },
-          })}
+          onPress={() =>
+            router.push({
+              pathname: '/(app)/booking/[shelterId]',
+              params: {
+                shelterId:   String(animal.shelterId),
+                shelterName: animal.shelterName ?? '',
+                animalName:  animal.name,
+              },
+            })
+          }
           showRightBorder
         />
         <ActionCell
@@ -244,28 +275,16 @@ interface ActionCellProps {
   showRightBorder?: boolean;
 }
 
-function ActionCell({
-  icon: Icon,
-  label,
-  color,
-  bgColor,
-  onPress,
-  showRightBorder,
-}: ActionCellProps) {
+function ActionCell({ icon: Icon, label, color, bgColor, onPress, showRightBorder }: ActionCellProps) {
   const scale = useSharedValue(1);
-
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   return (
     <Pressable
-      onPressIn={() => {
-        scale.value = withSpring(0.80, { damping: 14, stiffness: 340 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1.0, { damping: 14, stiffness: 340 });
-      }}
+      onPressIn={() => { scale.value = withSpring(0.80, { damping: 14, stiffness: 340 }); }}
+      onPressOut={() => { scale.value = withSpring(1.0,  { damping: 14, stiffness: 340 }); }}
       onPress={onPress}
       style={[styles.actionCell, showRightBorder && styles.actionCellBorder]}
     >
@@ -288,11 +307,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing[1],
     gap: Spacing[3],
   },
-  emptyWrap: {
-    marginTop: 48,
-  },
+  emptyWrap: { marginTop: 48 },
 
-  // ── Card
   card: {
     backgroundColor: Colors.neutral[0],
     borderRadius: Radius['2xl'],
@@ -304,11 +320,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing[4],
   },
-
-  // ── Photo
-  photoWrap: {
-    position: 'relative',
-  },
+  photoWrap: { position: 'relative' },
   photo: {
     width: 88,
     height: 88,
@@ -328,8 +340,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.neutral[150],
     ...Shadow.sm,
   },
-
-  // ── Action bar
   actionCell: {
     flex: 1,
     alignItems: 'center',

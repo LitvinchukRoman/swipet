@@ -100,7 +100,7 @@ export const feedService = {
     api.post<{ swipeId: number }>('/feed/swipe', { animalId, direction }).then((r) => r.data),
 
   /** Лайкнуті тварини. GET /feed/liked */
-  getLiked: (page = 1, limit = 20): Promise<Animal[]> =>
+  getLiked: (page = 1, limit = 100): Promise<Animal[]> =>
     api
       .get<AnimalDTO[]>('/feed/liked', { params: { page, limit } })
       .then((r) => r.data.map(mapAnimal)),
