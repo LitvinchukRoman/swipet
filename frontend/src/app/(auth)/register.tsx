@@ -1,9 +1,8 @@
 import { router } from 'expo-router';
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, User, PawPrint } from 'lucide-react-native';
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, User, PawPrint, CheckCircle, XCircle } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   KeyboardAvoidingView,
@@ -17,74 +16,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authService } from '@/services/auth';
+import { useAuthStore } from '@/store/auth';
 import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { analyzePassword, validatePassword, type Strength } from '@/lib/password';
 
 // ─── Password strength ───────────────────────────────────────────────────────
-// Strength analysis + the hard validation rule both live in `@/lib/password`,
-// which mirrors the backend contract so the two never diverge.
-
 const STRENGTH_CFG: Record<Strength, { label: string; color: string; width: number }> = {
-  empty:  { label: '',        color: Colors.neutral[200],    width: 0   },
-  weak:   { label: 'Weak',   color: Colors.strength.weak,   width: 0.2 },
-  fair:   { label: 'Fair',   color: Colors.strength.fair,   width: 0.5 },
-  good:   { label: 'Good',   color: Colors.strength.good,   width: 0.75},
-  strong: { label: 'Strong', color: Colors.strength.strong, width: 1   },
+  empty:  { label: '',        color: Colors.neutral[200],    width: 0    },
+  weak:   { label: 'Weak',   color: Colors.strength.weak,   width: 0.2  },
+  fair:   { label: 'Fair',   color: Colors.strength.fair,   width: 0.5  },
+  good:   { label: 'Good',   color: Colors.strength.good,   width: 0.75 },
+  strong: { label: 'Strong', color: Colors.strength.strong, width: 1    },
 };
 
-// Single animated progress-bar strength indicator
 function PasswordStrengthBar({ password }: { password: string }) {
   const { strength, hint } = analyzePassword(password);
   const cfg = STRENGTH_CFG[strength];
 
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress  = useRef(new Animated.Value(0)).current;
   const colorAnim = useRef(new Animated.Value(0)).current;
-
-  // map strength → numeric index for color interpolation
   const strengthIndex = { empty: 0, weak: 1, fair: 2, good: 3, strong: 4 }[strength];
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(progress, {
-        toValue: cfg.width,
-        useNativeDriver: false,
-        damping: 18,
-        stiffness: 120,
-      }),
-      Animated.timing(colorAnim, {
-        toValue: strengthIndex,
-        duration: Duration.normal,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.quad),
-      }),
+      Animated.spring(progress, { toValue: cfg.width, useNativeDriver: false, damping: 18, stiffness: 120 }),
+      Animated.timing(colorAnim, { toValue: strengthIndex, duration: Duration.normal, useNativeDriver: false, easing: Easing.out(Easing.quad) }),
     ]).start();
   }, [strength]);
 
   const animColor = colorAnim.interpolate({
     inputRange:  [0, 1, 2, 3, 4],
-    outputRange: [
-      Colors.neutral[200],
-      Colors.strength.weak,
-      Colors.strength.fair,
-      Colors.strength.good,
-      Colors.strength.strong,
-    ],
+    outputRange: [Colors.neutral[200], Colors.strength.weak, Colors.strength.fair, Colors.strength.good, Colors.strength.strong],
   });
 
   if (!password) return null;
 
   return (
     <View style={{ marginTop: Spacing[2], gap: Spacing[1] }}>
-      {/* track */}
-      <View
-        style={{
-          height: 5,
-          borderRadius: Radius.full,
-          backgroundColor: Colors.neutral[100],
-          overflow: 'hidden',
-        }}
-      >
-        {/* fill — width is percentage of track */}
+      <View style={{ height: 5, borderRadius: Radius.full, backgroundColor: Colors.neutral[100], overflow: 'hidden' }}>
         <Animated.View
           style={{
             height: '100%',
@@ -94,8 +63,6 @@ function PasswordStrengthBar({ password }: { password: string }) {
           }}
         />
       </View>
-
-      {/* label row */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Animated.Text style={{ fontSize: 11, fontWeight: '700', color: animColor }}>
           {cfg.label}
@@ -103,9 +70,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
         {hint ? (
           <Text style={{ fontSize: 11, color: Colors.neutral[400] }}>{hint}</Text>
         ) : strength === 'strong' ? (
-          <Text style={{ fontSize: 11, fontWeight: '600', color: Colors.strength.strong }}>
-            ✓ Great password
-          </Text>
+          <Text style={{ fontSize: 11, fontWeight: '600', color: Colors.strength.strong }}>✓ Great password</Text>
         ) : null}
       </View>
     </View>
@@ -159,7 +124,7 @@ function FloatingInput({
   showSecure?: boolean;
   onToggleSecure?: () => void;
   value: string;
-  matchOk?: boolean | null; // for confirm password
+  matchOk?: boolean | null;
 } & Omit<React.ComponentProps<typeof TextInput>, 'style'>) {
   const [focused, setFocused] = useState(false);
   const borderAnim = useRef(new Animated.Value(0)).current;
@@ -184,16 +149,10 @@ function FloatingInput({
     }).start();
   }, [value, focused]);
 
-  const animBorder = borderAnim.interpolate({
-    inputRange:  [0, 1],
-    outputRange: [error ? Colors.error : Colors.neutral[200], Colors.primary[500]],
-  });
+  const animBorder = borderAnim.interpolate({ inputRange: [0, 1], outputRange: [error ? Colors.error : Colors.neutral[200], Colors.primary[500]] });
   const labelTop   = labelAnim.interpolate({ inputRange: [0, 1], outputRange: [17, 6] });
   const labelSize  = labelAnim.interpolate({ inputRange: [0, 1], outputRange: [15, 11] });
-  const labelColor = labelAnim.interpolate({
-    inputRange:  [0, 1],
-    outputRange: [Colors.neutral[400], error ? Colors.error : Colors.primary[500]],
-  });
+  const labelColor = labelAnim.interpolate({ inputRange: [0, 1], outputRange: [Colors.neutral[400], error ? Colors.error : Colors.primary[500]] });
 
   return (
     <View>
@@ -208,12 +167,8 @@ function FloatingInput({
       >
         <Animated.Text
           style={{
-            position: 'absolute',
-            left: 48,
-            top: labelTop,
-            fontSize: labelSize,
-            color: labelColor,
-            fontWeight: '500',
+            position: 'absolute', left: 48, top: labelTop,
+            fontSize: labelSize, color: labelColor, fontWeight: '500',
             ...(Platform.OS === 'web' ? { pointerEvents: 'none' } : {}),
           }}
         >
@@ -224,7 +179,6 @@ function FloatingInput({
           <View style={{ marginRight: Spacing[3], opacity: focused || value ? 1 : 0.4 }}>
             {icon}
           </View>
-
           <TextInput
             {...props}
             value={value}
@@ -233,21 +187,18 @@ function FloatingInput({
             secureTextEntry={secureToggle && !showSecure}
             placeholderTextColor="transparent"
             style={{
-              flex: 1,
-              fontSize: 15,
-              color: Colors.neutral[900],
-              paddingTop: 18,
-              paddingBottom: 4,
+              flex: 1, fontSize: 15, color: Colors.neutral[900],
+              paddingTop: 18, paddingBottom: 4,
               ...(Platform.OS === 'web'
                 ? ({ outline: 'none', outlineWidth: 0, boxShadow: 'none', backgroundColor: 'transparent' } as any)
                 : {}),
             }}
           />
-
-          {/* right slot — eye or match indicator */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing[2] }}>
             {matchOk !== null && matchOk !== undefined && value.length > 0 && (
-              <Text style={{ fontSize: 13 }}>{matchOk ? '✅' : '❌'}</Text>
+              matchOk
+                ? <CheckCircle size={18} color={Colors.success} strokeWidth={2} />
+                : <XCircle     size={18} color={Colors.error}   strokeWidth={2} />
             )}
             {secureToggle && (
               <Pressable onPress={onToggleSecure} hitSlop={12}>
@@ -260,7 +211,6 @@ function FloatingInput({
           </View>
         </View>
       </Animated.View>
-
       {error ? (
         <Text style={{ fontSize: 12, color: Colors.error, marginTop: 4, marginLeft: Spacing[2] }}>
           {error}
@@ -272,6 +222,8 @@ function FloatingInput({
 
 // ─── RegisterScreen ──────────────────────────────────────────────────────────
 export default function RegisterScreen() {
+  const { setAuth } = useAuthStore();
+
   const [fullName,   setFullName]   = useState('');
   const [email,      setEmail]      = useState('');
   const [password,   setPassword]   = useState('');
@@ -295,13 +247,13 @@ export default function RegisterScreen() {
   // ── Validate ──────────────────────────────────────────────────────────────
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!fullName.trim())                              e.fullName   = 'Full name is required';
-    if (!email.trim())                                 e.email      = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email.trim()))       e.email      = 'Enter a valid email';
+    if (!fullName.trim())                        e.fullName   = 'Full name is required';
+    if (!email.trim())                           e.email      = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(email.trim())) e.email      = 'Enter a valid email';
     const pwError = validatePassword(password);
-    if (pwError)                                       e.password   = pwError;
-    if (password !== confirmPwd)                       e.confirmPwd = 'Passwords do not match';
-    if (!agreed)                                       e.agreed     = 'Please accept the terms';
+    if (pwError)                                 e.password   = pwError;
+    if (password !== confirmPwd)                 e.confirmPwd = 'Passwords do not match';
+    if (!agreed)                                 e.agreed     = 'Please accept the terms';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -311,11 +263,18 @@ export default function RegisterScreen() {
     if (!validate()) { shake(); return; }
     setLoading(true);
     try {
+      // 1. Реєстрація
       await authService.register({ fullName: fullName.trim(), email: email.trim(), password });
-      // Прямий редірект — Alert на react-native-web не виконує onPress.
-      router.replace('/(auth)/login');
+
+      // 2. Auto-login — бекенд не повертає токени при register,
+      //    тому одразу логінимося з тими самими кредами
+      const data = await authService.login({ email: email.trim(), password });
+      await setAuth(data.user, data.accessToken, data.refreshToken);
+
+      // 3. Прямий redirect на feed — без проміжних екранів
+      router.replace('/(app)/(tabs)');
     } catch (err: any) {
-      // Інлайн-помилка під email (Alert на web не показується).
+      // Інлайн-помилка під email — Alert на web не завжди показується
       const msg = err?.response?.data?.message ?? 'Registration failed. Please try again.';
       setErrors({ email: msg });
       shake();
@@ -336,7 +295,7 @@ export default function RegisterScreen() {
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            alignItems: 'center',         // ← центрування на веб
+            alignItems: 'center',
             paddingVertical: Spacing[8],
             paddingHorizontal: Spacing[6],
           }}
@@ -351,8 +310,7 @@ export default function RegisterScreen() {
                 onPress={() => router.back()}
                 hitSlop={12}
                 style={({ pressed }) => ({
-                  width: 40, height: 40,
-                  borderRadius: Radius.sm,
+                  width: 40, height: 40, borderRadius: Radius.sm,
                   backgroundColor: pressed ? Colors.neutral[100] : Colors.neutral[50],
                   alignItems: 'center', justifyContent: 'center',
                   alignSelf: 'flex-start',
@@ -386,7 +344,6 @@ export default function RegisterScreen() {
 
             {/* ── Form ───────────────────────────────────── */}
             <Animated.View style={[{ gap: Spacing[4] }, anim1, shakeStyle]}>
-
               <FloatingInput
                 label="Full name"
                 value={fullName}
@@ -396,7 +353,6 @@ export default function RegisterScreen() {
                 error={errors.fullName}
                 icon={<User size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
               />
-
               <FloatingInput
                 label="Email address"
                 value={email}
@@ -407,8 +363,6 @@ export default function RegisterScreen() {
                 error={errors.email}
                 icon={<Mail size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
               />
-
-              {/* Password + progress bar */}
               <View style={{ gap: Spacing[1] }}>
                 <FloatingInput
                   label="Password"
@@ -423,8 +377,6 @@ export default function RegisterScreen() {
                 />
                 <PasswordStrengthBar password={password} />
               </View>
-
-              {/* Confirm password */}
               <FloatingInput
                 label="Confirm password"
                 value={confirmPwd}
@@ -445,15 +397,12 @@ export default function RegisterScreen() {
                 onPress={() => { setAgreed(v => !v); clearErr('agreed'); }}
                 style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing[3] }}
               >
-                {/* custom checkbox */}
                 <View
                   style={{
-                    width: 20, height: 20, borderRadius: 6,
-                    borderWidth: 1.5,
+                    width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
                     borderColor: errors.agreed ? Colors.error : agreed ? Colors.primary[500] : Colors.neutral[300],
                     backgroundColor: agreed ? Colors.primary[500] : Colors.neutral[0],
-                    alignItems: 'center', justifyContent: 'center',
-                    marginTop: 1,
+                    alignItems: 'center', justifyContent: 'center', marginTop: 1,
                   }}
                 >
                   {agreed && (
@@ -476,10 +425,7 @@ export default function RegisterScreen() {
 
             {/* ── CTA ────────────────────────────────────── */}
             <Animated.View style={[{ marginTop: Spacing[6] }, anim3]}>
-              <Pressable
-                onPress={handleRegister}
-                disabled={loading}
-              >
+              <Pressable onPress={handleRegister} disabled={loading}>
                 {({ pressed }) => (
                   <View
                     style={{
@@ -487,8 +433,7 @@ export default function RegisterScreen() {
                       backgroundColor: pressed ? Colors.primary[600] : Colors.primary[500],
                       borderRadius: Radius.lg,
                       height: Layout.buttonHeight,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      alignItems: 'center', justifyContent: 'center',
                       opacity: loading ? 0.75 : 1,
                       shadowOpacity: pressed ? 0.15 : 0.30,
                       transform: [{ scale: pressed ? 0.985 : 1 }],
