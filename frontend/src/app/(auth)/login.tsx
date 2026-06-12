@@ -394,33 +394,6 @@ export default function LoginScreen() {
               <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[200] }} />
             </Animated.View>
 
-            {/* ── Demo ─────────────────────────────────── */}
-            <Animated.View style={[{ width: '100%' }, anim2]}>
-              <Pressable onPress={demoLogin}>
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      borderWidth: 1.5,
-                      borderColor: Colors.neutral[200],
-                      borderRadius: Radius.lg,
-                      height: Layout.buttonHeight,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: pressed ? Colors.neutral[50] : Colors.neutral[0],
-                      transform: [{ scale: pressed ? 0.985 : 1 }],
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing[2] }}>
-                      <Text style={{ fontSize: 16 }}>👀</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.neutral[500] }}>
-                        Continue in demo mode
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </Pressable>
-            </Animated.View>
-
             {/* ── Footer ───────────────────────────────── */}
             <Animated.View style={[{ alignItems: 'center', marginTop: Spacing[8] }, anim3]}>
               <Pressable onPress={() => router.push('/(auth)/register')}>
