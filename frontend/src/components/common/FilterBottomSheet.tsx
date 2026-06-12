@@ -31,8 +31,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { AnimalSize, FeedFilters, Species } from '@/types/models';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const SCREEN_H = Dimensions.get('window').height;
+// ─── Constants ────────────────────────────────
+const SCREEN_H   = Dimensions.get('window').height;
+const THUMB_SIZE = 28;
+const MIN_KM     = 5;
+const MAX_KM     = 500;
 
 export const SPECIES_ICON: Record<
   Species,
@@ -64,13 +67,6 @@ const AGE_OPTIONS: { value: number; label: string }[] = [
   { value: 99, label: 'Any age'       },
 ];
 
-const RADIUS_OPTIONS: { value: number; label: string }[] = [
-  { value: 10,  label: '10 km'  },
-  { value: 25,  label: '25 km'  },
-  { value: 50,  label: '50 km'  },
-  { value: 100, label: '100 km' },
-];
-
 export interface FilterBottomSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -78,7 +74,7 @@ export interface FilterBottomSheetProps {
   onApply: (filters: FeedFilters) => void;
 }
 
-// ─── Reanimated Chip ──────────────────────────────────────────────────────────
+// ─── Chip ─────────────────────────────────────
 function ChipRow<T extends string | number>({
   options,
   selected,
@@ -95,11 +91,7 @@ function ChipRow<T extends string | number>({
       {options.map((opt) => {
         const active = selected === opt;
         return (
-          <Chip
-            key={String(opt)}
-            active={active}
-            onPress={() => onSelect(active ? undefined : opt)}
-          >
+          <Chip key={String(opt)} active={active} onPress={() => onSelect(active ? undefined : opt)}>
             {renderLabel(opt)}
           </Chip>
         );
@@ -108,7 +100,6 @@ function ChipRow<T extends string | number>({
   );
 }
 
-// Окремий компонент для кнопки, щоб анімувати колір через Reanimated
 function Chip({ active, onPress, children }: { active: boolean; onPress: () => void; children: React.ReactNode }) {
   const progress = useSharedValue(active ? 1 : 0);
 
@@ -117,51 +108,136 @@ function Chip({ active, onPress, children }: { active: boolean; onPress: () => v
   }, [active, progress]);
 
   const animStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      progress.value,
-      [0, 1],
-      [Colors.neutral[100], Colors.primary[500]]
-    ),
+    backgroundColor: interpolateColor(progress.value, [0, 1], [Colors.neutral[100], Colors.primary[500]]),
   }));
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
-      <Animated.View
-        style={[
-          {
-            borderRadius: Radius.full,
-            paddingHorizontal: Spacing[4],
-            paddingVertical: Spacing[2],
-            ...(active ? Shadow.orange : {}),
-          },
-          animStyle,
-        ]}
-      >
+      <Animated.View style={[{ borderRadius: Radius.full, paddingHorizontal: Spacing[4], paddingVertical: Spacing[2], ...(active ? Shadow.orange : {}) }, animStyle]}>
         {children}
       </Animated.View>
     </Pressable>
   );
 }
 
-// ─── Section heading ──────────────────────────────────────────────────────────
+// ─── SectionLabel ────────────────────────────
 function SectionLabel({ label }: { label: string }) {
   return (
-    <Text
-      style={{
-        fontSize: 13,
-        fontWeight: '700',
-        color: Colors.neutral[500],
-        letterSpacing: 0.4,
-        textTransform: 'uppercase',
-        marginBottom: Spacing[3],
-      }}
-    >
+    <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.neutral[500], letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: Spacing[3] }}>
       {label}
     </Text>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── RadiusSlider ─────────────────────────────
+function RadiusSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const trackWidthSV = useSharedValue(0);
+  const thumbX       = useSharedValue(0);
+  const thumbScale   = useSharedValue(1);
+  const startX       = useSharedValue(0);
+  const isDraggingSV = useSharedValue(false);
+
+  // Sync thumb when value changes from outside (e.g. reset)
+  useEffect(() => {
+    if (!isDraggingSV.value && trackWidthSV.value > 0) {
+      thumbX.value = withSpring(
+        ((value - MIN_KM) / (MAX_KM - MIN_KM)) * trackWidthSV.value,
+        { damping: 20, stiffness: 200 },
+      );
+    }
+  }, [value]);
+
+  const pan = Gesture.Pan()
+    .hitSlop({ top: 14, bottom: 14, left: 14, right: 14 })
+    .onBegin(() => {
+      startX.value      = thumbX.value;
+      isDraggingSV.value = true;
+      thumbScale.value  = withSpring(1.22, { damping: 10, stiffness: 300 });
+    })
+    .onUpdate((e) => {
+      const tw   = trackWidthSV.value;
+      if (tw <= 0) return;
+      const newX = Math.max(0, Math.min(startX.value + e.translationX, tw));
+      thumbX.value = newX;
+      const ratio = newX / tw;
+      const v     = Math.round(MIN_KM + ratio * (MAX_KM - MIN_KM));
+      runOnJS(onChange)(v);
+    })
+    .onEnd(() => {
+      isDraggingSV.value = false;
+      thumbScale.value   = withSpring(1.0, { damping: 12, stiffness: 300 });
+    })
+    .onFinalize(() => {
+      isDraggingSV.value = false;
+      thumbScale.value   = withSpring(1.0, { damping: 12, stiffness: 300 });
+    });
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, thumbX.value),
+  }));
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: thumbX.value - THUMB_SIZE / 2 },
+      { scale: thumbScale.value },
+    ],
+  }));
+
+  // Badge floats above the thumb, clamped inside track bounds
+  const badgeStyle = useAnimatedStyle(() => {
+    const badgeW = 64;
+    const half   = badgeW / 2;
+    const tw     = trackWidthSV.value;
+    const x      = tw > 0
+      ? Math.max(half, Math.min(thumbX.value, tw - half)) - half
+      : 0;
+    return { transform: [{ translateX: x }] };
+  });
+
+  return (
+    <View style={sliderStyles.wrapper}>
+      {/* Floating value badge */}
+      <Animated.View style={[sliderStyles.badgeWrap, badgeStyle]}>
+        <View style={sliderStyles.badge}>
+          <Text style={sliderStyles.badgeText}>{value} km</Text>
+        </View>
+        {/* Triangle pointer */}
+        <View style={sliderStyles.badgeTip} />
+      </Animated.View>
+
+      {/* Track + Thumb */}
+      <View
+        style={sliderStyles.trackArea}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          if (w > 0) {
+            trackWidthSV.value = w;
+            thumbX.value = ((value - MIN_KM) / (MAX_KM - MIN_KM)) * w;
+          }
+        }}
+      >
+        {/* Track background */}
+        <View style={sliderStyles.track}>
+          {/* Filled portion */}
+          <Animated.View style={[sliderStyles.fill, fillStyle]} />
+        </View>
+
+        {/* Draggable thumb */}
+        <GestureDetector gesture={pan}>
+          <Animated.View style={[sliderStyles.thumb, thumbStyle]} />
+        </GestureDetector>
+      </View>
+
+      {/* Min / Max labels */}
+      <View style={sliderStyles.rangeRow}>
+        <Text style={sliderStyles.rangeLabel}>{MIN_KM} km</Text>
+        <Text style={sliderStyles.rangeLabel}>{MAX_KM} km</Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── Main component ───────────────────────────
 export function FilterBottomSheet({
   visible,
   onClose,
@@ -175,8 +251,9 @@ export function FilterBottomSheet({
   const [ageMax,   setAgeMax]   = useState<number | undefined>(initialFilters.ageMax);
   const [radiusKm, setRadiusKm] = useState<number>(initialFilters.radiusKm ?? 50);
 
-  // ── Анімація та стан відображення ──
-  // Ми зберігаємо власний стан isMounted, щоб Modal не зник до завершення анімації виходу
+  // resetKey forces slider remount so thumb snaps back cleanly
+  const [resetKey, setResetKey] = useState(0);
+
   const [isMounted, setIsMounted] = useState(visible);
   const translateY = useSharedValue(SCREEN_H);
   const backdropOp = useSharedValue(0);
@@ -188,46 +265,30 @@ export function FilterBottomSheet({
       setSize(initialFilters.size);
       setAgeMax(initialFilters.ageMax);
       setRadiusKm(initialFilters.radiusKm ?? 50);
-
-      // Плавно виїжджає
       translateY.value = withSpring(0, { damping: 22, stiffness: 200 });
       backdropOp.value = withTiming(1, { duration: 250 });
     } else if (isMounted) {
-      // Плавно ховається перед тим як закрити Modal
       translateY.value = withTiming(SCREEN_H, { duration: 250 });
       backdropOp.value = withTiming(0, { duration: 250 }, (finished) => {
-        if (finished) {
-          runOnJS(setIsMounted)(false);
-        }
+        if (finished) runOnJS(setIsMounted)(false);
       });
     }
   }, [visible]);
 
-  // ── Жест свайпу вниз ──
   const pan = Gesture.Pan()
     .onChange((e) => {
-      // Дозволяємо тягнути тільки вниз (позитивні значення)
-      if (e.translationY > 0) {
-        translateY.value = e.translationY;
-      }
+      if (e.translationY > 0) translateY.value = e.translationY;
     })
     .onEnd((e) => {
-      // Якщо свайпнули достатньо сильно або далеко — закриваємо
       if (e.translationY > 150 || e.velocityY > 500) {
         runOnJS(onClose)();
       } else {
-        // Інакше повертаємо на місце з ефектом пружини
         translateY.value = withSpring(0, { damping: 22, stiffness: 200 });
       }
     });
 
-  const animSheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const animBackdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOp.value,
-  }));
+  const animSheetStyle   = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  const animBackdropStyle = useAnimatedStyle(() => ({ opacity: backdropOp.value }));
 
   const activeCount = [species, size, ageMax].filter(Boolean).length + (radiusKm !== 50 ? 1 : 0);
 
@@ -236,6 +297,7 @@ export function FilterBottomSheet({
     setSize(undefined);
     setAgeMax(undefined);
     setRadiusKm(50);
+    setResetKey((k) => k + 1); // remount slider → thumb snaps to 50
   };
 
   const handleApply = () => {
@@ -248,82 +310,45 @@ export function FilterBottomSheet({
   return (
     <Modal transparent animationType="none" visible={isMounted} onRequestClose={onClose} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {/* ── ФОН (Backdrop) ───────────────────────── */}
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: Colors.overlay.dark },
-            animBackdropStyle,
-          ]}
-        >
+        {/* Backdrop */}
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.overlay.dark }, animBackdropStyle]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
 
-        {/* ── САМА ПАНЕЛЬ (Bottom Sheet) ───────────── */}
+        {/* Sheet */}
         <Animated.View
           style={[
             {
-              position: 'absolute',
-              bottom: 0, left: 0, right: 0,
+              position: 'absolute', bottom: 0, left: 0, right: 0,
               backgroundColor: Colors.neutral[0],
               borderTopLeftRadius: Radius['2xl'],
               borderTopRightRadius: Radius['2xl'],
               paddingBottom: insets.bottom + Spacing[4],
-              maxHeight: SCREEN_H * 0.9, // Щоб не вилазило за екран
+              maxHeight: SCREEN_H * 0.9,
               ...Shadow.md,
             },
             animSheetStyle,
           ]}
         >
-          {/* Обгортаємо ТІЛЬКИ шапку у жест. Це дозволить скролити список нижче без конфліктів */}
+          {/* Header — draggable area */}
           <GestureDetector gesture={pan}>
-            <View style={{ backgroundColor: 'transparent' }}>
-              {/* drag handle */}
+            <View>
               <View style={{ alignItems: 'center', paddingTop: Spacing[3] }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.neutral[200] }} />
               </View>
-
-              {/* header */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: Spacing[6],
-                  paddingTop: Spacing[4],
-                  paddingBottom: Spacing[5],
-                }}
-              >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing[6], paddingTop: Spacing[4], paddingBottom: Spacing[5] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing[2] }}>
                   <SlidersHorizontal size={18} color={Colors.neutral[900]} strokeWidth={2} />
-                  <Text style={{ fontSize: 20, fontWeight: '800', color: Colors.neutral[900], letterSpacing: -0.3 }}>
-                    Filters
-                  </Text>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: Colors.neutral[900], letterSpacing: -0.3 }}>Filters</Text>
                   {activeCount > 0 && (
-                    <View
-                      style={{
-                        backgroundColor: Colors.primary[500],
-                        borderRadius: Radius.full,
-                        width: 20, height: 20,
-                        alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ color: Colors.neutral[0], fontSize: 11, fontWeight: '700' }}>
-                        {activeCount}
-                      </Text>
+                    <View style={{ backgroundColor: Colors.primary[500], borderRadius: Radius.full, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: Colors.neutral[0], fontSize: 11, fontWeight: '700' }}>{activeCount}</Text>
                     </View>
                   )}
                 </View>
-
-                {/* reset */}
                 <Pressable
                   onPress={handleReset}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row', alignItems: 'center', gap: 4,
-                    paddingHorizontal: Spacing[3], paddingVertical: Spacing[1],
-                    borderRadius: Radius.md,
-                    backgroundColor: pressed ? Colors.neutral[100] : 'transparent',
-                  })}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: Spacing[3], paddingVertical: Spacing[1], borderRadius: Radius.md, backgroundColor: pressed ? Colors.neutral[100] : 'transparent' })}
                 >
                   <RotateCcw size={14} color={Colors.neutral[400]} strokeWidth={2} />
                   <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.neutral[400] }}>Reset</Text>
@@ -332,11 +357,8 @@ export function FilterBottomSheet({
             </View>
           </GestureDetector>
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: Spacing[6], gap: Spacing[6] }}
-          >
-            {/* ── Species ────────────────────────── */}
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing[6], gap: Spacing[6] }}>
+            {/* ── Species ── */}
             <View>
               <SectionLabel label="Animal type" />
               <ChipRow
@@ -345,23 +367,20 @@ export function FilterBottomSheet({
                 onSelect={setSpecies}
                 renderLabel={(val) => {
                   const opt = SPECIES_OPTIONS.find((o) => o.value === val)!;
-                  const IconComponent = SPECIES_ICON[val as Species];
-                  const isActive = species === val;
-                  const contentColor = isActive ? Colors.neutral[0] : Colors.neutral[700];
-
+                  const Icon = SPECIES_ICON[val as Species];
+                  const active = species === val;
+                  const color = active ? Colors.neutral[0] : Colors.neutral[700];
                   return (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <IconComponent size={16} color={contentColor} strokeWidth={2.5} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: contentColor }}>
-                        {opt.label}
-                      </Text>
+                      <Icon size={16} color={color} strokeWidth={2.5} />
+                      <Text style={{ fontSize: 13, fontWeight: '600', color }}>{opt.label}</Text>
                     </View>
                   );
                 }}
               />
             </View>
 
-            {/* ── Size ───────────────────────────── */}
+            {/* ── Size ── */}
             <View>
               <SectionLabel label="Size" />
               <View style={{ gap: Spacing[2] }}>
@@ -372,11 +391,8 @@ export function FilterBottomSheet({
                       key={opt.value}
                       onPress={() => setSize(active ? undefined : opt.value)}
                       style={({ pressed }) => ({
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: Spacing[4],
-                        borderRadius: Radius.lg,
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                        padding: Spacing[4], borderRadius: Radius.lg,
                         borderWidth: 1.5,
                         borderColor: active ? Colors.primary[500] : Colors.neutral[150],
                         backgroundColor: active ? Colors.primary[50] : Colors.neutral[0],
@@ -385,21 +401,11 @@ export function FilterBottomSheet({
                       })}
                     >
                       <View>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: active ? Colors.primary[600] : Colors.neutral[800] }}>
-                          {opt.label}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: active ? Colors.primary[400] : Colors.neutral[400], marginTop: 1 }}>
-                          {opt.sub}
-                        </Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: active ? Colors.primary[600] : Colors.neutral[800] }}>{opt.label}</Text>
+                        <Text style={{ fontSize: 12, color: active ? Colors.primary[400] : Colors.neutral[400], marginTop: 1 }}>{opt.sub}</Text>
                       </View>
                       {active && (
-                        <View
-                          style={{
-                            width: 20, height: 20, borderRadius: 10,
-                            backgroundColor: Colors.primary[500],
-                            alignItems: 'center', justifyContent: 'center',
-                          }}
-                        >
+                        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.primary[500], alignItems: 'center', justifyContent: 'center' }}>
                           <Text style={{ color: Colors.neutral[0], fontSize: 11, fontWeight: '700' }}>✓</Text>
                         </View>
                       )}
@@ -409,7 +415,7 @@ export function FilterBottomSheet({
               </View>
             </View>
 
-            {/* ── Age ────────────────────────────── */}
+            {/* ── Age ── */}
             <View>
               <SectionLabel label="Max age" />
               <ChipRow
@@ -419,43 +425,27 @@ export function FilterBottomSheet({
                 renderLabel={(val) => {
                   const opt = AGE_OPTIONS.find((o) => o.value === val)!;
                   return (
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: ageMax === val ? Colors.neutral[0] : Colors.neutral[700] }}>
-                      {opt.label}
-                    </Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: ageMax === val ? Colors.neutral[0] : Colors.neutral[700] }}>{opt.label}</Text>
                   );
                 }}
               />
             </View>
 
-            {/* ── Radius ─────────────────────────── */}
+            {/* ── Radius slider ── */}
             <View style={{ marginBottom: Spacing[3] }}>
               <SectionLabel label="Search radius" />
-              <ChipRow
-                options={RADIUS_OPTIONS.map((o) => o.value)}
-                selected={radiusKm}
-                onSelect={(v) => setRadiusKm(v ?? 50)}
-                renderLabel={(val) => {
-                  const opt = RADIUS_OPTIONS.find((o) => o.value === val)!;
-                  return (
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: radiusKm === val ? Colors.neutral[0] : Colors.neutral[700] }}>
-                      {opt.label}
-                    </Text>
-                  );
-                }}
-              />
+              <RadiusSlider key={resetKey} value={radiusKm} onChange={setRadiusKm} />
             </View>
           </ScrollView>
 
-          {/* ── Apply CTA ──────────────────────────── */}
+          {/* Apply CTA */}
           <View style={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[4] }}>
             <Pressable
               onPress={handleApply}
               style={({ pressed }) => ({
                 backgroundColor: pressed ? Colors.primary[600] : Colors.primary[500],
-                borderRadius: Radius.lg,
-                height: 56,
-                alignItems: 'center',
-                justifyContent: 'center',
+                borderRadius: Radius.lg, height: 56,
+                alignItems: 'center', justifyContent: 'center',
                 ...Shadow.orange,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               })}
@@ -470,3 +460,89 @@ export function FilterBottomSheet({
     </Modal>
   );
 }
+
+// ─── Slider styles ────────────────────────────
+const sliderStyles = StyleSheet.create({
+  wrapper: {
+    paddingTop: 44, // room for the floating badge
+  },
+
+  // Badge that follows the thumb
+  badgeWrap: {
+    position: 'absolute',
+    top: 0,
+    width: 64,
+    alignItems: 'center',
+  },
+  badge: {
+    backgroundColor: Colors.neutral[900],
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing[2],
+    paddingVertical: 5,
+    minWidth: 64,
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: Colors.neutral[0],
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  // Downward-pointing triangle
+  badgeTip: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: Colors.neutral[900],
+    marginTop: -1,
+  },
+
+  // Track
+  trackArea: {
+    height: THUMB_SIZE,
+    justifyContent: 'center',
+  },
+  track: {
+    height: 6,
+    backgroundColor: Colors.neutral[150],
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    backgroundColor: Colors.primary[500],
+    borderRadius: 3,
+  },
+
+  // Thumb
+  thumb: {
+    position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    backgroundColor: Colors.neutral[0],
+    borderWidth: 2.5,
+    borderColor: Colors.primary[500],
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  // Labels
+  rangeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: Spacing[3],
+  },
+  rangeLabel: {
+    color: Colors.neutral[400],
+    fontSize: 12,
+    fontWeight: '500',
+  },
+});
