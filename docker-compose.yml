@@ -85,10 +85,13 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+      # Через nginx (/media/ → minio) аби уникнути mixed-content на https-вебі.
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://localhost/media}
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
+      # Єдиний публічний origin для Stripe redirect (той самий, де залогінений юзер).
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://localhost}
     expose:
       - "8080"
     ports:
