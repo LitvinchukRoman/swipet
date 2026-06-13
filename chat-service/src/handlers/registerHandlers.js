@@ -53,6 +53,9 @@ export function registerHandlers(io, socket, { rooms, log }) {
   socket.on('send_message', async (payload) => {
     const roomId = payload?.roomId;
     const content = typeof payload?.content === 'string' ? payload.content.trim() : '';
+    // Опційний клієнтський id — щоб відправник точно зматчив свій optimistic bubble
+    // (а не за content, який збігається у двох однакових повідомленнях підряд).
+    const clientMessageId = typeof payload?.clientMessageId === 'string' ? payload.clientMessageId : undefined;
 
     if (roomId == null) return emitError(socket, 'roomId is required');
     if (!content) return emitError(socket, 'Message is empty');
@@ -66,7 +69,9 @@ export function registerHandlers(io, socket, { rooms, log }) {
     try {
       // Збереження через backend (єдине джерело правди), потім розсилка всім у кімнаті
       const saved = await coreApi.saveMessage(roomId, token, { senderId: userId, content });
-      io.to(roomName(roomId)).emit('new_message', saved);
+      // clientMessageId не зберігається в БД — лише прокидаємо у broadcast.
+      // Інші клієнти його ігнорують (у них немає pending з таким id).
+      io.to(roomName(roomId)).emit('new_message', { ...saved, clientMessageId });
       log.debug({ userId, roomId, messageId: saved.id }, 'new_message');
     } catch (err) {
       log.error({ err: err.message, userId, roomId }, 'send_message failed');
