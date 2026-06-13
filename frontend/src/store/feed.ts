@@ -96,7 +96,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
           if (s.isPrefetching || s.isLoading || s.feedEpoch !== epoch) return;
           set({ isPrefetching: true });
           feedService
-            .getFeed(s.coords!, s.filters)
+            .getFeed(s.coords!, s.filters, s.cards.map((c) => c.id))
             .then((newCards) => {
               // Фільтр/фід змінився під час prefetch — відкидаємо старі картки.
               if (get().feedEpoch !== epoch) {

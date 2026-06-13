@@ -80,8 +80,8 @@ function mapAnimal(d: AnimalDTO): Animal {
 }
 
 export const feedService = {
-  /** Стрічка карток. GET /feed?lat&lng&radiusKm&species&size&ageMax&limit */
-  getFeed: (coords: FeedCoords, filters?: FeedFilters): Promise<Animal[]> =>
+  /** Стрічка карток. GET /feed?lat&lng&radiusKm&species&size&ageMax&excludeIds&limit */
+  getFeed: (coords: FeedCoords, filters?: FeedFilters, excludeIds?: number[]): Promise<Animal[]> =>
     api
       .get<FeedAnimalDTO[]>('/feed', {
         params: {
@@ -92,6 +92,8 @@ export const feedService = {
           size: filters?.size,
           // фільтр приходить у роках → бекенд чекає місяці
           ageMax: filters?.ageMax != null ? filters.ageMax * 12 : undefined,
+          excludeIds: excludeIds?.length ? excludeIds.join(',') : undefined,
+          limit: 100,
         },
       })
       .then((r) => r.data.map(mapFeedAnimal)),

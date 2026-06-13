@@ -21,11 +21,11 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
                    a.primary_photo_url AS primaryPhotoUrl, 
                    s.id AS shelterId,
                    s.name AS shelterName,
-                   (6371 * acos(
+                   (6371 * acos( LEAST(GREATEST(
                       cos(radians(:lat)) * cos(radians(s.location_lat)) *
                       cos(radians(s.location_lng) - radians(:lng)) +
                       sin(radians(:lat)) * sin(radians(s.location_lat))
-                   )) AS distanceKm
+                   , -1.0), 1.0) )) AS distanceKm
             FROM animals a
             JOIN shelters s ON a.shelter_id = s.id
             WHERE a.status = 'AVAILABLE'
@@ -36,11 +36,12 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
                   SELECT 1 FROM swipes sw 
                   WHERE sw.animal_id = a.id AND sw.user_id = :userId
               )
-              AND (6371 * acos(
+              AND a.id NOT IN (:excludeIds)
+              AND (6371 * acos( LEAST(GREATEST(
                       cos(radians(:lat)) * cos(radians(s.location_lat)) *
                       cos(radians(s.location_lng) - radians(:lng)) +
                       sin(radians(:lat)) * sin(radians(s.location_lat))
-                   )) <= :radiusKm
+                   , -1.0), 1.0) )) <= :radiusKm
             ORDER BY distanceKm ASC
             LIMIT :limit
             """, nativeQuery = true)
@@ -52,6 +53,7 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
             @Param("species") String species,
             @Param("size") String size,
             @Param("ageMax") Integer ageMax,
+            @Param("excludeIds") List<Long> excludeIds,
             @Param("limit") Integer limit
     );
 

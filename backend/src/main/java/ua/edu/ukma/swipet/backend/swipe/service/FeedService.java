@@ -22,16 +22,17 @@ public class FeedService {
     @Transactional(readOnly = true)
     public List<FeedAnimalResponse> getFeed(
             Long userId, Double lat, Double lng, Double radiusKm, 
-            String species, String size, Integer ageMax, Integer limit) {
+            String species, String size, Integer ageMax, List<Long> excludeIds, Integer limit) {
         
         // Встановлюємо дефолтні значення, якщо клієнт їх не передав.
         // limit клампимо в [1..100]: негативний LIMIT валить SQL (500), а
         // надто великий — захист від важких запитів.
         double searchRadius = radiusKm != null && radiusKm > 0 ? radiusKm : 50.0;
         int fetchLimit = (limit != null && limit > 0) ? Math.min(limit, 100) : 20;
+        List<Long> ignoreIds = (excludeIds != null && !excludeIds.isEmpty()) ? excludeIds : List.of(-1L);
 
         return animalRepository.findFeedAnimals(
-                userId, lat, lng, searchRadius, species, size, ageMax, fetchLimit
+                userId, lat, lng, searchRadius, species, size, ageMax, ignoreIds, fetchLimit
         ).stream()
          .map(proj -> new FeedAnimalResponse(
                  proj.getId(),

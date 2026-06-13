@@ -34,10 +34,11 @@ public class FeedController {
             @RequestParam(required = false) String species,
             @RequestParam(required = false) String size,
             @RequestParam(required = false) Integer ageMax,
+            @RequestParam(required = false) List<Long> excludeIds,
             @RequestParam(required = false) Integer limit) {
 
         List<FeedAnimalResponse> feed =
-                feedService.getFeed(currentUser.id(), lat, lng, radiusKm, species, size, ageMax, limit);
+                feedService.getFeed(currentUser.id(), lat, lng, radiusKm, species, size, ageMax, excludeIds, limit);
 
         // AL-005: кожна показана картка = перегляд
         analyticsService.incrementViews(feed.stream().map(FeedAnimalResponse::id).toList());
