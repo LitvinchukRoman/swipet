@@ -128,15 +128,24 @@ variable "hosted_zone_name" {
 }
 
 variable "backend_subdomain" {
-  description = "Subdomain for the Spring backend API."
+  description = "Subdomain for the Spring backend API. Lives at api.swipet.naukma.com so the apex swipet.naukma.com is free for the static frontend (CloudFront)."
   type        = string
-  default     = "swipet"
+  default     = "api.swipet"
 }
 
 variable "chat_subdomain" {
   description = "Subdomain for the Node chat service."
   type        = string
   default     = "chat.swipet"
+}
+
+variable "frontend_subdomain" {
+  description = <<-EOT
+    Subdomain for the static Expo web app served via CloudFront. Takes the apex
+    swipet.naukma.com; the backend moved to api.swipet.naukma.com to free it.
+  EOT
+  type        = string
+  default     = "swipet"
 }
 
 # ----------------------------- CI / CD (GitHub OIDC) ------------------------

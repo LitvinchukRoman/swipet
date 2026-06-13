@@ -12,8 +12,9 @@ locals {
   backend_image = "${var.dockerhub_username}/swipet-backend:${var.image_tag}"
   chat_image    = "${var.dockerhub_username}/swipet-chat-service:${var.image_tag}"
 
-  backend_fqdn = "${var.backend_subdomain}.${var.hosted_zone_name}"
-  chat_fqdn    = "${var.chat_subdomain}.${var.hosted_zone_name}"
+  backend_fqdn  = "${var.backend_subdomain}.${var.hosted_zone_name}"
+  chat_fqdn     = "${var.chat_subdomain}.${var.hosted_zone_name}"
+  frontend_fqdn = "${var.frontend_subdomain}.${var.hosted_zone_name}"
 
   # Use the operator-provided wildcard cert when both files are given;
   # otherwise Caddy obtains certs automatically via ACME.

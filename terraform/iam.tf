@@ -148,6 +148,29 @@ data "aws_iam_policy_document" "github_deploy" {
     actions   = ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations"]
     resources = ["*"]
   }
+
+  # Frontend deploy: sync the exported web bundle into the private S3 origin.
+  statement {
+    sid       = "FrontendS3List"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.frontend.arn]
+  }
+
+  statement {
+    sid       = "FrontendS3Objects"
+    effect    = "Allow"
+    actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.frontend.arn}/*"]
+  }
+
+  # Bust the CloudFront edge cache after each deploy.
+  statement {
+    sid       = "FrontendCloudFrontInvalidate"
+    effect    = "Allow"
+    actions   = ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"]
+    resources = [aws_cloudfront_distribution.frontend.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "github_deploy" {

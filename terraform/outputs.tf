@@ -45,6 +45,27 @@ output "github_deploy_role_arn" {
   value       = aws_iam_role.github_deploy.arn
 }
 
+# ----------------------------- Frontend (S3 + CloudFront) -------------------
+output "frontend_s3_bucket" {
+  description = "GitHub Actions variable FRONTEND_S3_BUCKET (aws s3 sync target)."
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "cloudfront_distribution_id" {
+  description = "GitHub Actions variable CLOUDFRONT_DISTRIBUTION_ID (cache invalidation)."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "frontend_url" {
+  description = "Public HTTPS URL of the static Expo web app."
+  value       = "https://${local.frontend_fqdn}"
+}
+
+output "cloudfront_domain_name" {
+  description = "Raw CloudFront domain (use before DNS propagates)."
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
 output "ssh_private_key_ssm_param" {
   description = "Read the EC2 private key: aws ssm get-parameter --name <this> --with-decryption"
   value       = aws_ssm_parameter.ssh_private_key.name

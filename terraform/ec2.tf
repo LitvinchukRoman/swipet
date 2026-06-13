@@ -50,6 +50,20 @@ resource "aws_instance" "app" {
 
   tags = { Name = "${local.name}-app" }
 
+  lifecycle {
+    # `data.aws_ami.al2023` tracks the LATEST AL2023 image, which drifts every
+    # time AWS publishes a new one and would force-replace this box. Replacement
+    # would wipe the on-host Postgres data (DB runs as a container on the EBS
+    # root) AND change the instance id that backend CI's SSM_INSTANCE_ID points
+    # at. Pin to whatever AMI the box already runs.
+    #
+    # user_data is ignored for the same reason: changing backend_fqdn/chat_fqdn
+    # (Caddyfile) must NOT rebuild the box. The template still renders the new
+    # hostnames, so a *deliberate* future rebuild is correct; the currently
+    # running box is reconfigured live via SSM (Caddy reload) instead.
+    ignore_changes = [ami, user_data]
+  }
+
   # Secrets must exist before the box boots and reads them.
   depends_on = [
     aws_ssm_parameter.db_password,

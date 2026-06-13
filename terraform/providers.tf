@@ -9,3 +9,19 @@ provider "aws" {
     }
   }
 }
+
+# CloudFront only accepts ACM certificates issued in us-east-1, regardless of
+# where the rest of the stack lives. This alias is used solely for the frontend
+# distribution's TLS cert.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = var.project
+      Environment = var.environment
+      ManagedBy   = "terraform"
+    }
+  }
+}
