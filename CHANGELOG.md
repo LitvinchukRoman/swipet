@@ -106,17 +106,22 @@
 
 ---
 
-## Потрібні ENV (prod)
+## ENV у проді (прокинуто в інфру)
 
-Жодна зі змін НЕ додала нових env-змінних. Але `.env.example` був не синхронізований —
-для бекенду в проді обовʼязково мають бути присутні (вони вже зчитуються в `docker-compose.yml`):
+Бекенд-код нових env не вводив, але прод-флоу оплати був неповний. Виправлено:
 
-| ENV | Призначення |
-| --- | --- |
-| `STRIPE_API_KEY` | секретний ключ Stripe (`sk_live_…`) |
-| `STRIPE_WEBHOOK_SECRET` | підпис вебхука (`whsec_…`) |
-| `APP_PUBLIC_URL` | публічний origin для Stripe success/cancel redirect (напр. `https://swipet.app`) |
+| ENV | Звідки у проді | Стан |
+| --- | --- | --- |
+| `STRIPE_API_KEY` | SSM `/<proj>/<env>/stripe_api_key` → user_data → `.env` → compose | було; **задати реальний `sk_live_…`** через tf var `stripe_api_key` |
+| `STRIPE_WEBHOOK_SECRET` | SSM `/<proj>/<env>/stripe_webhook_secret` → user_data → `.env` → compose | було; **задати реальний `whsec_…`** через tf var `stripe_webhook_secret` |
+| `APP_PUBLIC_URL` | `https://${frontend_fqdn}` → user_data → `.env` → compose | **ДОДАНО** (`ec2.tf`, `templates/user_data.sh.tftpl`, `files/docker-compose.prod.yml`) |
 
-GitHub Actions (вже використовуються, перевірити що задані):
-`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (secrets); `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`,
-`SSM_INSTANCE_ID` (vars).
+Локально ці три змінні присутні в `.env.example` та `docker-compose.yml`.
+
+> ⚠️ Жива EC2 має `ignore_changes = [user_data]` — зміни user_data/compose НЕ
+> переналаштовують бокс автоматично. Щоб підхопити `APP_PUBLIC_URL` на чинному
+> інстансі: оновити `/opt/swipet/docker-compose.yml` + `/opt/swipet/.env` на хості
+> (через SSM) і `docker compose up -d backend`, або зробити свідомий rebuild боксу.
+
+GitHub Actions (перевірити що задані): `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
+(secrets); `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `SSM_INSTANCE_ID` (vars).

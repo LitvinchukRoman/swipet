@@ -128,9 +128,9 @@ variable "hosted_zone_name" {
 }
 
 variable "backend_subdomain" {
-  description = "Subdomain for the Spring backend API. Lives at api.swipet.naukma.com so the apex swipet.naukma.com is free for the static frontend (CloudFront)."
+  description = "Subdomain for the Spring backend API. Lives at swipet-api.naukma.com so the apex swipet.naukma.com is free for the static frontend (CloudFront)."
   type        = string
-  default     = "api.swipet"
+  default     = "swipet-api"
 }
 
 variable "chat_subdomain" {

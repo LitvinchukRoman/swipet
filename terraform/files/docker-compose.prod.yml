@@ -55,6 +55,9 @@ services:
       MINIO_AUTO_CREATE_BUCKET: "false"
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      # Public web origin for Stripe success/cancel redirect (same origin the user
+      # is logged in on) — otherwise verify-session loses the session after payment.
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL}
       FRONTEND_URL: ${FRONTEND_URL}
     ports:
       - "8080:8080"

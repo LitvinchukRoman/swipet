@@ -181,7 +181,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 # swipet.naukma.com -> CloudFront distribution (alias A/AAAA).
 #
 # This apex previously pointed at the EC2 EIP (backend). The backend record now
-# moves to api.swipet.naukma.com, so we take over swipet.naukma.com here:
+# moves to swipet-api.naukma.com, so we take over swipet.naukma.com here:
 #   - depends_on forces the backend record to be repointed FIRST, so the old
 #     A->EIP for swipet.naukma.com is gone before we claim the name.
 #   - allow_overwrite lets us UPSERT the alias even if a stale record lingers.

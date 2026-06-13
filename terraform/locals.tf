@@ -9,8 +9,12 @@ locals {
 
   # Docker Hub image references. CI pushes <user>/swipet-backend and
   # <user>/swipet-chat-service; the box pulls the same names.
-  backend_image = "${var.dockerhub_username}/swipet-backend:${var.image_tag}"
-  chat_image    = "${var.dockerhub_username}/swipet-chat-service:${var.image_tag}"
+  # lower(): Docker Hub repo namespaces are ALWAYS lowercase. Without this a
+  # mixed-case var (e.g. "LitvinchukRoman", same as the GitHub handle) produces
+  # an invalid reference and the box silently boots without the backend.
+  dockerhub_namespace = lower(var.dockerhub_username)
+  backend_image       = "${local.dockerhub_namespace}/swipet-backend:${var.image_tag}"
+  chat_image          = "${local.dockerhub_namespace}/swipet-chat-service:${var.image_tag}"
 
   backend_fqdn  = "${var.backend_subdomain}.${var.hosted_zone_name}"
   chat_fqdn     = "${var.chat_subdomain}.${var.hosted_zone_name}"

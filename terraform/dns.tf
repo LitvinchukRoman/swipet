@@ -11,7 +11,7 @@ data "aws_route53_zone" "this" {
   private_zone = false
 }
 
-# swipet.naukma.com      -> Spring backend API  (:8080)
+# swipet-api.naukma.com  -> Spring backend API  (:8080)
 resource "aws_route53_record" "backend" {
   zone_id = data.aws_route53_zone.this.zone_id
   name    = local.backend_fqdn

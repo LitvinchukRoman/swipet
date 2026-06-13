@@ -61,6 +61,7 @@ MINIO_ACCESS_KEY=$S3_ACCESS_KEY
 MINIO_SECRET_KEY=$S3_SECRET_KEY
 STRIPE_API_KEY=$STRIPE_API_KEY
 STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET
+APP_PUBLIC_URL=${app_public_url}
 FRONTEND_URL=${frontend_url}
 ENV
 chmod 600 /opt/swipet/.env
@@ -132,9 +133,27 @@ systemctl enable caddy
 systemctl restart caddy
 
 # --- pull and start (images are public; no Docker Hub login needed) --------
-# Non-fatal: a bad image name/tag must not abort bootstrap and leave Caddy down.
+# Non-fatal: a bad image name/tag must not abort bootstrap and leave Caddy down,
+# but we DO retry (the :latest tag may still be publishing on a fresh deploy)
+# and log the resolved image names + final state so failures aren't silent.
 cd /opt/swipet
-docker compose pull || echo "[swipet] WARN: docker compose pull failed — check image names/tags"
-docker compose up -d || echo "[swipet] WARN: docker compose up failed"
+echo "[swipet] images: BACKEND=${backend_image} CHAT=${chat_image}"
+
+pull_ok=""
+for attempt in 1 2 3 4 5; do
+  if docker compose pull; then
+    pull_ok="yes"
+    break
+  fi
+  echo "[swipet] WARN: docker compose pull failed (attempt $attempt/5) — retrying in 20s"
+  sleep 20
+done
+[ -n "$pull_ok" ] || echo "[swipet] ERROR: image pull failed after retries — check that ${backend_image} / ${chat_image} exist and are public"
+
+docker compose up -d || echo "[swipet] ERROR: docker compose up failed"
+
+# Surface the real state into the bootstrap log for debugging.
+sleep 5
+docker compose ps || true
 
 echo "[swipet] bootstrap finished $(date -u)"
