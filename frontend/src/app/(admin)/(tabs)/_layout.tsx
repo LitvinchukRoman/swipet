@@ -4,10 +4,10 @@ import { LayoutDashboard, Shield, Store, Users } from 'lucide-react-native';
 import { FloatingTabBar, type TabConfig } from '@/components/navigation/FloatingTabBar';
 
 const TABS: TabConfig[] = [
-  { name: 'index', label: 'Огляд', Icon: LayoutDashboard },
-  { name: 'shelters', label: 'Притулки', Icon: Store },
-  { name: 'users', label: 'Юзери', Icon: Users },
-  { name: 'profile', label: 'Профіль', Icon: Shield },
+  { name: 'index', label: 'Overview', Icon: LayoutDashboard },
+  { name: 'shelters', label: 'Shelters', Icon: Store },
+  { name: 'users', label: 'Users', Icon: Users },
+  { name: 'profile', label: 'Profile', Icon: Shield },
 ];
 
 export default function AdminTabsLayout() {
@@ -16,10 +16,10 @@ export default function AdminTabsLayout() {
       tabBar={(props) => <FloatingTabBar {...props} tabs={TABS} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Огляд' }} />
-      <Tabs.Screen name="shelters" options={{ title: 'Притулки' }} />
-      <Tabs.Screen name="users" options={{ title: 'Юзери' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Профіль' }} />
+      <Tabs.Screen name="index" options={{ title: 'Overview' }} />
+      <Tabs.Screen name="shelters" options={{ title: 'Shelters' }} />
+      <Tabs.Screen name="users" options={{ title: 'Users' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

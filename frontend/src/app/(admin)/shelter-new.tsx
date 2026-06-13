@@ -29,17 +29,17 @@ export default function AdminShelterNewScreen() {
   const submit = async () => {
     setError(null);
     if (!adminEmail.trim() || !name.trim() || !address.trim() || !city.trim()) {
-      setError('Заповніть email адміна, назву, адресу та місто.');
+      setError('Fill in admin email, name, address and city.');
       return;
     }
     if (!/\S+@\S+\.\S+/.test(adminEmail.trim())) {
-      setError('Невірний формат email адміна.');
+      setError('Invalid admin email format.');
       return;
     }
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-      setError('Координати мають бути числами (напр. 50.4501 та 30.5234).');
+      setError('Coordinates must be numbers (e.g. 50.4501 and 30.5234).');
       return;
     }
 
@@ -56,13 +56,13 @@ export default function AdminShelterNewScreen() {
         phone: phone.trim() || undefined,
         websiteUrl: websiteUrl.trim() || undefined,
       });
-      notify('Готово', `Притулок створено. ${adminEmail.trim()} тепер адміністратор притулку.`);
+      notify('Done', `Shelter created. ${adminEmail.trim()} is now the shelter administrator.`);
       router.back();
     } catch (err: any) {
       const msg =
         err?.response?.data?.violations?.[0]?.message ??
         err?.response?.data?.message ??
-        'Не вдалося створити притулок.';
+        "Couldn't create the shelter.";
       setError(msg);
     } finally {
       setSaving(false);
@@ -75,11 +75,12 @@ export default function AdminShelterNewScreen() {
         <View style={st.hintCard}>
           <Mail size={16} color={Colors.primary[600]} strokeWidth={2} />
           <Text style={st.hintText}>
-            Користувач із цим email стане адміністратором притулку. Деталі профілю (опис, лого, контакти) він заповнить сам.
+            The user with this email becomes the shelter administrator. They will fill in the profile details
+            (description, logo, contacts) themselves.
           </Text>
         </View>
 
-        <Field label="Email адміна притулку">
+        <Field label="Shelter admin email">
           <TextInput
             value={adminEmail}
             onChangeText={setAdminEmail}
@@ -91,42 +92,42 @@ export default function AdminShelterNewScreen() {
           />
         </Field>
 
-        <Field label="Назва притулку">
-          <TextInput value={name} onChangeText={setName} placeholder="Напр. Сіріус" placeholderTextColor={Colors.neutral[300]} style={st.input} />
+        <Field label="Shelter name">
+          <TextInput value={name} onChangeText={setName} placeholder="e.g. Sirius" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Опис (необов'язково)">
-          <TextInput value={description} onChangeText={setDescription} placeholder="Коротко про притулок…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
+        <Field label="Description (optional)">
+          <TextInput value={description} onChangeText={setDescription} placeholder="A short description of the shelter…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
         </Field>
 
-        <Field label="Адреса">
-          <TextInput value={address} onChangeText={setAddress} placeholder="вул. Молодіжна 1" placeholderTextColor={Colors.neutral[300]} style={st.input} />
+        <Field label="Address">
+          <TextInput value={address} onChangeText={setAddress} placeholder="e.g. 1 Main St" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Місто">
-          <TextInput value={city} onChangeText={setCity} placeholder="Київ" placeholderTextColor={Colors.neutral[300]} style={st.input} />
+        <Field label="City">
+          <TextInput value={city} onChangeText={setCity} placeholder="Kyiv" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Телефон (необов'язково)">
+        <Field label="Phone (optional)">
           <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+380…" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Сайт (необов'язково)">
+        <Field label="Website (optional)">
           <TextInput value={websiteUrl} onChangeText={setWebsiteUrl} autoCapitalize="none" keyboardType="url" placeholder="https://…" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
         <View style={st.coordsRow}>
-          <Field label="Широта (lat)" flex>
+          <Field label="Latitude (lat)" flex>
             <TextInput value={lat} onChangeText={setLat} keyboardType="numbers-and-punctuation" style={st.input} />
           </Field>
-          <Field label="Довгота (lng)" flex>
+          <Field label="Longitude (lng)" flex>
             <TextInput value={lng} onChangeText={setLng} keyboardType="numbers-and-punctuation" style={st.input} />
           </Field>
         </View>
 
         {error ? <Text style={st.error}>{error}</Text> : null}
 
-        <Button label="Створити притулок" onPress={submit} loading={saving} />
+        <Button label="Create shelter" onPress={submit} loading={saving} />
       </ScrollView>
     </SafeAreaView>
   );

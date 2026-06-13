@@ -28,7 +28,7 @@ export default function AdminSheltersScreen() {
     try {
       setShelters(await adminService.getShelters());
     } catch {
-      // лишаємо як є — нижче EmptyState
+      // keep list — EmptyState below
     } finally {
       setLoading(false);
     }
@@ -47,19 +47,19 @@ export default function AdminSheltersScreen() {
   };
 
   const toggleVerify = async (shelter: AdminShelter, next: boolean) => {
-    // оптимістично
+    // optimistic
     setShelters((prev) => prev.map((s) => (s.id === shelter.id ? { ...s, isVerified: next } : s)));
     try {
       await adminService.verifyShelter(shelter.id, next);
     } catch {
       setShelters((prev) => prev.map((s) => (s.id === shelter.id ? { ...s, isVerified: !next } : s)));
-      notify('Помилка', 'Не вдалося змінити статус верифікації');
+      notify('Error', "Couldn't change verification status");
     }
   };
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <Text style={s.title}>Притулки</Text>
+      <Text style={s.title}>Shelters</Text>
 
       {loading ? (
         <View style={s.center}>
@@ -73,7 +73,7 @@ export default function AdminSheltersScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[500]} />}
           ListEmptyComponent={
             <View style={{ marginTop: Spacing[16] }}>
-              <EmptyState title="Притулків ще немає" subtitle={'Створи перший притулок\nі признач йому адміністратора'} />
+              <EmptyState title="No shelters yet" subtitle={'Create the first shelter\nand assign it an administrator'} />
             </View>
           }
           renderItem={({ item, index }) => (
@@ -102,7 +102,7 @@ function ShelterRow({ shelter, onToggle }: { shelter: AdminShelter; onToggle: (n
           {shelter.name}
         </Text>
         <Text style={s.meta} numberOfLines={1}>
-          📍 {shelter.city} · адмін #{shelter.adminUserId}
+          📍 {shelter.city} · admin #{shelter.adminUserId}
         </Text>
         <View style={[s.badge, shelter.isVerified ? s.badgeOk : s.badgePending]}>
           {shelter.isVerified ? (
@@ -111,7 +111,7 @@ function ShelterRow({ shelter, onToggle }: { shelter: AdminShelter; onToggle: (n
             <Clock size={12} color="#A16207" strokeWidth={2.2} />
           )}
           <Text style={[s.badgeText, { color: shelter.isVerified ? '#15803D' : '#A16207' }]}>
-            {shelter.isVerified ? 'Верифіковано' : 'На перевірці'}
+            {shelter.isVerified ? 'Verified' : 'Pending review'}
           </Text>
         </View>
       </View>

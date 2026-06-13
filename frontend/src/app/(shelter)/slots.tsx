@@ -14,7 +14,7 @@ import { useShelterStore } from '@/store/shelter';
 
 const DURATIONS = [30, 60, 90, 120];
 
-/** Локальний ISO "YYYY-MM-DDTHH:MM:00" без зсуву таймзони. */
+/** Local ISO "YYYY-MM-DDTHH:MM:00" without a timezone offset. */
 function toLocalIso(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
@@ -59,16 +59,16 @@ export default function SlotsScreen() {
   const create = async () => {
     if (!shelterId) return;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      notify('Помилка', 'Дата у форматі РРРР-ММ-ДД');
+      notify('Error', 'Date in YYYY-MM-DD format');
       return;
     }
     if (!/^\d{2}:\d{2}$/.test(time)) {
-      notify('Помилка', 'Час у форматі ГГ:ХХ');
+      notify('Error', 'Time in HH:MM format');
       return;
     }
     const maxGuests = parseInt(guests, 10);
     if (Number.isNaN(maxGuests) || maxGuests < 1) {
-      notify('Помилка', 'Мінімум 1 гість');
+      notify('Error', 'At least 1 spot');
       return;
     }
 
@@ -76,7 +76,7 @@ export default function SlotsScreen() {
     const [hh, mm] = time.split(':').map(Number);
     const start = new Date(y, m - 1, d, hh, mm);
     if (start.getTime() <= Date.now()) {
-      notify('Помилка', 'Слот має бути в майбутньому');
+      notify('Error', 'Slot must be in the future');
       return;
     }
     const end = new Date(start.getTime() + duration * 60_000);
@@ -90,7 +90,7 @@ export default function SlotsScreen() {
       });
       await load();
     } catch (err: any) {
-      notify('Помилка', err?.response?.data?.message ?? 'Не вдалося створити слот');
+      notify('Error', err?.response?.data?.message ?? "Couldn't create the slot");
     } finally {
       setCreating(false);
     }
@@ -98,7 +98,7 @@ export default function SlotsScreen() {
 
   return (
     <SafeAreaView style={st.safe} edges={['bottom']}>
-      <Stack.Screen options={{ title: 'Слоти візитів' }} />
+      <Stack.Screen options={{ title: 'Visit Slots' }} />
 
       <FlatList
         data={slots}
@@ -108,36 +108,36 @@ export default function SlotsScreen() {
           <View style={st.formCard}>
             <View style={st.formHeader}>
               <CalendarPlus size={18} color={Colors.primary[600]} strokeWidth={2} />
-              <Text style={st.formTitle}>Новий слот</Text>
+              <Text style={st.formTitle}>New slot</Text>
             </View>
 
             <View style={st.formRow}>
-              <Field label="Дата" flex={2}>
+              <Field label="Date" flex={2}>
                 <TextInput value={date} onChangeText={setDate} placeholder="2025-06-10" placeholderTextColor={Colors.neutral[300]} style={st.input} autoCapitalize="none" />
               </Field>
-              <Field label="Час" flex={1}>
+              <Field label="Time" flex={1}>
                 <TextInput value={time} onChangeText={setTime} placeholder="10:00" placeholderTextColor={Colors.neutral[300]} style={st.input} />
               </Field>
             </View>
 
             <View style={st.formRow}>
-              <Field label="Тривалість" flex={1}>
+              <Field label="Duration" flex={1}>
                 <View style={st.pickerBox}>
                   <Picker selectedValue={duration} onValueChange={(v) => setDuration(Number(v))} style={st.picker}>
                     {DURATIONS.map((d) => (
-                      <Picker.Item key={d} label={`${d} хв`} value={d} />
+                      <Picker.Item key={d} label={`${d} min`} value={d} />
                     ))}
                   </Picker>
                 </View>
               </Field>
-              <Field label="Місць" flex={1}>
+              <Field label="Spots" flex={1}>
                 <TextInput value={guests} onChangeText={setGuests} keyboardType="number-pad" style={st.input} />
               </Field>
             </View>
 
-            <Button label="Створити слот" onPress={create} loading={creating} size="md" />
+            <Button label="Create slot" onPress={create} loading={creating} size="md" />
 
-            <Text style={st.listHeading}>Наявні слоти</Text>
+            <Text style={st.listHeading}>Existing slots</Text>
           </View>
         }
         ListEmptyComponent={
@@ -146,8 +146,8 @@ export default function SlotsScreen() {
           ) : (
             <View style={{ marginTop: Spacing[6] }}>
               <EmptyState
-                title={error ? 'Не вдалося завантажити' : 'Слотів ще немає'}
-                subtitle={error ? "Перевір зʼєднання" : 'Створи перший слот для візитів волонтерів'}
+                title={error ? "Couldn't load" : 'No slots yet'}
+                subtitle={error ? 'Check your connection' : 'Create the first slot for volunteer visits'}
               />
             </View>
           )
@@ -170,12 +170,12 @@ function SlotRow({ slot }: { slot: Slot }) {
         <Text style={st.slotTime}>{formatSlotTime(slot.startTime, slot.endTime)}</Text>
         <View style={st.slotMeta}>
           <Users size={13} color={Colors.neutral[500]} strokeWidth={2} />
-          <Text style={st.slotMetaText}>{slot.bookedCount}/{slot.maxGuests} заброньовано</Text>
+          <Text style={st.slotMetaText}>{slot.bookedCount}/{slot.maxGuests} booked</Text>
         </View>
       </View>
       <View style={[st.badge, full ? st.badgeFull : st.badgeFree]}>
         <Text style={[st.badgeText, { color: full ? Colors.neutral[500] : '#15803D' }]}>
-          {full ? 'Зайнято' : `${left} вільн.`}
+          {full ? 'Full' : `${left} left`}
         </Text>
       </View>
     </View>

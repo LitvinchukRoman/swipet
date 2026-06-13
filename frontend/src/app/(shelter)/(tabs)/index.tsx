@@ -58,8 +58,8 @@ export default function ShelterDashboardScreen() {
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
           <EmptyState
-            title="Притулок ще не призначено"
-            subtitle={'Профіль притулку створює адміністратор.\nЗверніться до нього, щоб отримати доступ.'}
+            title="No shelter assigned yet"
+            subtitle={'An administrator creates the shelter profile.\nContact them to get access.'}
           />
         </View>
       </SafeAreaView>
@@ -70,9 +70,9 @@ export default function ShelterDashboardScreen() {
     return (
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
-          <EmptyState title="Не вдалося завантажити" subtitle="Перевір зʼєднання з сервером" />
+          <EmptyState title="Couldn't load" subtitle="Check your connection to the server" />
           <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
-            <Text style={s.retryText}>Спробувати ще раз</Text>
+            <Text style={s.retryText}>Try again</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -114,7 +114,7 @@ export default function ShelterDashboardScreen() {
               <Clock size={13} color="#A16207" strokeWidth={2.2} />
             )}
             <Text style={[s.verifyText, { color: shelter.isVerified ? '#15803D' : '#A16207' }]}>
-              {shelter.isVerified ? 'Верифіковано' : 'На перевірці'}
+              {shelter.isVerified ? 'Verified' : 'Pending review'}
             </Text>
           </View>
         </View>
@@ -124,22 +124,22 @@ export default function ShelterDashboardScreen() {
           <MetricTile
             icon={<PawPrint size={18} color={Colors.primary[500]} strokeWidth={2} />}
             value={`${m.available}/${m.total}`}
-            label="Доступно"
+            label="Available"
           />
           <MetricTile
             icon={<Eye size={18} color={Colors.info} strokeWidth={2} />}
             value={m.views}
-            label="Переглядів"
+            label="Views"
           />
           <MetricTile
             icon={<Heart size={18} color={Colors.error} strokeWidth={2} />}
             value={m.likes}
-            label="Лайків"
+            label="Likes"
           />
           <MetricTile
             icon={<TrendingUp size={18} color={Colors.success} strokeWidth={2} />}
             value={`${m.likeRate}%`}
-            label="Конверсія"
+            label="Like rate"
           />
         </View>
 
@@ -151,7 +151,7 @@ export default function ShelterDashboardScreen() {
             onPress={() => router.push('/(shelter)/animal/new')}
           >
             <Plus size={18} color={Colors.neutral[0]} strokeWidth={2.4} />
-            <Text style={s.actionPrimaryText}>Додати тварину</Text>
+            <Text style={s.actionPrimaryText}>Add animal</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[s.actionBtn, s.actionOutline]}
@@ -159,28 +159,28 @@ export default function ShelterDashboardScreen() {
             onPress={() => router.push('/(shelter)/slots')}
           >
             <CalendarDays size={18} color={Colors.primary[600]} strokeWidth={2.2} />
-            <Text style={s.actionOutlineText}>Створити слот</Text>
+            <Text style={s.actionOutlineText}>Create slot</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Management ── */}
-        <Text style={s.sectionTitle}>Керування</Text>
+        <Text style={s.sectionTitle}>Manage</Text>
         <NavCard
           icon={<BarChart3 size={20} color={Colors.primary[600]} strokeWidth={2} />}
-          label="Аналітика"
-          hint="Перегляди та лайки по датах"
+          label="Analytics"
+          hint="Views and likes over time"
           onPress={() => router.push('/(shelter)/analytics')}
         />
         <NavCard
           icon={<CalendarDays size={20} color={Colors.primary[600]} strokeWidth={2} />}
-          label="Слоти візитів"
-          hint="Створення та перегляд бронювань"
+          label="Visit slots"
+          hint="Create and review bookings"
           onPress={() => router.push('/(shelter)/slots')}
         />
         <NavCard
           icon={<Store size={20} color={Colors.primary[600]} strokeWidth={2} />}
-          label="Профіль притулку"
-          hint="Назва, опис, лого, контакти"
+          label="Shelter profile"
+          hint="Name, description, logo, contacts"
           onPress={() => router.push('/(shelter)/shelter-edit')}
         />
       </ScrollView>

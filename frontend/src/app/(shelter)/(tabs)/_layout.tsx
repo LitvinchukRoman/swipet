@@ -4,10 +4,10 @@ import { LayoutDashboard, MessageCircle, PawPrint, Store } from 'lucide-react-na
 import { FloatingTabBar, type TabConfig } from '@/components/navigation/FloatingTabBar';
 
 const TABS: TabConfig[] = [
-  { name: 'index', label: 'Дашборд', Icon: LayoutDashboard },
-  { name: 'animals', label: 'Тварини', Icon: PawPrint },
-  { name: 'chat', label: 'Чат', Icon: MessageCircle },
-  { name: 'profile', label: 'Профіль', Icon: Store },
+  { name: 'index', label: 'Dashboard', Icon: LayoutDashboard },
+  { name: 'animals', label: 'Animals', Icon: PawPrint },
+  { name: 'chat', label: 'Messages', Icon: MessageCircle },
+  { name: 'profile', label: 'Profile', Icon: Store },
 ];
 
 export default function ShelterTabsLayout() {
@@ -16,10 +16,10 @@ export default function ShelterTabsLayout() {
       tabBar={(props) => <FloatingTabBar {...props} tabs={TABS} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Дашборд' }} />
-      <Tabs.Screen name="animals" options={{ title: 'Тварини' }} />
-      <Tabs.Screen name="chat" options={{ title: 'Чат' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Профіль' }} />
+      <Tabs.Screen name="index" options={{ title: 'Dashboard' }} />
+      <Tabs.Screen name="animals" options={{ title: 'Animals' }} />
+      <Tabs.Screen name="chat" options={{ title: 'Messages' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

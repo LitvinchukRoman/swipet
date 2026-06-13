@@ -53,7 +53,7 @@ export default function AnimalFormScreen() {
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      notify('Потрібен дозвіл', 'Дозвольте доступ до фото у налаштуваннях.');
+      notify('Permission needed', 'Please allow photo access in settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -78,16 +78,16 @@ export default function AnimalFormScreen() {
 
   const handleSave = async () => {
     if (!shelter) {
-      notify('Помилка', 'Притулок не завантажено');
+      notify('Error', 'Shelter not loaded');
       return;
     }
     if (!name.trim()) {
-      notify('Помилка', 'Вкажіть кличку тварини');
+      notify('Error', "Enter the animal's name");
       return;
     }
     const age = parseInt(ageMonths, 10);
     if (Number.isNaN(age) || age < 0) {
-      notify('Помилка', 'Вкажіть коректний вік у місяцях');
+      notify('Error', 'Enter a valid age in months');
       return;
     }
 
@@ -110,17 +110,17 @@ export default function AnimalFormScreen() {
         ? await shelterService.updateAnimal(editingId!, payload)
         : await shelterService.createAnimal(payload);
 
-      // Вантажимо лише щойно вибране локальне фото (remote http-URL у режимі редагування — пропускаємо)
+      // Only upload a freshly picked local photo (a remote http URL in edit mode is skipped)
       if (photoUri && !photoUri.startsWith('http')) {
         await uploadPhoto(animal.id, photoUri).catch(() => {
-          notify('Увага', 'Анкету збережено, але фото не завантажилось.');
+          notify('Notice', "Profile saved, but the photo didn't upload.");
         });
       }
 
       await reload();
       router.back();
     } catch (err: any) {
-      notify('Помилка', err?.response?.data?.message ?? 'Не вдалося зберегти анкету');
+      notify('Error', err?.response?.data?.message ?? "Couldn't save the profile");
     } finally {
       setSaving(false);
     }
@@ -128,7 +128,7 @@ export default function AnimalFormScreen() {
 
   return (
     <SafeAreaView style={st.safe} edges={['bottom']}>
-      <Stack.Screen options={{ title: isEdit ? 'Редагувати тварину' : 'Нова тварина' }} />
+      <Stack.Screen options={{ title: isEdit ? 'Edit animal' : 'New animal' }} />
       <ScrollView contentContainerStyle={st.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Pressable style={st.photoWrap} onPress={pickPhoto}>
           {photoUri ? (
@@ -136,45 +136,45 @@ export default function AnimalFormScreen() {
           ) : (
             <View style={st.photoEmpty}>
               <Camera size={28} color={Colors.primary[500]} strokeWidth={1.8} />
-              <Text style={st.photoLabel}>Додати фото</Text>
+              <Text style={st.photoLabel}>Add photo</Text>
             </View>
           )}
         </Pressable>
 
-        <Field label="Кличка">
-          <TextInput value={name} onChangeText={setName} placeholder="Напр. Рекс" placeholderTextColor={Colors.neutral[300]} style={st.input} />
+        <Field label="Name">
+          <TextInput value={name} onChangeText={setName} placeholder="e.g. Rex" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
         <Row>
-          <Field label="Вид" flex>
+          <Field label="Species" flex>
             <PickerBox selected={species} onChange={setSpecies} options={SPECIES} labelMap={SPECIES_LABEL} />
           </Field>
-          <Field label="Стать" flex>
+          <Field label="Gender" flex>
             <PickerBox selected={gender} onChange={setGender} options={GENDERS} labelMap={GENDER_LABEL} />
           </Field>
         </Row>
 
         <Row>
-          <Field label="Розмір" flex>
+          <Field label="Size" flex>
             <PickerBox selected={size} onChange={setSize} options={SIZES} labelMap={SIZE_LABEL} />
           </Field>
-          <Field label="Вік (місяців)" flex>
+          <Field label="Age (months)" flex>
             <TextInput value={ageMonths} onChangeText={setAgeMonths} keyboardType="number-pad" placeholder="12" placeholderTextColor={Colors.neutral[300]} style={st.input} />
           </Field>
         </Row>
 
-        <Field label="Порода (необов'язково)">
-          <TextInput value={breed} onChangeText={setBreed} placeholder="Напр. Лабрадор" placeholderTextColor={Colors.neutral[300]} style={st.input} />
+        <Field label="Breed (optional)">
+          <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Labrador" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Опис характеру">
-          <TextInput value={description} onChangeText={setDescription} placeholder="Розкажіть про тваринку…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
+        <Field label="Personality">
+          <TextInput value={description} onChangeText={setDescription} placeholder="Tell us about this pet…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
         </Field>
 
-        <ToggleRow label="Вакцинований" value={isVaccinated} onValueChange={setIsVaccinated} />
-        <ToggleRow label="Стерилізований" value={isSterilized} onValueChange={setIsSterilized} />
+        <ToggleRow label="Vaccinated" value={isVaccinated} onValueChange={setIsVaccinated} />
+        <ToggleRow label="Sterilized" value={isSterilized} onValueChange={setIsSterilized} />
 
-        <Button label={isEdit ? 'Зберегти зміни' : 'Додати тварину'} onPress={handleSave} loading={saving} />
+        <Button label={isEdit ? 'Save changes' : 'Add animal'} onPress={handleSave} loading={saving} />
       </ScrollView>
     </SafeAreaView>
   );

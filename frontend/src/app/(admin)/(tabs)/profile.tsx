@@ -20,7 +20,7 @@ export default function AdminProfileScreen() {
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      notify('Потрібен дозвіл', 'Дозвольте доступ до фото у налаштуваннях.');
+      notify('Permission needed', 'Please allow photo access in settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -45,14 +45,14 @@ export default function AdminProfileScreen() {
       const updated = await userService.updateMe({ avatarUrl });
       await updateUser(updated);
     } catch {
-      notify('Помилка', 'Не вдалося оновити фото. Спробуйте ще раз.');
+      notify('Error', "Couldn't update your photo. Please try again.");
     } finally {
       setUploading(false);
     }
   };
 
   const handleLogout = async () => {
-    const ok = await confirm('Вийти з акаунту?', 'Ви впевнені, що хочете вийти?');
+    const ok = await confirm('Log out?', 'Are you sure you want to log out?');
     if (!ok) return;
     try {
       if (refreshToken) await authService.logout(refreshToken);
@@ -67,15 +67,15 @@ export default function AdminProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
         <View style={s.headerCard}>
           <Avatar uri={user?.avatarUrl} name={user?.fullName} size={88} onEditPress={handleAvatarPress} uploading={uploading} />
-          <Text style={s.userName}>{user?.fullName ?? 'Адміністратор'}</Text>
+          <Text style={s.userName}>{user?.fullName ?? 'Administrator'}</Text>
           <Text style={s.userEmail}>{user?.email}</Text>
           <View style={s.roleBadge}>
-            <Text style={s.roleText}>Адміністратор</Text>
+            <Text style={s.roleText}>Administrator</Text>
           </View>
         </View>
 
         <View style={{ marginTop: Spacing[6] }}>
-          <Button label="Вийти" variant="destructive" icon={LogOut} onPress={handleLogout} />
+          <Button label="Log Out" variant="destructive" icon={LogOut} onPress={handleLogout} />
         </View>
       </ScrollView>
     </SafeAreaView>

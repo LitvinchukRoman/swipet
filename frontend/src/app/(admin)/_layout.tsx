@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 
 import { Colors, FontSize, FontWeight } from '@/lib/theme';
 
-// Оболонка адміністратора (ADMIN). Доступ контролює root _layout за роллю.
+// Admin shell (ADMIN). Access is gated by the root _layout by role.
 export default function AdminLayout() {
   return (
     <Stack
@@ -20,7 +20,7 @@ export default function AdminLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="shelter-new" options={{ headerShown: true, title: 'Новий притулок' }} />
+      <Stack.Screen name="shelter-new" options={{ headerShown: true, title: 'New Shelter' }} />
     </Stack>
   );
 }

@@ -54,9 +54,9 @@ export default function AdminOverviewScreen() {
     return (
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
-          <EmptyState title="Не вдалося завантажити" subtitle="Перевір зʼєднання з сервером" />
+          <EmptyState title="Couldn't load" subtitle="Check your server connection" />
           <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
-            <Text style={s.retryText}>Спробувати ще раз</Text>
+            <Text style={s.retryText}>Try again</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -75,19 +75,19 @@ export default function AdminOverviewScreen() {
             <ShieldCheck size={22} color={Colors.neutral[0]} strokeWidth={2.2} />
           </View>
           <View>
-            <Text style={s.title}>Адмін-панель</Text>
-            <Text style={s.subtitle}>Керування платформою</Text>
+            <Text style={s.title}>Admin panel</Text>
+            <Text style={s.subtitle}>Platform management</Text>
           </View>
         </View>
 
         <View style={s.grid}>
-          <StatTile icon={<Users size={18} color={Colors.info} strokeWidth={2} />} value={stats.userCount} label="Користувачів" />
-          <StatTile icon={<Store size={18} color={Colors.primary[500]} strokeWidth={2} />} value={stats.shelterCount} label="Притулків" />
-          <StatTile icon={<PawPrint size={18} color={Colors.success} strokeWidth={2} />} value={stats.animalCount} label="Тварин" />
+          <StatTile icon={<Users size={18} color={Colors.info} strokeWidth={2} />} value={stats.userCount} label="Users" />
+          <StatTile icon={<Store size={18} color={Colors.primary[500]} strokeWidth={2} />} value={stats.shelterCount} label="Shelters" />
+          <StatTile icon={<PawPrint size={18} color={Colors.success} strokeWidth={2} />} value={stats.animalCount} label="Animals" />
           <StatTile
             icon={<TriangleAlert size={18} color={Colors.warning} strokeWidth={2} />}
             value={stats.pendingShelters}
-            label="На перевірці"
+            label="Pending"
             highlight={stats.pendingShelters > 0}
           />
         </View>
@@ -96,14 +96,14 @@ export default function AdminOverviewScreen() {
           <TouchableOpacity style={s.alertCard} activeOpacity={0.85} onPress={() => router.push('/(admin)/(tabs)/shelters')}>
             <TriangleAlert size={18} color="#A16207" strokeWidth={2} />
             <Text style={s.alertText}>
-              {stats.pendingShelters} {pluralShelter(stats.pendingShelters)} очікують верифікації
+              {stats.pendingShelters} {pluralShelter(stats.pendingShelters)} awaiting verification
             </Text>
           </TouchableOpacity>
         ) : null}
 
         <TouchableOpacity style={s.cta} activeOpacity={0.85} onPress={() => router.push('/(admin)/shelter-new')}>
           <Plus size={18} color={Colors.neutral[0]} strokeWidth={2.4} />
-          <Text style={s.ctaText}>Створити притулок</Text>
+          <Text style={s.ctaText}>Create shelter</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -111,9 +111,7 @@ export default function AdminOverviewScreen() {
 }
 
 function pluralShelter(n: number) {
-  if (n === 1) return 'притулок';
-  if (n >= 2 && n <= 4) return 'притулки';
-  return 'притулків';
+  return n === 1 ? 'shelter' : 'shelters';
 }
 
 function StatTile({

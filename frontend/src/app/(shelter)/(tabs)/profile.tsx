@@ -39,7 +39,7 @@ export default function ShelterProfileScreen() {
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      notify('Потрібен дозвіл', 'Дозвольте доступ до фото у налаштуваннях.');
+      notify('Permission needed', 'Please allow photo access in settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -64,14 +64,14 @@ export default function ShelterProfileScreen() {
       const updated = await userService.updateMe({ avatarUrl });
       await updateUser(updated);
     } catch {
-      notify('Помилка', 'Не вдалося оновити фото. Спробуйте ще раз.');
+      notify('Error', "Couldn't update your photo. Please try again.");
     } finally {
       setUploading(false);
     }
   };
 
   const handleLogout = async () => {
-    const ok = await confirm('Вийти з акаунту?', 'Ви впевнені, що хочете вийти?');
+    const ok = await confirm('Log out?', 'Are you sure you want to log out?');
     if (!ok) return;
     try {
       if (refreshToken) await authService.logout(refreshToken);
@@ -94,15 +94,15 @@ export default function ShelterProfileScreen() {
             onEditPress={handleAvatarPress}
             uploading={uploading}
           />
-          <Text style={s.userName}>{user?.fullName ?? 'Адмін'}</Text>
+          <Text style={s.userName}>{user?.fullName ?? 'Admin'}</Text>
           <Text style={s.userEmail}>{user?.email}</Text>
           <View style={s.roleBadge}>
-            <Text style={s.roleText}>Адмін притулку</Text>
+            <Text style={s.roleText}>Shelter Admin</Text>
           </View>
         </View>
 
         {/* ── Shelter ── */}
-        <Text style={s.sectionLabel}>Притулок</Text>
+        <Text style={s.sectionLabel}>Shelter</Text>
         {shelter ? (
           <View style={s.shelterCard}>
             <View style={s.shelterIcon}>
@@ -127,18 +127,18 @@ export default function ShelterProfileScreen() {
                 <Clock size={12} color="#A16207" strokeWidth={2.2} />
               )}
               <Text style={[s.verifyText, { color: shelter.isVerified ? '#15803D' : '#A16207' }]}>
-                {shelter.isVerified ? 'Верифіковано' : 'На перевірці'}
+                {shelter.isVerified ? 'Verified' : 'Pending review'}
               </Text>
             </View>
           </View>
         ) : null}
 
         <View style={s.menuCard}>
-          <MenuRow icon={Pencil} label="Редагувати притулок" onPress={() => router.push('/(shelter)/shelter-edit')} />
-          <MenuRow icon={BarChart3} label="Аналітика" onPress={() => router.push('/(shelter)/analytics')} />
+          <MenuRow icon={Pencil} label="Edit shelter" onPress={() => router.push('/(shelter)/shelter-edit')} />
+          <MenuRow icon={BarChart3} label="Analytics" onPress={() => router.push('/(shelter)/analytics')} />
           <MenuRow
             icon={CalendarDays}
-            label="Слоти візитів"
+            label="Visit slots"
             onPress={() => router.push('/(shelter)/slots')}
             isLast
           />
@@ -146,7 +146,7 @@ export default function ShelterProfileScreen() {
 
         {/* ── Logout ── */}
         <View style={{ marginTop: Spacing[6] }}>
-          <Button label="Вийти" variant="destructive" icon={LogOut} onPress={handleLogout} />
+          <Button label="Log Out" variant="destructive" icon={LogOut} onPress={handleLogout} />
         </View>
       </ScrollView>
     </SafeAreaView>

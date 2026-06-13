@@ -35,7 +35,7 @@ export default function ShelterEditScreen() {
     return (
       <SafeAreaView style={st.safe}>
         <View style={st.center}>
-          <Text style={st.muted}>Притулок не завантажено</Text>
+          <Text style={st.muted}>Shelter not loaded</Text>
         </View>
       </SafeAreaView>
     );
@@ -44,7 +44,7 @@ export default function ShelterEditScreen() {
   const pickLogo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      notify('Потрібен дозвіл', 'Дозвольте доступ до фото у налаштуваннях.');
+      notify('Permission needed', 'Please allow photo access in settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -68,7 +68,7 @@ export default function ShelterEditScreen() {
       await shelterService.uploadLogo(shelter.id, form);
       await load();
     } catch {
-      notify('Помилка', 'Не вдалося завантажити лого.');
+      notify('Error', "Couldn't upload the logo.");
     } finally {
       setUploadingLogo(false);
     }
@@ -77,13 +77,13 @@ export default function ShelterEditScreen() {
   const submit = async () => {
     setError(null);
     if (!name.trim() || !address.trim() || !city.trim()) {
-      setError('Заповніть назву, адресу та місто.');
+      setError('Fill in name, address and city.');
       return;
     }
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-      setError('Координати мають бути числами (напр. 50.4501 та 30.5234).');
+      setError('Coordinates must be numbers (e.g. 50.4501 and 30.5234).');
       return;
     }
 
@@ -105,7 +105,7 @@ export default function ShelterEditScreen() {
       const msg =
         err?.response?.data?.violations?.[0]?.message ??
         err?.response?.data?.message ??
-        'Не вдалося зберегти зміни.';
+        "Couldn't save changes.";
       setError(msg);
     } finally {
       setSaving(false);
@@ -115,7 +115,7 @@ export default function ShelterEditScreen() {
   return (
     <SafeAreaView style={st.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={st.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* Лого */}
+        {/* Logo */}
         <TouchableOpacity style={st.logoWrap} onPress={pickLogo} activeOpacity={0.85} disabled={uploadingLogo}>
           {shelter.logoUrl ? (
             <Image source={{ uri: shelter.logoUrl }} style={st.logo} contentFit="cover" />
@@ -128,44 +128,44 @@ export default function ShelterEditScreen() {
             <Camera size={14} color={Colors.neutral[0]} strokeWidth={2.2} />
           </View>
         </TouchableOpacity>
-        <Text style={st.logoHint}>{uploadingLogo ? 'Завантаження…' : 'Натисни, щоб змінити лого'}</Text>
+        <Text style={st.logoHint}>{uploadingLogo ? 'Uploading…' : 'Tap to change the logo'}</Text>
 
-        <Field label="Назва притулку">
+        <Field label="Shelter name">
           <TextInput value={name} onChangeText={setName} placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Опис">
-          <TextInput value={description} onChangeText={setDescription} placeholder="Коротко про притулок…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
+        <Field label="Description">
+          <TextInput value={description} onChangeText={setDescription} placeholder="A short description of the shelter…" placeholderTextColor={Colors.neutral[300]} multiline style={[st.input, st.textArea]} />
         </Field>
 
-        <Field label="Адреса">
+        <Field label="Address">
           <TextInput value={address} onChangeText={setAddress} placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Місто">
+        <Field label="City">
           <TextInput value={city} onChangeText={setCity} placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Телефон">
+        <Field label="Phone">
           <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+380…" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
-        <Field label="Сайт">
+        <Field label="Website">
           <TextInput value={websiteUrl} onChangeText={setWebsiteUrl} autoCapitalize="none" keyboardType="url" placeholder="https://…" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
 
         <View style={st.coordsRow}>
-          <Field label="Широта (lat)" flex>
+          <Field label="Latitude (lat)" flex>
             <TextInput value={lat} onChangeText={setLat} keyboardType="numbers-and-punctuation" style={st.input} />
           </Field>
-          <Field label="Довгота (lng)" flex>
+          <Field label="Longitude (lng)" flex>
             <TextInput value={lng} onChangeText={setLng} keyboardType="numbers-and-punctuation" style={st.input} />
           </Field>
         </View>
 
         {error ? <Text style={st.error}>{error}</Text> : null}
 
-        <Button label="Зберегти зміни" onPress={submit} loading={saving} />
+        <Button label="Save changes" onPress={submit} loading={saving} />
       </ScrollView>
     </SafeAreaView>
   );

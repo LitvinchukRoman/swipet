@@ -39,13 +39,13 @@ export default function ShelterAnimalsScreen() {
   };
 
   const handleDelete = async (animal: Animal) => {
-    const ok = await confirm('Видалити тварину?', `Анкету «${animal.name}» буде видалено назавжди.`);
+    const ok = await confirm('Delete animal?', `${animal.name}'s profile will be permanently deleted.`);
     if (!ok) return;
     try {
       await shelterService.deleteAnimal(animal.id);
       await load();
     } catch {
-      notify('Помилка', 'Не вдалося видалити анкету');
+      notify('Error', "Couldn't delete the profile");
     }
   };
 
@@ -53,7 +53,7 @@ export default function ShelterAnimalsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <Text style={s.title}>Тварини</Text>
+      <Text style={s.title}>Animals</Text>
 
       {loading ? (
         <View style={s.center}>
@@ -70,8 +70,8 @@ export default function ShelterAnimalsScreen() {
           ListEmptyComponent={
             <View style={{ marginTop: Spacing[16] }}>
               <EmptyState
-                title="Ще немає тварин"
-                subtitle={'Додай першу анкету — і вона\nзʼявиться у стрічці адопції'}
+                title="No animals yet"
+                subtitle={"Add the first profile — it'll\nshow up in the adoption feed"}
               />
             </View>
           }
@@ -83,7 +83,7 @@ export default function ShelterAnimalsScreen() {
         />
       )}
 
-      {/* FAB — додати тварину */}
+      {/* FAB — add animal */}
       <TouchableOpacity
         style={s.fab}
         activeOpacity={0.85}
@@ -147,9 +147,9 @@ function AnimalRow({
 }
 
 const STATUS_LABEL: Record<Animal['status'], string> = {
-  AVAILABLE: 'Доступний',
-  RESERVED: 'Зарезервований',
-  ADOPTED: 'Прилаштований',
+  AVAILABLE: 'Available',
+  RESERVED: 'Reserved',
+  ADOPTED: 'Adopted',
 };
 function statusStyle(st: Animal['status']) {
   if (st === 'AVAILABLE') return { backgroundColor: '#DCFCE7' };

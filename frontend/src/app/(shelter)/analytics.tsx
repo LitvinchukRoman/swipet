@@ -65,10 +65,10 @@ export default function AnalyticsScreen() {
   if (error || rows!.length === 0) {
     return (
       <SafeAreaView style={st.safe}>
-        <Stack.Screen options={{ title: 'Аналітика' }} />
+        <Stack.Screen options={{ title: 'Analytics' }} />
         <EmptyState
-          title={error ? 'Не вдалося завантажити' : 'Ще немає даних'}
-          subtitle={error ? 'Перевір зʼєднання з сервером' : 'Статистика зʼявиться коли тварин почнуть переглядати'}
+          title={error ? "Couldn't load" : 'No data yet'}
+          subtitle={error ? 'Check your server connection' : 'Stats will appear once animals start getting views'}
         />
       </SafeAreaView>
     );
@@ -76,20 +76,20 @@ export default function AnalyticsScreen() {
 
   return (
     <SafeAreaView style={st.safe} edges={['bottom']}>
-      <Stack.Screen options={{ title: 'Аналітика' }} />
+      <Stack.Screen options={{ title: 'Analytics' }} />
       <ScrollView contentContainerStyle={st.content} showsVerticalScrollIndicator={false}>
         <View style={st.statsGrid}>
-          <StatCard icon={<Eye size={18} color={Colors.info} strokeWidth={2} />} value={totals.views} label="Переглядів" />
-          <StatCard icon={<Heart size={18} color={Colors.primary[500]} strokeWidth={2} />} value={totals.likes} label="Лайків" />
-          <StatCard icon={<TrendingUp size={18} color={Colors.success} strokeWidth={2} />} value={`${totals.likeRate}%`} label="Конверсія" />
-          <StatCard icon={<MessageCircle size={18} color={Colors.warning} strokeWidth={2} />} value={totals.chats} label="Чатів" />
+          <StatCard icon={<Eye size={18} color={Colors.info} strokeWidth={2} />} value={totals.views} label="Views" />
+          <StatCard icon={<Heart size={18} color={Colors.primary[500]} strokeWidth={2} />} value={totals.likes} label="Likes" />
+          <StatCard icon={<TrendingUp size={18} color={Colors.success} strokeWidth={2} />} value={`${totals.likeRate}%`} label="Like rate" />
+          <StatCard icon={<MessageCircle size={18} color={Colors.warning} strokeWidth={2} />} value={totals.chats} label="Chats" />
         </View>
 
         <View style={st.chartCard}>
-          <Text style={st.chartTitle}>Перегляди vs лайки</Text>
+          <Text style={st.chartTitle}>Views vs likes</Text>
           <View style={st.legendRow}>
-            <Legend color={Colors.info} label="Перегляди" />
-            <Legend color={Colors.primary[500]} label="Лайки" />
+            <Legend color={Colors.info} label="Views" />
+            <Legend color={Colors.primary[500]} label="Likes" />
           </View>
           <LineChart data={daily} />
         </View>

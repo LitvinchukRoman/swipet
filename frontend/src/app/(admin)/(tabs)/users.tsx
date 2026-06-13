@@ -19,9 +19,9 @@ import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@
 import { adminService, type AdminUser, type UserRole } from '@/services/admin';
 
 const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'USER', label: 'Юзер' },
-  { value: 'SHELTER_ADMIN', label: 'Притулок' },
-  { value: 'ADMIN', label: 'Адмін' },
+  { value: 'USER', label: 'User' },
+  { value: 'SHELTER_ADMIN', label: 'Shelter' },
+  { value: 'ADMIN', label: 'Admin' },
 ];
 
 export default function AdminUsersScreen() {
@@ -33,7 +33,7 @@ export default function AdminUsersScreen() {
     try {
       setUsers(await adminService.getUsers());
     } catch {
-      // лишаємо — нижче EmptyState
+      // keep list — EmptyState below
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export default function AdminUsersScreen() {
 
   const changeRole = async (user: AdminUser, role: UserRole) => {
     if (user.role === role) return;
-    const ok = await confirm('Змінити роль?', `${user.fullName}: ${user.role} → ${role}`);
+    const ok = await confirm('Change role?', `${user.fullName}: ${user.role} → ${role}`);
     if (!ok) return;
 
     const prev = user.role;
@@ -62,13 +62,13 @@ export default function AdminUsersScreen() {
       await adminService.updateUserRole(user.id, role);
     } catch {
       setUsers((list) => list.map((u) => (u.id === user.id ? { ...u, role: prev } : u)));
-      notify('Помилка', 'Не вдалося змінити роль');
+      notify('Error', "Couldn't change the role");
     }
   };
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <Text style={s.title}>Користувачі</Text>
+      <Text style={s.title}>Users</Text>
 
       {loading ? (
         <View style={s.center}>
@@ -82,7 +82,7 @@ export default function AdminUsersScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[500]} />}
           ListEmptyComponent={
             <View style={{ marginTop: Spacing[16] }}>
-              <EmptyState title="Користувачів немає" subtitle="Список зʼявиться після реєстрацій" />
+              <EmptyState title="No users" subtitle="The list appears after sign-ups" />
             </View>
           }
           renderItem={({ item, index }) => (
