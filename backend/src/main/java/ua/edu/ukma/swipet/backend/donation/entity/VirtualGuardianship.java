@@ -35,7 +35,12 @@ public class VirtualGuardianship {
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
-    private Boolean isActive = true;
+    private Boolean isActive = false;
+
+    /** Stripe Checkout Session id першого (активаційного) платежу. Опікунство стає
+     *  активним лише після підтвердження саме цього платежу. */
+    @Column(name = "activation_tx_id")
+    private String activationTxId;
 
     @CreationTimestamp
     @Column(name = "started_at", updatable = false)

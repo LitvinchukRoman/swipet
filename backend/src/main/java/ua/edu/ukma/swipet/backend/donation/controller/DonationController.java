@@ -8,6 +8,7 @@ import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
 import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
+import ua.edu.ukma.swipet.backend.donation.dto.VerifySessionResponse;
 import ua.edu.ukma.swipet.backend.donation.dto.VirtualGuardianshipResponse;
 import ua.edu.ukma.swipet.backend.donation.dto.WebhookPayload;
 import ua.edu.ukma.swipet.backend.donation.service.DonationService;
@@ -57,6 +58,15 @@ public class DonationController {
         @CurrentUser AuthenticatedUser currentUser) {
 
         return donationService.getMyGuardianships(currentUser.id());
+    }
+
+    @GetMapping("/verify-session")
+    @ResponseStatus(HttpStatus.OK)
+    public VerifySessionResponse verifySession(
+        @CurrentUser AuthenticatedUser currentUser,
+        @RequestParam("session_id") String sessionId) {
+
+        return donationService.verifySession(currentUser.id(), sessionId);
     }
 
     @PostMapping("/webhook")

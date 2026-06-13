@@ -7,6 +7,7 @@ public record FeedAnimalResponse(
         Integer ageMonths,
         String size,
         String primaryPhotoUrl,
+        Long shelterId,
         String shelterName,
         Double distanceKm
 ) {}

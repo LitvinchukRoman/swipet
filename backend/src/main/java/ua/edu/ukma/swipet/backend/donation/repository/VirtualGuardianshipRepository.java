@@ -8,6 +8,7 @@ import ua.edu.ukma.swipet.backend.donation.entity.VirtualGuardianship;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface VirtualGuardianshipRepository extends JpaRepository<VirtualGuardianship, Long> {
@@ -16,4 +17,10 @@ public interface VirtualGuardianshipRepository extends JpaRepository<VirtualGuar
 
     @Query("SELECT vg FROM VirtualGuardianship vg WHERE vg.isActive = true AND vg.nextBillingAt <= :now")
     List<VirtualGuardianship> findDueSubscriptions(@Param("now") LocalDateTime now);
+
+    boolean existsByUser_IdAndAnimal_IdAndIsActiveTrue(Long userId, Long animalId);
+
+    Optional<VirtualGuardianship> findByActivationTxId(String activationTxId);
+
+    Optional<VirtualGuardianship> findFirstByUser_IdAndAnimal_IdAndIsActiveTrueOrderByIdDesc(Long userId, Long animalId);
 }

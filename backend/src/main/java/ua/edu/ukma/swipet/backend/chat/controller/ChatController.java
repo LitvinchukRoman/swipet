@@ -40,17 +40,20 @@ public class ChatController {
     @GetMapping("/rooms/{roomId}/messages")
     @ResponseStatus(HttpStatus.OK)
     public Page<ChatMessageResponse> getRoomHistory(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long roomId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return chatService.getRoomHistory(roomId, page, size);
+        return chatService.getRoomHistory(roomId, currentUser.id(), currentUser.role(), page, size);
     }
 
     @PostMapping("/internal/rooms/{roomId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public ChatMessageResponse saveMessageFromNodeJs(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long roomId,
             @Valid @RequestBody MessageSaveRequest request) {
-        return chatService.saveMessage(roomId, request);
+        // Відправник = автентифікований користувач (JWT), senderId з тіла ігнорується.
+        return chatService.saveMessage(roomId, currentUser.id(), currentUser.role(), request.content());
     }
 }

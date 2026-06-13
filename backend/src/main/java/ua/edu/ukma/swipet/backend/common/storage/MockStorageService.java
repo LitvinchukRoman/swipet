@@ -28,4 +28,9 @@ public class MockStorageService implements StorageService {
     public void deleteFile(String fileUrl) {
         log.debug("[mock] deleteFile {}", fileUrl);
     }
+
+    @Override
+    public boolean isOwnedUrl(String url) {
+        return url != null && url.startsWith("mock://media/");
+    }
 }

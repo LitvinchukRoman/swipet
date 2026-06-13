@@ -148,7 +148,7 @@ class BookingServiceTest {
     @Test
     void bookSlot_Success() {
         // Arrange
-        when(slotRepository.findById(1L)).thenReturn(Optional.of(testSlot));
+        when(slotRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testSlot));
         when(reservationRepository.countBySlot_IdAndStatus(1L, ReservationStatus.ACTIVE)).thenReturn(0L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
 
@@ -173,7 +173,7 @@ class BookingServiceTest {
     @Test
     void bookSlot_SlotNotFound_ThrowsAppException() {
         // Arrange
-        when(slotRepository.findById(1L)).thenReturn(Optional.empty());
+        when(slotRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         AppException exception = assertThrows(AppException.class, () ->
@@ -198,7 +198,7 @@ class BookingServiceTest {
             .maxGuests(5)
             .build();
 
-        when(slotRepository.findById(1L)).thenReturn(Optional.of(pastSlot));
+        when(slotRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(pastSlot));
 
         // Act & Assert
         AppException exception = assertThrows(AppException.class, () ->
@@ -215,7 +215,7 @@ class BookingServiceTest {
     @Test
     void bookSlot_SlotFull_ThrowsAppException() {
         // Arrange
-        when(slotRepository.findById(1L)).thenReturn(Optional.of(testSlot));
+        when(slotRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testSlot));
         when(reservationRepository.countBySlot_IdAndStatus(1L, ReservationStatus.ACTIVE)).thenReturn(5L);
 
         // Act & Assert
@@ -234,7 +234,7 @@ class BookingServiceTest {
     @Test
     void bookSlot_UserNotFound_ThrowsAppException() {
         // Arrange
-        when(slotRepository.findById(1L)).thenReturn(Optional.of(testSlot));
+        when(slotRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testSlot));
         when(reservationRepository.countBySlot_IdAndStatus(1L, ReservationStatus.ACTIVE)).thenReturn(0L);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 

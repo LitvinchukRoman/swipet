@@ -12,6 +12,7 @@ import ua.edu.ukma.swipet.backend.booking.dto.BookingReservationResponse;
 import ua.edu.ukma.swipet.backend.booking.dto.BookingSlotRequest;
 import ua.edu.ukma.swipet.backend.booking.dto.BookingSlotResponse;
 import ua.edu.ukma.swipet.backend.booking.service.BookingService;
+import ua.edu.ukma.swipet.backend.common.security.ShelterOwnershipGuard;
 
 import java.util.List;
 
@@ -21,13 +22,16 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final ShelterOwnershipGuard ownershipGuard;
 
     @PostMapping("/shelters/{shelterId}/slots")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public BookingSlotResponse createSlot(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long shelterId,
             @Valid @RequestBody BookingSlotRequest request) {
+        ownershipGuard.assertCanManageShelter(currentUser, shelterId);
         return bookingService.createSlot(shelterId, request);
     }
 

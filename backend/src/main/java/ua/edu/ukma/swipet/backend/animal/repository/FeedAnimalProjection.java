@@ -7,6 +7,7 @@ public interface FeedAnimalProjection {
     Integer getAgeMonths();
     String getSize();
     String getPrimaryPhotoUrl();
+    Long getShelterId();
     String getShelterName();
     Double getDistanceKm();
 }

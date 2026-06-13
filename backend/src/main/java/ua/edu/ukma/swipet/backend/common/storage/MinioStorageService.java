@@ -140,6 +140,15 @@ public class MinioStorageService implements StorageService {
         };
     }
 
+    @Override
+    public boolean isOwnedUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        // Належить сховищу, якщо містить шлях до нашого бакета (працює і для public-url, і для endpoint).
+        return extractKey(url) != null;
+    }
+
     private String publicUrlFor(String key) {
         StorageProperties.Minio m = props.minio();
         String base = (m.publicUrl() == null || m.publicUrl().isBlank())

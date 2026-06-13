@@ -20,6 +20,7 @@ public class ChatMapper {
                 room.getShelter().getName(),
                 room.getAnimal().getId(),
                 room.getAnimal().getName(),
+                room.getAnimal().getSpecies() != null ? room.getAnimal().getSpecies().name() : null,
                 room.getAnimal().getPrimaryPhotoUrl(),
                 room.getLastMessageAt(),
                 lastMessage,

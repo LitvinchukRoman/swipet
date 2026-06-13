@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
+import ua.edu.ukma.swipet.backend.animal.entity.Species;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.User;
 import ua.edu.ukma.swipet.backend.auth.repository.UserRepository;
@@ -18,6 +19,9 @@ import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.DonationRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.GuardianshipRequest;
 import ua.edu.ukma.swipet.backend.donation.dto.PaymentInitResponse;
+import ua.edu.ukma.swipet.backend.donation.dto.PaymentVerificationStatus;
+import ua.edu.ukma.swipet.backend.donation.dto.VerifySessionResponse;
+import ua.edu.ukma.swipet.backend.donation.dto.VirtualGuardianshipResponse;
 import ua.edu.ukma.swipet.backend.donation.entity.Donation;
 import ua.edu.ukma.swipet.backend.donation.entity.DonationStatus;
 import ua.edu.ukma.swipet.backend.donation.entity.DonationType;
@@ -28,6 +32,7 @@ import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -84,6 +89,8 @@ class DonationServiceTest {
         testAnimal = Animal.builder()
             .id(1L)
             .name("Test Animal")
+            .species(Species.DOG)
+            .breed("Labrador")
             .shelter(testShelter)
             .build();
 
@@ -316,5 +323,150 @@ class DonationServiceTest {
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
         assertEquals("FORBIDDEN", exception.getCode());
         assertEquals("Ви не можете відмінити чуже опікунство", exception.getMessage());
+    }
+
+    // ─── getMyGuardianships ──────────────────────────────────────────────────
+
+    @Test
+    void getMyGuardianships_MapsSpeciesAndBreed() {
+        // Arrange
+        VirtualGuardianship guardianship = VirtualGuardianship.builder()
+            .id(1L)
+            .user(testUser)
+            .animal(testAnimal)
+            .monthlyAmount(new BigDecimal("50.00"))
+            .isActive(true)
+            .build();
+
+        when(guardianshipRepository.findAllByUser_IdAndIsActiveTrue(1L))
+            .thenReturn(List.of(guardianship));
+
+        // Act
+        List<VirtualGuardianshipResponse> result = donationService.getMyGuardianships(1L);
+
+        // Assert
+        assertEquals(1, result.size());
+        VirtualGuardianshipResponse dto = result.get(0);
+        assertEquals(Species.DOG, dto.animalSpecies());
+        assertEquals("Labrador", dto.animalBreed());
+        assertEquals("Test Animal", dto.animalName());
+    }
+
+    // ─── verifySession ───────────────────────────────────────────────────────
+
+    @Test
+    void verifySession_Success_ReconcilesPendingDonation() {
+        // Arrange
+        String sessionId = "session_123";
+        Donation pending = Donation.builder()
+            .id(1L).user(testUser).shelter(testShelter)
+            .status(DonationStatus.PENDING).externalTxId(sessionId)
+            .build();
+
+        when(donationRepository.findByExternalTxId(sessionId)).thenReturn(Optional.of(pending));
+        when(paymentService.getCheckoutStatus(sessionId)).thenReturn(PaymentVerificationStatus.SUCCESS);
+
+        // Act
+        VerifySessionResponse response = donationService.verifySession(1L, sessionId);
+
+        // Assert — повертає success і підтягує статус донату (підстраховка вебхука)
+        assertEquals(PaymentVerificationStatus.SUCCESS, response.status());
+        assertEquals(DonationStatus.SUCCESS, pending.getStatus());
+    }
+
+    @Test
+    void verifySession_Failed_MarksDonationFailed() {
+        // Arrange
+        String sessionId = "session_123";
+        Donation pending = Donation.builder()
+            .id(1L).user(testUser).shelter(testShelter)
+            .status(DonationStatus.PENDING).externalTxId(sessionId)
+            .build();
+
+        when(donationRepository.findByExternalTxId(sessionId)).thenReturn(Optional.of(pending));
+        when(paymentService.getCheckoutStatus(sessionId)).thenReturn(PaymentVerificationStatus.FAILED);
+
+        // Act
+        VerifySessionResponse response = donationService.verifySession(1L, sessionId);
+
+        // Assert
+        assertEquals(PaymentVerificationStatus.FAILED, response.status());
+        assertEquals(DonationStatus.FAILED, pending.getStatus());
+    }
+
+    @Test
+    void verifySession_Pending_DoesNotMutateDonation() {
+        // Arrange
+        String sessionId = "session_123";
+        Donation pending = Donation.builder()
+            .id(1L).user(testUser).shelter(testShelter)
+            .status(DonationStatus.PENDING).externalTxId(sessionId)
+            .build();
+
+        when(donationRepository.findByExternalTxId(sessionId)).thenReturn(Optional.of(pending));
+        when(paymentService.getCheckoutStatus(sessionId)).thenReturn(PaymentVerificationStatus.PENDING);
+
+        // Act
+        VerifySessionResponse response = donationService.verifySession(1L, sessionId);
+
+        // Assert
+        assertEquals(PaymentVerificationStatus.PENDING, response.status());
+        assertEquals(DonationStatus.PENDING, pending.getStatus());
+    }
+
+    @Test
+    void verifySession_AlreadySuccess_StaysSuccess() {
+        // Arrange — вебхук уже відпрацював; повторна перевірка не ламає статус
+        String sessionId = "session_123";
+        Donation succeeded = Donation.builder()
+            .id(1L).user(testUser).shelter(testShelter)
+            .status(DonationStatus.SUCCESS).externalTxId(sessionId)
+            .build();
+
+        when(donationRepository.findByExternalTxId(sessionId)).thenReturn(Optional.of(succeeded));
+        when(paymentService.getCheckoutStatus(sessionId)).thenReturn(PaymentVerificationStatus.SUCCESS);
+
+        // Act
+        VerifySessionResponse response = donationService.verifySession(1L, sessionId);
+
+        // Assert
+        assertEquals(PaymentVerificationStatus.SUCCESS, response.status());
+        assertEquals(DonationStatus.SUCCESS, succeeded.getStatus());
+    }
+
+    @Test
+    void verifySession_NotFound_ThrowsAppException() {
+        // Arrange
+        when(donationRepository.findByExternalTxId("missing")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () ->
+            donationService.verifySession(1L, "missing")
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertEquals("Транзакцію не знайдено", exception.getMessage());
+        verify(paymentService, never()).getCheckoutStatus(anyString());
+    }
+
+    @Test
+    void verifySession_NotOwner_ThrowsForbidden() {
+        // Arrange
+        String sessionId = "session_123";
+        User otherUser = User.builder().id(2L).email("other@example.com").build();
+        Donation foreign = Donation.builder()
+            .id(1L).user(otherUser).shelter(testShelter)
+            .status(DonationStatus.PENDING).externalTxId(sessionId)
+            .build();
+
+        when(donationRepository.findByExternalTxId(sessionId)).thenReturn(Optional.of(foreign));
+
+        // Act & Assert — не можна перевіряти чужий платіж, і Stripe не смикаємо
+        AppException exception = assertThrows(AppException.class, () ->
+            donationService.verifySession(1L, sessionId)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        verify(paymentService, never()).getCheckoutStatus(anyString());
     }
 }

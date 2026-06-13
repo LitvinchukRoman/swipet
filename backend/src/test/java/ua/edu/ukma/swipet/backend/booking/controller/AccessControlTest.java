@@ -43,7 +43,7 @@ class AccessControlTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
+    @WithMockAuthenticatedUser(userId = 2L, email = "admin@example.com", role = "ADMIN")
     void createSlot_AdminUser_Returns201() throws Exception {
         // Arrange — час не перетинається із засіяним у data.sql слотом (+1 день)
         BookingSlotRequest request = new BookingSlotRequest(
@@ -60,9 +60,10 @@ class AccessControlTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "shelter@example.com", roles = "SHELTER_ADMIN")
+    @WithMockAuthenticatedUser(userId = 3L, email = "shelter@example.com", role = "SHELTER_ADMIN")
     void createSlot_ShelterAdminUser_Returns201() throws Exception {
-        // Arrange — час не перетинається із засіяним у data.sql слотом (+1 день)
+        // Arrange — притулок 1 належить shelter-адміну (user id 3, див. data.sql);
+        // час не перетинається із засіяним у data.sql слотом (+8 днів)
         BookingSlotRequest request = new BookingSlotRequest(
             LocalDateTime.now().plusDays(8),
             LocalDateTime.now().plusDays(8).plusHours(2),
@@ -74,6 +75,22 @@ class AccessControlTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockAuthenticatedUser(userId = 3L, email = "shelter@example.com", role = "SHELTER_ADMIN")
+    void createSlot_ShelterAdminForeignShelter_Returns403() throws Exception {
+        // Притулок 2 належить іншому власнику (user 2) — shelter-адмін притулку 1 не має доступу.
+        BookingSlotRequest request = new BookingSlotRequest(
+            LocalDateTime.now().plusDays(9),
+            LocalDateTime.now().plusDays(9).plusHours(2),
+            5
+        );
+
+        mockMvc.perform(post("/api/v1/shelters/2/slots")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isForbidden());
     }
 
     @Test

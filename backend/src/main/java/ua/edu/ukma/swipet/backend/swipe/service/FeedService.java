@@ -40,6 +40,7 @@ public class FeedService {
                  proj.getAgeMonths(),
                  proj.getSize(),
                  proj.getPrimaryPhotoUrl(),
+                 proj.getShelterId(),
                  proj.getShelterName(),
                  // Округлюємо дистанцію до одного знака після коми
                  Math.round(proj.getDistanceKm() * 10.0) / 10.0

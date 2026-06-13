@@ -8,6 +8,7 @@ public record ChatRoomResponse(
         String shelterName,
         Long animalId,
         String animalName,
+        String animalSpecies,
         String animalPrimaryPhotoUrl,
         LocalDateTime lastMessageAt,
         String lastMessage,

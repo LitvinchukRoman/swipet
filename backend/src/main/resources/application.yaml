@@ -60,6 +60,12 @@ swipet:
     allow-credentials: true
     max-age: 3600
 
+# Один публічний origin застосунку (для Stripe success/cancel redirect).
+# Має збігатися з origin, де користувач залогінений (через nginx — https://localhost),
+# інакше після оплати втрачається сесія і verify-session повертає 401.
+app:
+  frontend-url: ${APP_PUBLIC_URL:http://localhost:8081}
+
 management:
   endpoints:
     web:

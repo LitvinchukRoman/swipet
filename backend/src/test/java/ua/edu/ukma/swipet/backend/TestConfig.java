@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Primary;
 import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.PaymentInitResponse;
+import ua.edu.ukma.swipet.backend.donation.dto.PaymentVerificationStatus;
 import ua.edu.ukma.swipet.backend.donation.service.PaymentService;
 
 import java.math.BigDecimal;
@@ -42,6 +43,9 @@ public class TestConfig {
         // Невалідний підпис → 401, як і реальна перевірка Stripe.
         Mockito.when(mockService.verifyWebhook(eq("invalid_payload"), anyString()))
             .thenThrow(AppException.unauthorized("Недійсний підпис вебхуку. Доступ заборонено."));
+        // verify-session: за замовчуванням сесія оплачена.
+        Mockito.when(mockService.getCheckoutStatus(anyString()))
+            .thenReturn(PaymentVerificationStatus.SUCCESS);
         return mockService;
     }
 

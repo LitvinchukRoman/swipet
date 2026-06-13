@@ -138,13 +138,32 @@ class AuthServiceTest {
                 .isRevoked(false)
                 .build();
         when(refreshTokenRepository.findByToken(raw)).thenReturn(Optional.of(stored));
+        when(refreshTokenRepository.revokeIfActive(raw)).thenReturn(1);
         when(userRepository.findById(11L)).thenReturn(Optional.of(user));
 
         TokenResponse resp = authService.refresh(raw.toString());
 
-        assertThat(stored.getIsRevoked()).isTrue();
         assertThat(resp.refreshToken()).isNotEqualTo(raw.toString());
-        verify(refreshTokenRepository, times(2)).save(any(RefreshToken.class));
+        verify(refreshTokenRepository).revokeIfActive(raw);
+        verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void refresh_concurrentlyUsedToken_throws() {
+        // Токен валідний на момент читання, але інший конкурентний запит уже
+        // ревокнув його (revokeIfActive -> 0) → ротацію відхиляємо.
+        UUID raw = UUID.randomUUID();
+        RefreshToken stored = RefreshToken.builder()
+                .id(99L).token(raw).userId(11L)
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .isRevoked(false).build();
+        when(refreshTokenRepository.findByToken(raw)).thenReturn(Optional.of(stored));
+        when(refreshTokenRepository.revokeIfActive(raw)).thenReturn(0);
+
+        assertThatThrownBy(() -> authService.refresh(raw.toString()))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("already used");
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 
     @Test

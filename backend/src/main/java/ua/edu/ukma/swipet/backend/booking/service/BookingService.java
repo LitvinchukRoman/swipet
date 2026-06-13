@@ -86,7 +86,9 @@ public class BookingService {
 
     @Transactional
     public BookingReservationResponse bookSlot(Long userId, Long slotId, BookingReservationRequest request) {
-        BookingSlot slot = slotRepository.findById(slotId)
+        // Беремо слот під write-локом, щоб конкурентні бронювання серіалізувались
+        // і сумарна кількість не перевищила maxGuests (захист від овербукінгу).
+        BookingSlot slot = slotRepository.findByIdForUpdate(slotId)
                 .orElseThrow(() -> AppException.notFound("Слот не знайдено"));
 
         if (slot.getStartTime().isBefore(LocalDateTime.now())) {

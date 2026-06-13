@@ -8,5 +8,10 @@ public record UpdateProfileRequest(
         String fullName,
 
         @Size(max = 20, message = "Телефон не повинен перевищувати 20 символів")
-        String phone
+        String phone,
+
+        // Клієнт надсилає URL після завантаження аватара (POST /me/avatar).
+        // Раніше це поле тихо ігнорувалось → аватар не закріплювався через PATCH.
+        @Size(max = 1024, message = "URL аватара задовгий")
+        String avatarUrl
 ) {}

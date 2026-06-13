@@ -11,6 +11,9 @@ import ua.edu.ukma.swipet.backend.animal.dto.AnimalResponse;
 import ua.edu.ukma.swipet.backend.animal.dto.PhotoResponse;
 import ua.edu.ukma.swipet.backend.animal.service.AnimalService;
 import ua.edu.ukma.swipet.backend.animal.service.PhotoService;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
+import ua.edu.ukma.swipet.backend.common.security.ShelterOwnershipGuard;
 
 @RestController
 @RequestMapping("/api/v1/animals")
@@ -19,11 +22,15 @@ public class AnimalController {
 
     private final AnimalService animalService;
     private final PhotoService photoService;
+    private final ShelterOwnershipGuard ownershipGuard;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
-    public AnimalResponse createAnimal(@Valid @RequestBody AnimalRequest request) {
+    public AnimalResponse createAnimal(
+            @CurrentUser AuthenticatedUser currentUser,
+            @Valid @RequestBody AnimalRequest request) {
+        ownershipGuard.assertCanManageShelter(currentUser, request.shelterId());
         return animalService.createAnimal(request);
     }
 
@@ -44,15 +51,20 @@ public class AnimalController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public AnimalResponse updateAnimal(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long id, 
             @Valid @RequestBody AnimalRequest request) {
+        ownershipGuard.assertCanManageAnimal(currentUser, id);
         return animalService.updateAnimal(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
-    public void deleteAnimal(@PathVariable Long id) {
+    public void deleteAnimal(
+            @CurrentUser AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        ownershipGuard.assertCanManageAnimal(currentUser, id);
         animalService.deleteAnimal(id);
     }
 
@@ -62,16 +74,22 @@ public class AnimalController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public PhotoResponse uploadPhoto(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "sortOrder", required = false) Integer sortOrder) {
+        ownershipGuard.assertCanManageAnimal(currentUser, id);
         return photoService.uploadPhoto(id, file, sortOrder);
     }
 
     @DeleteMapping("/{id}/photos/{photoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
-    public void deletePhoto(@PathVariable Long id, @PathVariable Long photoId) {
+    public void deletePhoto(
+            @CurrentUser AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @PathVariable Long photoId) {
+        ownershipGuard.assertCanManageAnimal(currentUser, id);
         photoService.deletePhoto(id, photoId);
     }
 }

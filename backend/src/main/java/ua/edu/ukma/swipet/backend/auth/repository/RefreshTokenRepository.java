@@ -16,6 +16,15 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     Optional<RefreshToken> findByToken(UUID token);
 
+    /**
+     * Атомарно ревокує токен лише якщо він ще активний. Повертає кількість змінених
+     * рядків: 1 — ротацію виконав цей запит; 0 — токен уже ревокнули (конкурентний
+     * refresh або повторне використання), тож ротацію слід відхилити.
+     */
+    @Modifying
+    @Query("UPDATE RefreshToken r SET r.isRevoked = true WHERE r.token = :token AND r.isRevoked = false")
+    int revokeIfActive(@Param("token") UUID token);
+
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.userId = :userId")
     int deleteByUserId(@Param("userId") Long userId);

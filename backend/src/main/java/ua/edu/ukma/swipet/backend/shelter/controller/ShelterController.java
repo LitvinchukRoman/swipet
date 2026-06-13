@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
 import ua.edu.ukma.swipet.backend.auth.security.CurrentUser;
+import ua.edu.ukma.swipet.backend.common.security.ShelterOwnershipGuard;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterRequest;
 import ua.edu.ukma.swipet.backend.shelter.dto.ShelterResponse;
 import ua.edu.ukma.swipet.backend.shelter.service.ShelterService;
@@ -18,6 +19,7 @@ import ua.edu.ukma.swipet.backend.shelter.service.ShelterService;
 public class ShelterController {
 
     private final ShelterService shelterService;
+    private final ShelterOwnershipGuard ownershipGuard;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -46,8 +48,10 @@ public class ShelterController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public ShelterResponse updateShelter(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long id,
             @Valid @RequestBody ShelterRequest request) {
+        ownershipGuard.assertCanManageShelter(currentUser, id);
         return shelterService.updateShelter(id, request);
     }
 
@@ -55,8 +59,10 @@ public class ShelterController {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
     public ShelterResponse uploadLogo(
+            @CurrentUser AuthenticatedUser currentUser,
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
+        ownershipGuard.assertCanManageShelter(currentUser, id);
         return shelterService.uploadLogo(id, file);
     }
 }

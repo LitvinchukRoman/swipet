@@ -78,8 +78,8 @@ class DonationControllerTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "test@example.com", roles = "USER")
-    void createOneTimeDonation_MissingShelterId_Returns400() throws Exception {
-        // Arrange
+    void createOneTimeDonation_MissingTarget_Returns400() throws Exception {
+        // Arrange — ні притулку, ні тварини: немає кому донатити → 400.
         DonationRequest request = new DonationRequest(null, null, new BigDecimal("100.00"));
 
         // Act & Assert
@@ -150,11 +150,45 @@ class DonationControllerTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockAuthenticatedUser(userId = 1L, role = "USER")
-    void getMyGuardianships_Success_Returns200() throws Exception {
-        // Act & Assert
+    void getMyGuardianships_Success_Returns200WithSpeciesAndBreed() throws Exception {
+        // Act & Assert — DTO тепер містить animalSpecies/animalBreed (Task 1)
         mockMvc.perform(get("/api/v1/donations/my-guardianships"))
             .andExpect(status().isOk())
-            .andExpect(content().contentType("application/json"));
+            .andExpect(content().contentType("application/json"))
+            .andExpect(jsonPath("$[0].animalName").value("Test Animal"))
+            .andExpect(jsonPath("$[0].animalSpecies").value("DOG"));
+    }
+
+    @Test
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
+    void verifySession_Success_Returns200WithStatus() throws Exception {
+        // Act & Assert — реальний статус від Stripe (Task 2), контракт { status }
+        mockMvc.perform(get("/api/v1/donations/verify-session").param("session_id", "test_session_123"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("success"));
+    }
+
+    @Test
+    @WithMockAuthenticatedUser(userId = 1L, role = "USER")
+    void verifySession_UnknownSession_Returns404() throws Exception {
+        // Act & Assert — немає донату з таким session_id
+        mockMvc.perform(get("/api/v1/donations/verify-session").param("session_id", "does_not_exist"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockAuthenticatedUser(userId = 2L, role = "USER")
+    void verifySession_NotOwner_Returns403() throws Exception {
+        // Act & Assert — донат test_session_123 належить user 1, не user 2
+        mockMvc.perform(get("/api/v1/donations/verify-session").param("session_id", "test_session_123"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void verifySession_Unauthenticated_Returns401() throws Exception {
+        // Act & Assert — ендпоінт під автентифікацією
+        mockMvc.perform(get("/api/v1/donations/verify-session").param("session_id", "test_session_123"))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test

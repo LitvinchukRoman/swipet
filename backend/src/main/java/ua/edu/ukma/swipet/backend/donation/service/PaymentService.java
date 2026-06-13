@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.donation.config.StripeProperties;
 import ua.edu.ukma.swipet.backend.donation.dto.PaymentInitResponse;
+import ua.edu.ukma.swipet.backend.donation.dto.PaymentVerificationStatus;
 
 import java.math.BigDecimal;
 
@@ -72,6 +73,36 @@ public class PaymentService {
         } catch (StripeException e) {
             log.error("Помилка ініціалізації платежу Stripe: {}", e.getMessage());
             throw AppException.badRequest("Не вдалося створити платіжну сесію. Спробуйте пізніше.");
+        }
+    }
+
+    /**
+     * Повертає узагальнений статус Stripe Checkout Session за її id.
+     * Використовується ендпоінтом /verify-session, щоб після redirect показати
+     * користувачу реальний результат, не чекаючи доставки вебхука.
+     *
+     * Мапінг сирих полів Stripe:
+     *  - payment_status == "paid" | "no_payment_required" → SUCCESS
+     *  - status == "expired"                              → FAILED
+     *  - інакше (status "open", payment_status "unpaid")  → PENDING
+     */
+    public PaymentVerificationStatus getCheckoutStatus(String sessionId) {
+        try {
+            Session session = Session.retrieve(sessionId);
+            String paymentStatus = session.getPaymentStatus();
+            String status = session.getStatus();
+
+            if ("paid".equals(paymentStatus) || "no_payment_required".equals(paymentStatus)) {
+                return PaymentVerificationStatus.SUCCESS;
+            }
+            if ("expired".equals(status)) {
+                return PaymentVerificationStatus.FAILED;
+            }
+            return PaymentVerificationStatus.PENDING;
+
+        } catch (StripeException e) {
+            log.error("Не вдалося отримати Stripe-сесію {}: {}", sessionId, e.getMessage());
+            throw AppException.badRequest("Не вдалося перевірити статус платежу.");
         }
     }
 

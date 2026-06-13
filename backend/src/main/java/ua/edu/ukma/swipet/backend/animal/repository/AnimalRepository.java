@@ -19,6 +19,7 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
                    a.age_months AS ageMonths, 
                    CAST(a.size AS text) AS size, 
                    a.primary_photo_url AS primaryPhotoUrl, 
+                   s.id AS shelterId,
                    s.name AS shelterName,
                    (6371 * acos(
                       cos(radians(:lat)) * cos(radians(s.location_lat)) *

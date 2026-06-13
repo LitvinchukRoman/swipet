@@ -74,12 +74,16 @@ public class AuthService {
             throw AppException.unauthorized("Refresh token expired or revoked");
         }
 
+        // Атомарна ротація: ревокуємо лише якщо токен ще активний. За конкурентних
+        // запитів з тим самим токеном рівно один отримає updated==1, решта — 0 і
+        // дістануть відмову (інакше один токен видав би кілька валідних пар).
+        int revoked = refreshTokenRepository.revokeIfActive(tokenUuid);
+        if (revoked == 0) {
+            throw AppException.unauthorized("Refresh token already used");
+        }
+
         User user = userRepository.findById(stored.getUserId())
                 .orElseThrow(() -> AppException.unauthorized("User no longer exists"));
-
-        // Refresh-token rotation: revoke old, issue a new pair.
-        stored.setIsRevoked(true);
-        refreshTokenRepository.save(stored);
 
         return issueTokens(user);
     }
