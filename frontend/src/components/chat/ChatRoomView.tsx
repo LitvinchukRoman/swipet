@@ -16,7 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMessageTime } from '@/lib/format';
-import { connectSocket, disconnectSocket, type ChatMessageDTO } from '@/lib/socket';
+import { notify } from '@/lib/notify';
+import { connectSocket, type ChatMessageDTO } from '@/lib/socket';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/store/auth';
@@ -27,6 +28,12 @@ interface UIMessage {
   content: string;
   sentAt: string;
   pending?: boolean;
+  clientMessageId?: string;
+}
+
+/** Унікальний клієнтський id для optimistic-повідомлення. */
+function makeClientMessageId(): string {
+  return `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 const TYPING_OFF_DELAY = 1500;
@@ -72,7 +79,10 @@ export default function ChatRoomView() {
     (m: ChatMessageDTO) => {
       setMessages((prev) => {
         if (m.senderId === myId) {
-          const idx = prev.findIndex((x) => x.pending && x.content === m.content);
+          // Точний матч за clientMessageId; фолбек на content для старих клієнтів.
+          const idx = m.clientMessageId
+            ? prev.findIndex((x) => x.pending && x.clientMessageId === m.clientMessageId)
+            : prev.findIndex((x) => x.pending && x.content === m.content);
           if (idx !== -1) {
             const copy = [...prev];
             copy[idx] = { id: m.id, senderId: m.senderId, content: m.content, sentAt: m.sentAt };
@@ -106,7 +116,15 @@ export default function ChatRoomView() {
     const onConnect      = () => { setSocketLive(true); socket.emit('join_room', { roomId }); socket.emit('mark_read', { roomId }); };
     const onRoomJoined   = (p: { roomId: number; history: ChatMessageDTO[] }) => {
       if (p.roomId !== roomId) return;
-      setMessages(p.history.map((m) => ({ id: m.id, senderId: m.senderId, content: m.content, sentAt: m.sentAt })));
+      // Не затираємо optimistic-повідомлення, які ще не підтверджені сервером:
+      // інакше пізній room_joined вбиває pending bubble (гонка REST ↔ socket).
+      setMessages((prev) => {
+        const history = p.history.map((m) => ({ id: m.id, senderId: m.senderId, content: m.content, sentAt: m.sentAt }));
+        const stillPending = prev.filter(
+          (x) => x.pending && !history.some((h) => h.senderId === x.senderId && h.content === x.content),
+        );
+        return [...history, ...stillPending];
+      });
       scrollToEnd(false);
     };
     const onNewMessage   = (m: ChatMessageDTO) => { if (m.roomId !== roomId) return; upsertMessage(m); scrollToEnd(); };
@@ -132,8 +150,10 @@ export default function ChatRoomView() {
       socket.off('user_typing',   onUserTyping);
       socket.off('connect_error', onConnectError);
       socket.off('disconnect',    onConnectError);
+      // Залишаємо кімнату «м'яко»: знімаємо лише наші слухачі (вище) + typing off.
+      // НЕ рвемо глобальний singleton-сокет — це робиться тільки на logout (clearAuth),
+      // інакше швидка навігація між чатами дає цикли disconnect/reconnect і втрату подій.
       if (socket.connected) socket.emit('typing', { roomId, isTyping: false });
-      disconnectSocket();
       if (typingOffTimer.current) clearTimeout(typingOffTimer.current);
     };
   }, [roomId, token, myId, scrollToEnd, upsertMessage]);
@@ -156,27 +176,30 @@ export default function ChatRoomView() {
   const send = () => {
     const content = text.trim();
     if (!content) return;
+
+    // Офлайн: НЕ показуємо хибно «надіслане» повідомлення, яке не дійде до сервера.
+    // Лишаємо текст у полі, щоб користувач повторив після відновлення зв'язку.
+    if (!socketLive || !token) {
+      notify('You’re offline', 'Reconnecting… your message hasn’t been sent yet.');
+      return;
+    }
+
     setText('');
     animateSend();
 
-    if (socketLive && token) {
-      const socket = connectSocket(token);
-      const optimistic: UIMessage = {
-        id: -Date.now(),
-        senderId: myId,
-        content,
-        sentAt: new Date().toISOString(),
-        pending: true,
-      };
-      setMessages((prev) => [...prev, optimistic]);
-      socket.emit('send_message', { roomId, content });
-      socket.emit('typing', { roomId, isTyping: false });
-    } else {
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now(), senderId: myId, content, sentAt: new Date().toISOString() },
-      ]);
-    }
+    const clientMessageId = makeClientMessageId();
+    const socket = connectSocket(token);
+    const optimistic: UIMessage = {
+      id: -Date.now(),
+      senderId: myId,
+      content,
+      sentAt: new Date().toISOString(),
+      pending: true,
+      clientMessageId,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    socket.emit('send_message', { roomId, content, clientMessageId });
+    socket.emit('typing', { roomId, isTyping: false });
     scrollToEnd();
   };
 

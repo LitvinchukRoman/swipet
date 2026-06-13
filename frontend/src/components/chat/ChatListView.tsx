@@ -1,5 +1,4 @@
-import { router } from 'expo-router';
-import type { RelativePathString } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { MessageCircle, RefreshCw } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -21,7 +20,8 @@ import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/the
 import { chatService } from '@/services/chat';
 import type { ChatRoom } from '@/types/models';
 
-type RoomPathname = RelativePathString;
+// Динамічний маршрут кімнати чату — різний для застосунку та притулку.
+type RoomPathname = '/(app)/chat/[id]' | '/(shelter)/chat/[id]';
 
 // ─── Skeleton loader ──────────────────────────────────────────────────────────
 function SkeletonRow() {
@@ -66,7 +66,9 @@ export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Оновлюємо список при кожному поверненні на екран (напр. після виходу з чату),
+  // інакше lastMessage / unreadCount лишаються stale.
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const onRefresh = async () => {
     setRefreshing(true);

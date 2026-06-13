@@ -36,6 +36,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { formatAge } from '@/lib/format';
 import { Colors, Duration, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { animalService } from '@/services/animal';
+import { chatService } from '@/services/chat';
+import { notify } from '@/lib/notify';
 import type { Animal, Shelter, Species } from '@/types/models';
 
 // ─── Species icon map ─────────────────────────────────────────────────────────
@@ -424,6 +426,33 @@ export default function ShelterDetailScreen() {
 
   const animalCount = shelter.animals?.length ?? 0;
 
+  // Кімнати чату прив'язані до тварини, тож "Contact Shelter" відкриває діалог
+  // про першу тварину притулку. Якщо тварин немає — фолбек на телефон/нотіфай.
+  const handleContactShelter = async () => {
+    const firstAnimal = shelter.animals?.[0];
+    if (!firstAnimal) {
+      if (shelter.phone) {
+        Linking.openURL(`tel:${shelter.phone}`);
+      } else {
+        notify('Contact unavailable', 'This shelter has no animals to start a chat about yet.');
+      }
+      return;
+    }
+    try {
+      const { roomId } = await chatService.createRoom(firstAnimal.id, shelter.id);
+      router.push({
+        pathname: '/(app)/chat/[id]',
+        params: {
+          id:          String(roomId),
+          shelterName: shelter.name,
+          animalName:  firstAnimal.name,
+        },
+      });
+    } catch {
+      notify('Could not open chat', 'Please try again in a moment.');
+    }
+  };
+
   return (
     <View style={styles.root}>
       {/* ── Sticky top bar (appears on scroll) ─────────────────────────── */}
@@ -657,7 +686,7 @@ export default function ShelterDetailScreen() {
           label="Contact Shelter"
           variant="primary"
           icon={<PawPrint size={18} color={Colors.neutral[0]} strokeWidth={1.8} />}
-          onPress={() => {/* navigate to chat / contact flow */}}
+          onPress={handleContactShelter}
         />
       </View>
     </View>

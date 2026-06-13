@@ -16,6 +16,7 @@ interface FeedAnimalDTO {
   ageMonths: number;
   size: string;
   primaryPhotoUrl?: string;
+  shelterId: number;
   shelterName: string;
   distanceKm?: number;
 }
@@ -51,7 +52,7 @@ function mapFeedAnimal(d: FeedAnimalDTO): Animal {
     status: 'AVAILABLE',
     primaryPhotoUrl: d.primaryPhotoUrl,
     photos: d.primaryPhotoUrl ? [d.primaryPhotoUrl] : [],
-    shelterId: 0,
+    shelterId: d.shelterId,
     shelterName: d.shelterName,
     distanceKm: d.distanceKm,
   };

@@ -28,10 +28,22 @@ api.interceptors.request.use((config) => {
 // one refresh runs; everyone else awaits its result.
 let refreshPromise: Promise<string> | null = null;
 
-async function refreshAccessToken(refreshToken: string): Promise<string> {
+async function refreshAccessToken(refreshToken: string, epoch: number): Promise<string> {
   const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+
+  // If the user logged out / logged in while this refresh was in flight, the
+  // session epoch changed — drop the result instead of resurrecting a dead session.
+  if (useAuthStore.getState().sessionEpoch !== epoch) {
+    throw new Error('SESSION_CHANGED');
+  }
+
   // Persist BOTH the new access AND the rotated refresh token.
   await useAuthStore.getState().setTokens(data.accessToken, data.refreshToken ?? refreshToken);
+  // Backend returns the fresh user (TokenResponse.user) — keep role/profile in sync
+  // so the root role-guard never acts on a stale role.
+  if (data.user) {
+    await useAuthStore.getState().updateUser(data.user);
+  }
   return data.accessToken;
 }
 
@@ -44,23 +56,31 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
-      const { refreshToken, clearAuth } = useAuthStore.getState();
+      const { refreshToken, clearAuth, sessionEpoch } = useAuthStore.getState();
       if (!refreshToken) {
         await clearAuth();
         return Promise.reject(error);
       }
 
+      const epochAtStart = sessionEpoch;
       try {
         if (!refreshPromise) {
-          refreshPromise = refreshAccessToken(refreshToken).finally(() => {
+          refreshPromise = refreshAccessToken(refreshToken, epochAtStart).finally(() => {
             refreshPromise = null;
           });
         }
         const newAccessToken = await refreshPromise;
+        // Session changed during refresh (logout/login) — don't retry on a dead session.
+        if (useAuthStore.getState().sessionEpoch !== epochAtStart) {
+          return Promise.reject(error);
+        }
         original.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(original);
       } catch {
-        await clearAuth();
+        // Only force-logout if this is still the same session that 401'd.
+        if (useAuthStore.getState().sessionEpoch === epochAtStart) {
+          await clearAuth();
+        }
         return Promise.reject(error);
       }
     }

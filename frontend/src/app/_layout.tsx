@@ -6,13 +6,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useAuthStore } from '@/store/auth';
-
-// Кожна роль має «домашню» оболонку (групу маршрутів).
-const HOME_BY_ROLE = {
-  ADMIN: '/(admin)/(tabs)',
-  SHELTER_ADMIN: '/(shelter)/(tabs)',
-  USER: '/(app)/(tabs)',
-} as const;
+import { homePathForRole } from '@/lib/roles';
+import { roleFromToken } from '@/lib/jwt';
 
 export default function RootLayout() {
   const { accessToken, user, isLoading, loadFromStorage } = useAuthStore();
@@ -35,8 +30,10 @@ export default function RootLayout() {
       return;
     }
 
-    const role = user?.role ?? 'USER';
-    const homePath = HOME_BY_ROLE[role] ?? HOME_BY_ROLE.USER;
+    // Кеш user може ще не підвантажитись — тоді беремо роль із валідного JWT,
+    // щоб не кинути SHELTER_ADMIN/ADMIN помилково в USER-оболонку.
+    const role = user?.role ?? roleFromToken(accessToken) ?? 'USER';
+    const homePath = homePathForRole(role);
 
     const inHomeGroup =
       (role === 'ADMIN' && group === '(admin)') ||

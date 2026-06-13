@@ -12,6 +12,7 @@ interface ChatRoomDTO {
   shelterName: string;
   animalId: number;
   animalName: string;
+  animalSpecies?: string;
   animalPrimaryPhotoUrl?: string;
   lastMessageAt?: string;
   // ⚠️ бекенд поки НЕ повертає текст останнього повідомлення та лічильник непрочитаних
@@ -40,7 +41,7 @@ function mapRoom(d: ChatRoomDTO): ChatRoom {
       id: d.animalId,
       name: d.animalName,
       primaryPhotoUrl: d.animalPrimaryPhotoUrl,
-      species: 'OTHER' as Species, // бекенд не віддає вид у списку кімнат
+      species: (d.animalSpecies as Species) ?? ('OTHER' as Species),
     },
     shelter: { id: d.shelterId, name: d.shelterName },
     lastMessage: d.lastMessage,
@@ -62,9 +63,9 @@ function mapMessage(d: ChatMessageDTO): ChatMessage {
 
 export const chatService = {
   /** Список кімнат. GET /chats/rooms */
-  getRooms: (): Promise<ChatRoom[]> =>
+  getRooms: (page = 1, size = 50): Promise<ChatRoom[]> =>
     api
-      .get<Page<ChatRoomDTO>>('/chats/rooms', { params: { page: 1, size: 20 } })
+      .get<Page<ChatRoomDTO>>('/chats/rooms', { params: { page, size } })
       .then((r) => r.data.content.map(mapRoom)),
 
   /** Історія кімнати (новіші першими → розвертаємо). GET /chats/rooms/:id/messages */

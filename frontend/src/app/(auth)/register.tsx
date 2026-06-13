@@ -19,6 +19,7 @@ import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
 import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { analyzePassword, validatePassword, type Strength } from '@/lib/password';
+import { homePathForRole } from '@/lib/roles';
 
 // ─── Password strength ───────────────────────────────────────────────────────
 const STRENGTH_CFG: Record<Strength, { label: string; color: string; width: number }> = {
@@ -263,16 +264,20 @@ export default function RegisterScreen() {
     if (!validate()) { shake(); return; }
     setLoading(true);
     try {
-      // 1. Реєстрація
-      await authService.register({ fullName: fullName.trim(), email: email.trim(), password });
+      // Бекенд видає пару токенів уже на реєстрації → одразу логінимо користувача
+      // (без крихкого другого запиту login).
+      const { tokens } = await authService.register({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
 
-      // 2. Auto-login — бекенд не повертає токени при register,
-      //    тому одразу логінимося з тими самими кредами
-      const data = await authService.login({ email: email.trim(), password });
+      // Фолбек, якщо старіший бекенд не повернув tokens — логінимось окремо.
+      const data = tokens ?? (await authService.login({ email: email.trim(), password }));
       await setAuth(data.user, data.accessToken, data.refreshToken);
 
-      // 3. Прямий redirect на feed — без проміжних екранів
-      router.replace('/(app)/(tabs)');
+      // Маршрут за роллю (root layout усе одно підстрахує).
+      router.replace(homePathForRole(data.user.role));
     } catch (err: any) {
       // Інлайн-помилка під email — Alert на web не завжди показується
       const msg = err?.response?.data?.message ?? 'Registration failed. Please try again.';

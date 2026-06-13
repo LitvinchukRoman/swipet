@@ -49,9 +49,14 @@ const TopCard = forwardRef<TopCardRef, TopCardProps>(
   ({ animal, swipeProgress, onSwipeDone, onPress }, ref) => {
     const x = useSharedValue(0);
     const y = useSharedValue(0);
- 
+    // Гард від подвійного свайпу однієї картки (жест + кнопка одночасно):
+    // без нього onSwipeDone міг спрацювати двічі → currentIndex += 2 → пропуск тварини.
+    const exitingRef = useRef(false);
+
     const animateExit = useCallback(
       (direction: SwipeDirection) => {
+        if (exitingRef.current) return;
+        exitingRef.current = true;
         const toX = direction === 'RIGHT' ? EXIT_X : -EXIT_X;
         x.value = withTiming(toX, { duration: EXIT_DURATION }, (finished) => {
           'worklet';

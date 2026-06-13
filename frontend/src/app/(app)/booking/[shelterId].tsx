@@ -44,6 +44,13 @@ import { notify } from '@/lib/notify';
 /** Ключ дати без зсуву таймзони — беремо префікс ISO LocalDateTime. */
 const dateKey = (iso: string) => iso.slice(0, 10);
 
+/** Сьогоднішня дата у ЛОКАЛЬНІЙ зоні (YYYY-MM-DD). toISOString() дає UTC і біля
+ *  півночі помилково підсвічував "today" не той день. */
+const todayKey = () => {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+};
+
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
@@ -73,7 +80,8 @@ export default function BookingScreen() {
     shelterName?: string;
     animalName?: string;
   }>();
-  const shelterId = parseInt(params.shelterId, 10);
+  const parsedShelterId = Number.parseInt(params.shelterId ?? '', 10);
+  const shelterId = Number.isFinite(parsedShelterId) ? parsedShelterId : null;
   const shelterName = params.shelterName ?? 'Shelter';
   const animalName = params.animalName;
 
@@ -83,6 +91,11 @@ export default function BookingScreen() {
   const [confirmSlot, setConfirmSlot] = useState<Slot | null>(null);
 
   useEffect(() => {
+    // Невалідний shelterId у URL — не б'ємо бекенд із NaN (дало б 400/404).
+    if (shelterId == null) {
+      notify('Invalid shelter', 'This booking link is broken.');
+      return;
+    }
     fetchSlots(shelterId);
   }, [shelterId]);
 
@@ -151,7 +164,7 @@ export default function BookingScreen() {
           {isLoading ? (
             <LoadingSlots />
           ) : error ? (
-            <ErrorState message={error} onRetry={() => fetchSlots(shelterId)} />
+            <ErrorState message={error} onRetry={() => { if (shelterId != null) fetchSlots(shelterId); }} />
           ) : visibleSlots.length === 0 ? (
             <EmptySlots />
           ) : (
@@ -191,7 +204,7 @@ function DateCell({ dateKeyStr, selected, onPress }: { dateKeyStr: string; selec
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const d = new Date(dateKeyStr + 'T12:00:00');
-  const isToday = dateKeyStr === new Date().toISOString().slice(0, 10);
+  const isToday = dateKeyStr === todayKey();
 
   return (
     <Pressable

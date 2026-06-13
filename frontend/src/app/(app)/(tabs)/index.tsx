@@ -11,6 +11,7 @@ import { SwipeDeck } from '@/components/SwipeDeck';
 import { Toast, type ToastType } from '@/components/common/Toast';
 import { FilterBottomSheet } from '@/components/common/FilterBottomSheet';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
+import { countActiveFilters } from '@/lib/filters';
 import { useFeedStore } from '@/store/feed';
 import type { Animal, FeedFilters, SwipeDirection } from '@/types/models';
 
@@ -28,52 +29,41 @@ export default function FeedScreen() {
 
   const [toast, setToast] = useState<ToastState>({ visible: false, message: '', type: 'info' });
   const [filterOpen, setFilterOpen] = useState(false);
-  const [locationError, setLocationError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── SC-FEED-001: геолокація при монтуванні ──────────────────────────────
-  // Фолбек якщо локацію отримати не вдалось
-const FALLBACK_COORDS = { lat: 50.4501, lng: 30.5234 }; // Київ
+  // Геолокація — це ПОКРАЩЕННЯ, а не умова. Якщо дозволу немає / помилка /
+  // таймаут — все одно вантажимо стрічку з фолбек-координатами (Київ), щоб
+  // користувач завжди бачив тварин. Раніше відмова в дозволі повністю блокувала фід.
+  const FALLBACK_COORDS = { lat: 50.4501, lng: 30.5234 }; // Київ
 
-const initLocation = useCallback(async () => {
-  setLocationError(false);
-  try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      // Лише відмова в дозволі → показуємо помилку
-      setLocationError(true);
-      return;
-    }
-
+  const initLocation = useCallback(async () => {
     let feedCoords = FALLBACK_COORDS;
-
     try {
-      // 1. Спочатку пробуємо закешовану позицію — повертається миттєво
-      const last = await Location.getLastKnownPositionAsync({ maxAge: 300_000 });
-      if (last) {
-        feedCoords = { lat: last.coords.latitude, lng: last.coords.longitude };
-      } else {
-        // 2. Запитуємо свіжу позицію з таймаутом
-        const pos = (await Promise.race([
-          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 8000),
-          ),
-        ])) as Location.LocationObject;
-
-        feedCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        // 1. Закешована позиція — повертається миттєво
+        const last = await Location.getLastKnownPositionAsync({ maxAge: 300_000 });
+        if (last) {
+          feedCoords = { lat: last.coords.latitude, lng: last.coords.longitude };
+        } else {
+          // 2. Свіжа позиція з таймаутом
+          const pos = (await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 8000),
+            ),
+          ])) as Location.LocationObject;
+          feedCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        }
       }
     } catch {
-      // kCLErrorLocationUnknown / timeout → не блокуємо юзера,
-      // завантажуємо стрічку з фолбек координатами
+      // Відмова в дозволі / kCLErrorLocationUnknown / timeout — мовчки використовуємо фолбек.
     }
 
     setCoords(feedCoords);
     loadFeed(feedCoords);
-  } catch {
-    setLocationError(true);
-  }
-}, [setCoords, loadFeed]);
+  }, [setCoords, loadFeed]);
 
   useEffect(() => {
     initLocation();
@@ -114,7 +104,7 @@ const initLocation = useCallback(async () => {
 
   const isDone    = !isLoading && currentIndex >= cards.length;
   const remaining = Math.max(cards.length - currentIndex, 0);
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const activeFilterCount = countActiveFilters(filters);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -152,9 +142,7 @@ const initLocation = useCallback(async () => {
       </View>
 
       {/* ── Content ─────────────────────────── */}
-      {locationError ? (
-        <LocationError onRetry={initLocation} />
-      ) : isLoading ? (
+      {isLoading ? (
         <LoadingState />
       ) : isDone ? (
         <EmptyState
@@ -193,34 +181,6 @@ function LoadingState() {
       </View>
       <ActivityIndicator size="large" color={Colors.primary[500]} style={{ marginTop: Spacing[4] }} />
       <Text style={styles.loadingText}>Finding animals nearby…</Text>
-    </View>
-  );
-}
-
-// ─── Location error state ─────────────────────
-function LocationError({ onRetry }: { onRetry: () => void }) {
-  return (
-    <View style={styles.loading}>
-      <Text style={{ fontSize: 40, marginBottom: Spacing[4] }}>📍</Text>
-      <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.neutral[800], textAlign: 'center' }}>
-        Location access needed
-      </Text>
-      <Text style={{ fontSize: 14, color: Colors.neutral[400], textAlign: 'center', marginTop: Spacing[2], lineHeight: 21, paddingHorizontal: Spacing[8] }}>
-        Swipet uses your location to show animals nearby. Please allow access in Settings.
-      </Text>
-      <TouchableOpacity
-        onPress={onRetry}
-        activeOpacity={0.8}
-        style={{
-          marginTop: Spacing[6],
-          backgroundColor: Colors.primary[500],
-          borderRadius: Radius.lg,
-          paddingHorizontal: Spacing[8],
-          paddingVertical: Spacing[3],
-        }}
-      >
-        <Text style={{ color: Colors.neutral[0], fontWeight: '700', fontSize: 15 }}>Try again</Text>
-      </TouchableOpacity>
     </View>
   );
 }

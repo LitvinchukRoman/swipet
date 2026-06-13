@@ -34,6 +34,7 @@ import { DonationSheet } from '@/components/common/DonationSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { formatAge, formatDistance, SPECIES_ICON } from '@/lib/format';
+import { notify } from '@/lib/notify';
 import { chatService } from '@/services/chat';
 import { useFeedStore } from '@/store/feed';
 import type { Animal } from '@/types/models';
@@ -59,15 +60,23 @@ export default function LikedScreen() {
   }, []);
 
   const openChat = async (animal: Animal) => {
-    const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
-    router.push({
-      pathname: '/(app)/chat/[id]',
-      params: {
-        id:          String(roomId),
-        shelterName: animal.shelterName ?? '',
-        animalName:  animal.name,
-      },
-    });
+    if (!animal.shelterId) {
+      notify('Chat unavailable', 'This animal has no linked shelter yet. Pull to refresh and try again.');
+      return;
+    }
+    try {
+      const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
+      router.push({
+        pathname: '/(app)/chat/[id]',
+        params: {
+          id:          String(roomId),
+          shelterName: animal.shelterName ?? '',
+          animalName:  animal.name,
+        },
+      });
+    } catch {
+      notify('Could not open chat', 'Please try again in a moment.');
+    }
   };
 
   if (isLikedLoading && liked.length === 0) {

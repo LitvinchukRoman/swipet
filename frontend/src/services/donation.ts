@@ -5,7 +5,7 @@ import type { Species, VirtualGuardianship } from '@/types/models';
 // (DonationController /api/v1/donations). Платіж — через Stripe (повертається paymentUrl).
 
 export interface OneTimePayload {
-  shelterId: number;
+  shelterId?: number; // опційно — бекенд резолвить притулок з animalId
   animalId?: number;
   amount: number; // UAH
 }
@@ -19,12 +19,16 @@ export interface PaymentResponse {
   paymentUrl: string;
 }
 
+export type PaymentVerificationStatus = 'success' | 'pending' | 'failed';
+
 // Backend DTO: VirtualGuardianshipResponse (плоский — animalName/photo окремими полями).
 interface GuardianshipDTO {
   id: number;
   animalId: number;
   animalName: string;
   animalPrimaryPhotoUrl?: string;
+  animalSpecies: Species;
+  animalBreed?: string;
   monthlyAmount: number;
   isActive: boolean;
   startedAt: string;
@@ -44,7 +48,8 @@ function mapGuardianship(d: GuardianshipDTO): VirtualGuardianship {
       id: d.animalId,
       name: d.animalName,
       primaryPhotoUrl: d.animalPrimaryPhotoUrl,
-      species: 'OTHER' as Species,
+      species: d.animalSpecies ?? ('OTHER' as Species),
+      breed: d.animalBreed,
     },
   };
 }
@@ -70,12 +75,13 @@ export const donationService = {
 
   /**
    * Перевірка Stripe Checkout Session після redirect на /payment-success.
-   * ⚠️ BACKEND-ПРОГАЛИНА: ендпоінта GET /donations/verify-session ще НЕМАЄ
-   * (DonationController має лише /webhook). Поки повертаємо optimistic success —
-   * фактичне підтвердження робить Stripe-вебхук на сервері.
-   * TODO(backend): додати GET /donations/verify-session?session_id= і розкоментувати:
-   *   return api.get('/donations/verify-session', { params: { session_id: sessionId } }).then(r => r.data);
+   * GET /donations/verify-session?session_id= → { status: 'success' | 'pending' | 'failed' }.
+   * Бекенд звертається до Stripe напряму, тож результат реальний (не optimistic).
    */
-  verifySession: (sessionId: string): Promise<{ status: string }> =>
-    Promise.resolve({ status: 'success' }),
+  verifySession: (sessionId: string): Promise<{ status: PaymentVerificationStatus }> =>
+    api
+      .get<{ status: PaymentVerificationStatus }>('/donations/verify-session', {
+        params: { session_id: sessionId },
+      })
+      .then((r) => r.data),
 };

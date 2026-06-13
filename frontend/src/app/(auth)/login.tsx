@@ -18,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
 import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
+import { homePathForRole } from '@/lib/roles';
+import { notify } from '@/lib/notify';
 
 // ─── useShake ────────────────────────────────────────────────────────────────
 const useShake = () => {
@@ -244,12 +246,27 @@ export default function LoginScreen() {
   const anim3 = useFadeSlide(300);
 
   // ── Demo ─────────────────────────────────────────────────────────────────
-  const demoLogin = async () => {
-    await setAuth(
-      { id: 99, email: 'demo@swipet.ua', fullName: 'Demo User', role: 'USER', isEmailVerified: true },
-      'demo-access-token', 'demo-refresh-token'
-    );
-    router.replace('/(app)/(tabs)');
+  // Реальний логін у seed-акаунти (пароль однаковий — "password"), щоб демо
+  // працювало проти живого бекенду (фейкові токени миттєво відлітали на 401).
+  const DEMO_ACCOUNTS = {
+    USER:    { email: 'demo@swipet.com',         label: 'User' },
+    SHELTER: { email: 'shelter_kyiv@swipet.com', label: 'Shelter' },
+    ADMIN:   { email: 'admin@swipet.com',        label: 'Admin' },
+  } as const;
+
+  const [demoLoading, setDemoLoading] = useState<keyof typeof DEMO_ACCOUNTS | null>(null);
+
+  const demoLogin = async (kind: keyof typeof DEMO_ACCOUNTS) => {
+    setDemoLoading(kind);
+    try {
+      const data = await authService.login({ email: DEMO_ACCOUNTS[kind].email, password: 'password' });
+      await setAuth(data.user, data.accessToken, data.refreshToken);
+      router.replace(homePathForRole(data.user.role));
+    } catch {
+      notify('Demo unavailable', 'Seed accounts are missing. Run the backend with seed migrations.');
+    } finally {
+      setDemoLoading(null);
+    }
   };
 
   // ── Validate ─────────────────────────────────────────────────────────────
@@ -269,7 +286,7 @@ export default function LoginScreen() {
     try {
       const data = await authService.login({ email: email.trim(), password });
       await setAuth(data.user, data.accessToken, data.refreshToken);
-      router.replace('/(app)/(tabs)');
+      router.replace(homePathForRole(data.user.role));
     } catch (err: any) {
       // Інлайн-помилка під полем пароля (Alert на react-native-web не показується).
       const msg = err?.response?.data?.message ?? 'Invalid email or password';
@@ -390,8 +407,38 @@ export default function LoginScreen() {
             {/* ── Divider ──────────────────────────────── */}
             <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: Spacing[3], marginVertical: Spacing[5] }, anim2]}>
               <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[200] }} />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: Colors.neutral[400] }}>OR</Text>
+              <Text style={{ fontSize: 12, fontWeight: '500', color: Colors.neutral[400] }}>TRY A DEMO</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[200] }} />
+            </Animated.View>
+
+            {/* ── Demo logins (real seed accounts) ───────── */}
+            <Animated.View style={[{ flexDirection: 'row', gap: Spacing[2] }, anim2]}>
+              {(['USER', 'SHELTER', 'ADMIN'] as const).map((kind) => (
+                <Pressable
+                  key={kind}
+                  onPress={() => demoLogin(kind)}
+                  disabled={demoLoading !== null}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    height: 46,
+                    borderRadius: Radius.lg,
+                    borderWidth: 1.5,
+                    borderColor: Colors.neutral[200],
+                    backgroundColor: pressed ? Colors.neutral[50] : Colors.neutral[0],
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: demoLoading !== null && demoLoading !== kind ? 0.5 : 1,
+                  })}
+                >
+                  {demoLoading === kind ? (
+                    <ActivityIndicator color={Colors.primary[500]} />
+                  ) : (
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.neutral[700] }}>
+                      {DEMO_ACCOUNTS[kind].label}
+                    </Text>
+                  )}
+                </Pressable>
+              ))}
             </Animated.View>
 
             {/* ── Footer ───────────────────────────────── */}

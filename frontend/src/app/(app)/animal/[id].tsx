@@ -45,6 +45,8 @@ import {
 import type { Species } from '@/types/models';
 import { animalService } from '@/services/animal';
 import { chatService } from '@/services/chat';
+import { notify } from '@/lib/notify';
+import { useFeedStore } from '@/store/feed';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal } from '@/types/models';
 import { DonationSheet } from '@/components/common/DonationSheet';
@@ -136,19 +138,32 @@ function StatTile({
 }
 
 // ─── Heart button ─────────────────────────────────────────────────────────────
-function HeartButton({ size = 44, darkMode = false }: { size?: number; darkMode?: boolean }) {
-  const [liked, setLiked] = useState(false);
+// Контрольований: стан лайку та персист — у власника (екран ↔ feed store),
+// тож лайк зберігається на бекенді (свайп RIGHT), а не губиться у локальному useState.
+function HeartButton({
+  liked,
+  onToggle,
+  size = 44,
+  darkMode = false,
+}: {
+  liked: boolean;
+  onToggle: () => void;
+  size?: number;
+  darkMode?: boolean;
+}) {
   const scale  = useRef(new Animated.Value(1)).current;
-  const bgAnim = useRef(new Animated.Value(0)).current;
+  const bgAnim = useRef(new Animated.Value(liked ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(bgAnim, { toValue: liked ? 1 : 0, duration: Duration.normal, useNativeDriver: false }).start();
+  }, [liked]);
 
   const toggle = () => {
-    const next = !liked;
-    setLiked(next);
     Animated.sequence([
       Animated.spring(scale, { toValue: 1.22, useNativeDriver: true, damping: 4, stiffness: 300 }),
       Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
     ]).start();
-    Animated.timing(bgAnim, { toValue: next ? 1 : 0, duration: Duration.normal, useNativeDriver: false }).start();
+    onToggle();
   };
 
   const bg = bgAnim.interpolate({
@@ -336,6 +351,17 @@ export default function AnimalDetailScreen() {
   const [loading,         setLoading]         = useState(true);
   const [donationVisible, setDonationVisible] = useState(false);
 
+  const liked        = useFeedStore((s) => s.liked);
+  const likeAnimal   = useFeedStore((s) => s.likeAnimal);
+  const unlikeAnimal = useFeedStore((s) => s.unlikeAnimal);
+  const isLiked      = !!animal && liked.some((a) => a.id === animal.id);
+
+  const toggleLike = () => {
+    if (!animal) return;
+    if (isLiked) unlikeAnimal(animal.id);
+    else likeAnimal(animal);
+  };
+
   const header  = useFadeSlide(0);
   const stats   = useFadeSlide(80);
   const about   = useFadeSlide(160);
@@ -358,15 +384,23 @@ export default function AnimalDetailScreen() {
   // ── openChat — передає shelterName і animalName як params ─────────────────
   const openChat = async () => {
     if (!animal) return;
-    const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
-    router.push({
-      pathname: '/(app)/chat/[id]',
-      params: {
-        id: roomId,
-        shelterName: animal.shelterName,
-        animalName:  animal.name,
-      },
-    });
+    if (!animal.shelterId) {
+      notify('Chat unavailable', 'This animal has no linked shelter yet.');
+      return;
+    }
+    try {
+      const { roomId } = await chatService.createRoom(animal.id, animal.shelterId);
+      router.push({
+        pathname: '/(app)/chat/[id]',
+        params: {
+          id: String(roomId),
+          shelterName: animal.shelterName,
+          animalName:  animal.name,
+        },
+      });
+    } catch {
+      notify('Could not open chat', 'Please try again in a moment.');
+    }
   };
 
   const openBooking = () => {
@@ -431,7 +465,7 @@ export default function AnimalDetailScreen() {
                 >
                   <Share2 size={18} color="#fff" strokeWidth={2} />
                 </Pressable>
-                <HeartButton size={40} darkMode />
+                <HeartButton size={40} darkMode liked={isLiked} onToggle={toggleLike} />
               </View>
             </View>
           </SafeAreaView>

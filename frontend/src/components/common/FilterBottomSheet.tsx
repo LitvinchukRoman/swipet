@@ -29,6 +29,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
+import { countActiveFilters } from '@/lib/filters';
 import type { AnimalSize, FeedFilters, Species } from '@/types/models';
 
 // ─── Constants ────────────────────────────────
@@ -290,7 +291,7 @@ export function FilterBottomSheet({
   const animSheetStyle   = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
   const animBackdropStyle = useAnimatedStyle(() => ({ opacity: backdropOp.value }));
 
-  const activeCount = [species, size, ageMax].filter(Boolean).length + (radiusKm !== 50 ? 1 : 0);
+  const activeCount = countActiveFilters({ species, size, ageMax, radiusKm });
 
   const handleReset = () => {
     setSpecies(undefined);

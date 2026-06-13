@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { storage } from '@/lib/storage';
+import { disconnectSocket } from '@/lib/socket';
 
 export interface User {
   id: number;
@@ -17,6 +18,9 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isLoading: boolean;
+  /** Інкрементується на кожен login/logout. In-flight refresh порівнює епоху,
+   *  щоб не відновити стару сесію після виходу (race refresh ↔ logout). */
+  sessionEpoch: number;
 
   setAuth: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
   clearAuth: () => Promise<void>;
@@ -32,11 +36,12 @@ const KEYS = {
   USER: 'swipet_user',
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
   isLoading: true,
+  sessionEpoch: 0,
 
   setAuth: async (user, accessToken, refreshToken) => {
     await Promise.all([
@@ -44,16 +49,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       storage.setItem(KEYS.REFRESH, refreshToken),
       storage.setItem(KEYS.USER, JSON.stringify(user)),
     ]);
-    set({ user, accessToken, refreshToken });
+    set({ user, accessToken, refreshToken, sessionEpoch: get().sessionEpoch + 1 });
   },
 
   clearAuth: async () => {
+    // Рвемо глобальний сокет лише тут (на logout), не в кожній кімнаті чату.
+    disconnectSocket();
     await Promise.all([
       storage.removeItem(KEYS.ACCESS),
       storage.removeItem(KEYS.REFRESH),
       storage.removeItem(KEYS.USER),
     ]);
-    set({ user: null, accessToken: null, refreshToken: null });
+    set({ user: null, accessToken: null, refreshToken: null, sessionEpoch: get().sessionEpoch + 1 });
   },
 
   setAccessToken: async (token) => {

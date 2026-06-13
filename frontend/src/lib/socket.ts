@@ -10,6 +10,8 @@ export interface ChatMessageDTO {
   content: string;
   sentAt: string;
   isRead?: boolean;
+  /** Лише у відповіді відправнику — щоб зматчити optimistic bubble. */
+  clientMessageId?: string;
 }
 
 // server → client
@@ -24,7 +26,7 @@ interface ServerToClientEvents {
 // client → server
 interface ClientToServerEvents {
   join_room: (p: { roomId: number }) => void;
-  send_message: (p: { roomId: number; content: string }) => void;
+  send_message: (p: { roomId: number; content: string; clientMessageId?: string }) => void;
   mark_read: (p: { roomId: number }) => void;
   typing: (p: { roomId: number; isTyping: boolean }) => void;
 }

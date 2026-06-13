@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { donationService } from '@/services/donation';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { confirm, notify } from '@/lib/notify';
+import { SPECIES_ICON, SPECIES_LABEL } from '@/lib/format';
 import type { VirtualGuardianship } from '@/types/models';
 
 // ─── useFadeSlide ─────────────────────────────────────────────────────────────
@@ -171,6 +172,9 @@ function GuardianshipCard({
   const daysUntil   = Math.ceil((nextBilling.getTime() - Date.now()) / 86_400_000);
   const startedDate = new Date(item.startedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
+  const species     = item.animal?.species ?? 'OTHER';
+  const SpeciesIcon = SPECIES_ICON[species];
+
   const handleCancel = async () => {
     // confirm() — web-safe (window.confirm на web; Alert з кнопками на native).
     // Прямий Alert.alert з кнопками на web — no-op, тож скасування не спрацьовувало.
@@ -216,6 +220,19 @@ function GuardianshipCard({
                 contentFit="cover"
                 transition={200}
               />
+              {/* species icon — correct dog/cat/rabbit glyph from the live DTO */}
+              <View
+                style={{
+                  position: 'absolute', top: -4, left: -4,
+                  width: 24, height: 24, borderRadius: 12,
+                  backgroundColor: Colors.neutral[0],
+                  borderWidth: 1.5, borderColor: Colors.neutral[100],
+                  alignItems: 'center', justifyContent: 'center',
+                  ...Shadow.sm,
+                }}
+              >
+                <SpeciesIcon size={13} color={Colors.primary[500]} strokeWidth={2} />
+              </View>
               {/* active indicator */}
               <View
                 style={{
@@ -247,7 +264,7 @@ function GuardianshipCard({
               </View>
 
               <Text style={{ fontSize: 13, color: Colors.neutral[400] }}>
-                {item.animal?.breed ?? 'Mixed breed'}
+                {item.animal?.breed ?? `${SPECIES_LABEL[species]} · Mixed breed`}
               </Text>
 
               {/* amount + since */}

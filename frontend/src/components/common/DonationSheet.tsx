@@ -56,6 +56,9 @@ export interface DonationSheetProps {
 const SCREEN_H = Dimensions.get('window').height;
 const ONE_TIME_PRESETS     = [50, 100, 200];
 const GUARDIANSHIP_PRESETS = [100, 200, 500];
+// Мінімуми мають збігатися з бекендом: одноразовий ₴10, опікунство ₴50/міс.
+const MIN_ONE_TIME      = 10;
+const MIN_GUARDIANSHIP  = 50;
 
 // ─── Spring press hook (untouched) ────────────
 function usePress() {
@@ -193,12 +196,12 @@ function SuccessView({ mode, amount, onClose }: { mode: DonationMode; amount: nu
       </Animated.View>
       <View style={{ alignItems: 'center', gap: Spacing[2] }}>
         <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.neutral[900] }}>
-          {mode === 'GUARDIANSHIP' ? "You're a guardian! 🐾" : 'Thank you! ❤️'}
+          One last step 🐾
         </Text>
         <Text style={{ fontSize: 14, color: Colors.neutral[500], textAlign: 'center', lineHeight: 21 }}>
           {mode === 'GUARDIANSHIP'
-            ? `Your ₴${amount}/month subscription is now active. You'll be notified about updates.`
-            : `₴${amount} is on its way. Opening secure payment...`}
+            ? `Opening secure payment — complete the ₴${amount}/month checkout to start your guardianship.`
+            : `Opening secure payment — complete the ₴${amount} checkout to finish your donation.`}
         </Text>
       </View>
       <Pressable
@@ -232,6 +235,10 @@ export function DonationSheet({
   const [loading,     setLoading]     = useState(false);
   const [success,     setSuccess]     = useState(false);
 
+  // Відкладене відкриття платіжного браузера — тримаємо в ref, щоб скасувати,
+  // якщо користувач закрив sheet до спрацювання (інакше браузер відкриється «привидом»).
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── Reanimated State (Замінив Animated на Reanimated для жестів) ──
   const [isMounted, setIsMounted] = useState(visible);
   const translateY = useSharedValue(SCREEN_H);
@@ -239,6 +246,11 @@ export function DonationSheet({
   const backdropOp = useSharedValue(0);
 
   const close = useCallback(() => {
+    // Скасовуємо заплановане відкриття платіжного браузера при ручному закритті.
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
     Keyboard.dismiss();
     keyboardOffset.value = withTiming(0);
     translateY.value = withTiming(SCREEN_H, { duration: 250 });
@@ -281,6 +293,11 @@ export function DonationSheet({
     return () => { showSub.remove(); hideSub.remove(); };
   }, [keyboardOffset]);
 
+  // Підстраховка: чистимо відкладений таймер при розмонтуванні.
+  useEffect(() => () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+  }, []);
+
   // ── Жест свайпу вниз ──────────────────────────────────
   const pan = Gesture.Pan()
     .onChange((e) => {
@@ -311,19 +328,32 @@ export function DonationSheet({
   }, [mode]);
 
   const presets     = mode === 'ONE_TIME' ? ONE_TIME_PRESETS : GUARDIANSHIP_PRESETS;
-  const finalAmount = customAmt ? parseInt(customAmt, 10) : selectedAmt ?? 0;
+  const parsedCustom = customAmt ? parseInt(customAmt, 10) : null;
+  const finalAmount  = parsedCustom != null && !Number.isNaN(parsedCustom) ? parsedCustom : selectedAmt ?? 0;
+  const minAmount    = mode === 'GUARDIANSHIP' ? MIN_GUARDIANSHIP : MIN_ONE_TIME;
 
   // ── Submit ────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!finalAmount || finalAmount < 10) {
-      notify('Invalid amount', 'Minimum donation is ₴10');
+    if (!finalAmount || finalAmount < minAmount) {
+      notify(
+        'Invalid amount',
+        mode === 'GUARDIANSHIP'
+          ? `Minimum monthly guardianship is ₴${MIN_GUARDIANSHIP}`
+          : `Minimum donation is ₴${MIN_ONE_TIME}`,
+      );
       return;
     }
     setLoading(true);
     try {
       let paymentUrl: string;
       if (mode === 'ONE_TIME') {
-        const res = await donationService.createOneTime({ shelterId, animalId, amount: finalAmount });
+        // shelterId може бути 0/undefined (напр. зі списку «Улюблені») — тоді не шлемо його,
+        // бекенд резолвить притулок із animalId. Це прибирає поломку разового донату.
+        const res = await donationService.createOneTime({
+          shelterId: shelterId || undefined,
+          animalId,
+          amount: finalAmount,
+        });
         paymentUrl = res.paymentUrl;
       } else {
         const res = await donationService.createGuardianship({ animalId, monthlyAmount: finalAmount });
@@ -332,8 +362,11 @@ export function DonationSheet({
 
       setSuccess(true);
 
-      setTimeout(async () => {
+      openTimer.current = setTimeout(async () => {
+        openTimer.current = null;
         close();
+        // Web: Stripe redirect веде на той самий https-origin → app сам верифікує сесію.
+        // Native: in-app browser; повноцінний deep-link verify — окремий тікет.
         await WebBrowser.openBrowserAsync(paymentUrl, {
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
           showTitle: false,

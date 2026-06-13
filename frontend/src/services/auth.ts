@@ -25,12 +25,20 @@ export interface AuthResponse {
   };
 }
 
+// Бекенд повертає пару токенів уже на реєстрації (RegisterResponse.tokens),
+// тож окремий login після register не потрібен.
+export interface RegisterResponse {
+  userId: number;
+  message: string;
+  tokens: AuthResponse;
+}
+
 export const authService = {
   login: (payload: LoginPayload) =>
     api.post<AuthResponse>('/auth/login', payload).then((r) => r.data),
 
   register: (payload: RegisterPayload) =>
-    api.post<{ userId: number; message: string }>('/auth/register', payload).then((r) => r.data),
+    api.post<RegisterResponse>('/auth/register', payload).then((r) => r.data),
 
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),
