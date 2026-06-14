@@ -212,12 +212,14 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
   const goLeft = () => {
     if (index > 0) {
       listRef.current?.scrollToIndex({ index: index - 1, animated: true });
+      setIndex(index - 1);
     }
   };
 
   const goRight = () => {
     if (index < photos.length - 1) {
       listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+      setIndex(index + 1);
     }
   };
 
@@ -231,6 +233,7 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, i) => String(i)}
         onMomentumScrollEnd={onScroll}
+        getItemLayout={(_, index) => ({ length: SCREEN_W, offset: SCREEN_W * index, index })}
         style={{ width: SCREEN_W, height: PHOTO_H }}
         renderItem={({ item }) => (
           <Image

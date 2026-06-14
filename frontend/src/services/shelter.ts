@@ -93,20 +93,29 @@ function mapShelter(d: ShelterResponseDTO): Shelter {
 }
 
 function mapAnimal(d: AnimalResponseDTO, shelterName = ''): Animal {
+  const photos = d.photos ? [...d.photos] : [];
+  if (d.primaryPhotoUrl) {
+    const primaryIdx = photos.findIndex((p) => p.url === d.primaryPhotoUrl);
+    if (primaryIdx > 0) {
+      const [primary] = photos.splice(primaryIdx, 1);
+      photos.unshift(primary);
+    }
+  }
+
   return {
     id: d.id,
     name: d.name,
-    species: d.species,
+    species: d.species as Species,
     breed: d.breed,
     ageMonths: d.ageMonths,
-    size: d.size,
-    gender: d.gender,
+    size: d.size as AnimalSize,
+    gender: d.gender as Gender,
     description: d.description,
     isVaccinated: d.isVaccinated,
     isSterilized: d.isSterilized,
     status: d.status,
-    primaryPhotoUrl: d.primaryPhotoUrl ?? d.photos?.[0]?.url,
-    photos: d.photos ?? [],
+    primaryPhotoUrl: d.primaryPhotoUrl ?? photos[0]?.url,
+    photos,
     shelterId: d.shelterId,
     shelterName,
   };

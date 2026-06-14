@@ -33,6 +33,15 @@ interface ShelterDTO {
 }
 
 function mapAnimal(d: AnimalDTO, shelterName = ''): Animal {
+  const photos = d.photos ? [...d.photos] : [];
+  if (d.primaryPhotoUrl) {
+    const primaryIdx = photos.findIndex((p) => p.url === d.primaryPhotoUrl);
+    if (primaryIdx > 0) {
+      const [primary] = photos.splice(primaryIdx, 1);
+      photos.unshift(primary);
+    }
+  }
+
   return {
     id: d.id,
     name: d.name,
@@ -40,13 +49,13 @@ function mapAnimal(d: AnimalDTO, shelterName = ''): Animal {
     breed: d.breed,
     ageMonths: d.ageMonths,
     size: d.size as AnimalSize,
-    gender: d.gender as Gender,
+    gender: d.gender as Animal['gender'],
     description: d.description,
     isVaccinated: d.isVaccinated,
     isSterilized: d.isSterilized,
     status: d.status as Animal['status'],
-    primaryPhotoUrl: d.primaryPhotoUrl ?? d.photos?.[0]?.url,
-    photos: d.photos ?? [],
+    primaryPhotoUrl: d.primaryPhotoUrl ?? photos[0]?.url,
+    photos,
     shelterId: d.shelterId,
     shelterName,
   };

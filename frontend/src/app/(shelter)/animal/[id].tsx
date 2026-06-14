@@ -303,6 +303,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+    marginTop: 8,
   },
   photoLabel: { fontSize: FontSize.sm, color: Colors.primary[500], fontWeight: FontWeight.semibold },
 
