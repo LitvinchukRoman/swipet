@@ -36,6 +36,11 @@ public class PhotoService {
         // Синхронізуємо двонаправлений зв'язок
         animal.addPhoto(photo);
         
+        // Якщо основне фото ще не задане, робимо це фото основним
+        if (animal.getPrimaryPhotoUrl() == null || animal.getPrimaryPhotoUrl().isBlank()) {
+            animal.setPrimaryPhotoUrl(url);
+        }
+
         // Зберігаємо в базу даних
         AnimalPhoto savedPhoto = animalPhotoRepository.save(photo);
 
@@ -60,5 +65,14 @@ public class PhotoService {
 
         // Завдяки orphanRemoval = true в Animal, видалення з колекції автоматично зітре запис з бази
         animal.removePhoto(photo);
+
+        // Якщо видалили основне фото, призначаємо нове або null
+        if (photo.getUrl().equals(animal.getPrimaryPhotoUrl())) {
+            String nextPrimaryUrl = animal.getPhotos().stream()
+                    .map(AnimalPhoto::getUrl)
+                    .findFirst()
+                    .orElse(null);
+            animal.setPrimaryPhotoUrl(nextPrimaryUrl);
+        }
     }
 }

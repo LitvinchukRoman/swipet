@@ -19,7 +19,7 @@ export interface Animal {
   isSterilized: boolean;
   status: AnimalStatus;
   primaryPhotoUrl?: string;
-  photos: string[];
+  photos: { id: number; url: string; sortOrder: number }[];
   shelterId: number;
   shelterName: string;
   distanceKm?: number;

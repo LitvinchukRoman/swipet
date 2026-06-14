@@ -27,6 +27,12 @@ public class AnimalMapper {
     }
 
     public AnimalResponse toResponse(Animal animal) {
+        java.util.List<ua.edu.ukma.swipet.backend.animal.dto.PhotoResponse> photos = animal.getPhotos() != null
+                ? animal.getPhotos().stream()
+                        .map(p -> new ua.edu.ukma.swipet.backend.animal.dto.PhotoResponse(p.getId(), p.getUrl(), p.getSortOrder()))
+                        .toList()
+                : java.util.List.of();
+
         return new AnimalResponse(
                 animal.getId(),
                 animal.getShelter().getId(),
@@ -41,6 +47,7 @@ public class AnimalMapper {
                 animal.getIsSterilized(),
                 animal.getStatus(),
                 animal.getPrimaryPhotoUrl(),
+                photos,
                 animal.getCreatedAt()
         );
     }

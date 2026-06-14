@@ -425,7 +425,7 @@ export default function AnimalDetailScreen() {
     );
   }
 
-  const photos = animal.photos?.length ? animal.photos : [animal.primaryPhotoUrl ?? ''];
+  const photos = animal.photos?.length ? animal.photos.map((p) => p.url) : [animal.primaryPhotoUrl ?? ''];
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>

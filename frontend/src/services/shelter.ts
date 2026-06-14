@@ -45,6 +45,7 @@ interface AnimalResponseDTO {
   isSterilized: boolean;
   status: AnimalStatus;
   primaryPhotoUrl?: string;
+  photos: { id: number; url: string; sortOrder: number }[];
   createdAt: string;
 }
 
@@ -105,7 +106,7 @@ function mapAnimal(d: AnimalResponseDTO, shelterName = ''): Animal {
     isSterilized: d.isSterilized,
     status: d.status,
     primaryPhotoUrl: d.primaryPhotoUrl,
-    photos: d.primaryPhotoUrl ? [d.primaryPhotoUrl] : [],
+    photos: d.photos ?? [],
     shelterId: d.shelterId,
     shelterName,
   };
@@ -162,12 +163,16 @@ export const shelterService = {
     api.delete(`/animals/${id}`).then(() => undefined),
 
   /** Завантажити фото тварини. POST /animals/:id/photos (multipart) */
-  uploadAnimalPhoto: (animalId: number, file: FormData): Promise<void> =>
+  uploadAnimalPhoto: (animalId: number, file: FormData): Promise<{ id: number; url: string; sortOrder: number }> =>
     api
       .post(`/animals/${animalId}/photos`, file, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      .then(() => undefined),
+      .then((r) => r.data),
+
+  /** Видалити фото тварини. DELETE /animals/:id/photos/:photoId */
+  deleteAnimalPhoto: (animalId: number, photoId: number): Promise<void> =>
+    api.delete(`/animals/${animalId}/photos/${photoId}`).then(() => undefined),
 
   /** Зареєструвати притулок. POST /shelters */
   registerShelter: (payload: ShelterPayload): Promise<Shelter> =>

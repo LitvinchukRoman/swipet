@@ -6,6 +6,7 @@ import ua.edu.ukma.swipet.backend.animal.entity.Size;
 import ua.edu.ukma.swipet.backend.animal.entity.Species;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record AnimalResponse(
         Long id,
@@ -21,5 +22,6 @@ public record AnimalResponse(
         Boolean isSterilized,
         AnimalStatus status,
         String primaryPhotoUrl,
+        List<PhotoResponse> photos,
         LocalDateTime createdAt
 ) {}

@@ -2,7 +2,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Camera, Check } from 'lucide-react-native';
+import { Camera, Check, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   Platform,
@@ -53,11 +53,19 @@ export default function AnimalFormScreen() {
   const [isVaccinated, setIsVaccinated] = useState(existing?.isVaccinated ?? false);
   const [isSterilized, setIsSterilized] = useState(existing?.isSterilized ?? false);
   const [status, setStatus] = useState<Animal['status']>(existing?.status ?? 'AVAILABLE');
-  const [photoUri, setPhotoUri] = useState<string | null>(existing?.primaryPhotoUrl ?? null);
+  type PhotoItem = { id?: number; uri: string };
+  const [photos, setPhotos] = useState<PhotoItem[]>(
+    existing?.photos?.map((p) => ({ id: p.id, uri: p.url })) ?? []
+  );
+  const [photosToDelete, setPhotosToDelete] = useState<number[]>([]);
 
   const [saving, setSaving] = useState(false);
 
   const pickPhoto = async () => {
+    if (photos.length >= 5) {
+      notify('Limit reached', 'You can upload up to 5 photos.');
+      return;
+    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       notify('Permission needed', 'Please allow photo access in settings.');
@@ -69,7 +77,19 @@ export default function AnimalFormScreen() {
       aspect: [4, 3],
       quality: 0.85,
     });
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    if (!result.canceled) {
+      setPhotos([...photos, { uri: result.assets[0].uri }]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    const photo = photos[index];
+    if (photo.id) {
+      setPhotosToDelete([...photosToDelete, photo.id]);
+    }
+    const newPhotos = [...photos];
+    newPhotos.splice(index, 1);
+    setPhotos(newPhotos);
   };
 
   const uploadPhoto = async (animalId: number, uri: string) => {
@@ -118,10 +138,16 @@ export default function AnimalFormScreen() {
         ? await shelterService.updateAnimal(editingId!, payload)
         : await shelterService.createAnimal(payload);
 
-      // Only upload a freshly picked local photo (a remote http URL in edit mode is skipped)
-      if (photoUri && !photoUri.startsWith('http')) {
-        await uploadPhoto(animal.id, photoUri).catch(() => {
-          notify('Notice', "Profile saved, but the photo didn't upload.");
+      const newPhotos = photos.filter((p) => !p.id);
+      for (const p of newPhotos) {
+        await uploadPhoto(animal.id, p.uri).catch(() => {
+          notify('Notice', "Profile saved, but some photos didn't upload.");
+        });
+      }
+
+      for (const pid of photosToDelete) {
+        await shelterService.deleteAnimalPhoto(animal.id, pid).catch(() => {
+          console.warn('Failed to delete photo', pid);
         });
       }
 
@@ -138,16 +164,30 @@ export default function AnimalFormScreen() {
     <SafeAreaView style={st.safe} edges={['bottom']}>
       <Stack.Screen options={{ title: isEdit ? 'Edit animal' : 'New animal' }} />
       <ScrollView contentContainerStyle={st.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={st.photoWrap} onPress={pickPhoto}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={st.photo} contentFit="cover" />
-          ) : (
-            <View style={st.photoEmpty}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing[3], paddingBottom: Spacing[4] }}>
+          {photos.map((p, i) => (
+            <View key={i} style={st.photoWrap}>
+              <Image source={{ uri: p.uri }} style={st.photo} contentFit="cover" />
+              <Pressable
+                style={{ position: 'absolute', top: -8, right: -8, backgroundColor: Colors.neutral[900], borderRadius: 12, padding: 4 }}
+                onPress={() => removePhoto(i)}
+              >
+                <X size={14} color="#fff" strokeWidth={2.5} />
+              </Pressable>
+              {i === 0 && (
+                <View style={{ position: 'absolute', bottom: 6, left: 6, backgroundColor: Colors.primary[500], paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 10, color: '#fff', fontWeight: 'bold' }}>PRIMARY</Text>
+                </View>
+              )}
+            </View>
+          ))}
+          {photos.length < 5 && (
+            <Pressable style={st.photoEmpty} onPress={pickPhoto}>
               <Camera size={28} color={Colors.primary[500]} strokeWidth={1.8} />
               <Text style={st.photoLabel}>Add photo</Text>
-            </View>
+            </Pressable>
           )}
-        </Pressable>
+        </ScrollView>
 
         <Field label="Name">
           <TextInput value={name} onChangeText={setName} placeholder="e.g. Rex" placeholderTextColor={Colors.neutral[300]} style={st.input} />
@@ -250,10 +290,10 @@ const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.neutral[50] },
   content: { padding: Spacing[4], gap: Spacing[3], paddingBottom: Spacing[10] },
 
-  photoWrap: { alignSelf: 'center', marginBottom: Spacing[2] },
-  photo: { width: 160, height: 120, borderRadius: Radius.xl },
+  photoWrap: { alignSelf: 'center', marginBottom: Spacing[2], position: 'relative' },
+  photo: { width: 120, height: 120, borderRadius: Radius.xl },
   photoEmpty: {
-    width: 160,
+    width: 120,
     height: 120,
     borderRadius: Radius.xl,
     backgroundColor: Colors.primary[50],
