@@ -47,6 +47,14 @@ public class ChatController {
         return chatService.getRoomHistory(roomId, currentUser.id(), currentUser.role(), page, size);
     }
 
+    @PostMapping("/rooms/{roomId}/read")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markRoomRead(
+            @CurrentUser AuthenticatedUser currentUser,
+            @PathVariable Long roomId) {
+        chatService.markRoomRead(roomId, currentUser.id(), currentUser.role());
+    }
+
     @PostMapping("/internal/rooms/{roomId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public ChatMessageResponse saveMessageFromNodeJs(

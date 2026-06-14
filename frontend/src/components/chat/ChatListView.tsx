@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { formatMessageTime, SPECIES_EMOJI } from '@/lib/format';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { chatService } from '@/services/chat';
+import { useAuthStore } from '@/store/auth';
 import type { ChatRoom } from '@/types/models';
 
 // Динамічний маршрут кімнати чату — різний для застосунку та притулку.
@@ -54,6 +55,9 @@ export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
   const [rooms,      setRooms]      = useState<ChatRoom[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Притулок-адмін бачить імʼя клієнта; адоптер — назву притулку.
+  const isShelterAdmin = useAuthStore((s) => s.user?.role) === 'SHELTER_ADMIN';
 
   const load = useCallback(async () => {
     try {
@@ -142,7 +146,7 @@ export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
           }
           renderItem={({ item, index }) => (
             <Animated2.View entering={FadeInDown.delay(index * 55).springify().damping(18)}>
-              <ChatRow room={item} roomPathname={roomPathname} />
+              <ChatRow room={item} roomPathname={roomPathname} isShelterAdmin={isShelterAdmin} />
             </Animated2.View>
           )}
         />
@@ -154,8 +158,18 @@ export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  ChatRow
 // ─────────────────────────────────────────────────────────────────────────────
-function ChatRow({ room, roomPathname }: { room: ChatRoom; roomPathname: RoomPathname }) {
+function ChatRow({
+  room,
+  roomPathname,
+  isShelterAdmin,
+}: {
+  room: ChatRoom;
+  roomPathname: RoomPathname;
+  isShelterAdmin: boolean;
+}) {
   const hasUnread = room.unreadCount > 0;
+  // Назва рядка = співрозмовник: клієнт (для притулку) або притулок (для адоптера).
+  const peerName  = isShelterAdmin ? room.user.name || 'Client' : room.shelter.name;
   const scale     = useRef(new Animated.Value(1)).current;
 
   const onPressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, damping: 14, stiffness: 300 }).start();
@@ -167,9 +181,9 @@ function ChatRow({ room, roomPathname }: { room: ChatRoom; roomPathname: RoomPat
         router.push({
           pathname: roomPathname,
           params: {
-            id:          room.id,
-            shelterName: room.shelter.name,
-            animalName:  room.animal.name,
+            id:         room.id,
+            peerName:   peerName,
+            animalName: room.animal.name,
           },
         })
       }
@@ -192,7 +206,7 @@ function ChatRow({ room, roomPathname }: { room: ChatRoom; roomPathname: RoomPat
         <View style={styles.rowBody}>
           <View style={styles.rowTop}>
             <Text style={[styles.shelterName, hasUnread && styles.shelterNameUnread]} numberOfLines={1}>
-              {room.shelter.name}
+              {peerName}
             </Text>
             <Text style={[styles.time, hasUnread && styles.timeUnread]}>
               {formatMessageTime(room.lastMessageAt)}

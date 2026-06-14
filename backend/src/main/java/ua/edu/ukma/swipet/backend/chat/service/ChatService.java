@@ -146,4 +146,16 @@ public class ChatService {
         return chatMessageRepository.findByRoom_IdOrderBySentAtDesc(roomId, pageable)
                 .map(chatMapper::toMessageResponse);
     }
+
+    /**
+     * Позначає прочитаними всі повідомлення кімнати, надіслані НЕ цим користувачем.
+     * Доступ — лише учаснику кімнати (її автор, адмін притулку або платформений ADMIN).
+     */
+    @Transactional
+    public void markRoomRead(Long roomId, Long userId, Role role) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> AppException.notFound("Кімнату чату не знайдено"));
+        assertMember(room, userId, role);
+        chatMessageRepository.markRoomRead(roomId, userId);
+    }
 }

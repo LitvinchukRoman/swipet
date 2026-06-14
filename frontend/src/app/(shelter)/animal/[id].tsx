@@ -22,7 +22,7 @@ import { notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { shelterService, type AnimalPayload } from '@/services/shelter';
 import { useShelterStore } from '@/store/shelter';
-import type { AnimalSize, Gender, Species } from '@/types/models';
+import type { Animal, AnimalSize, Gender, Species } from '@/types/models';
 
 const SPECIES: Species[] = ['DOG', 'CAT', 'RABBIT', 'OTHER'];
 const SIZES: AnimalSize[] = ['SMALL', 'MEDIUM', 'LARGE'];

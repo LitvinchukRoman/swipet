@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 public record ChatRoomResponse(
         Long id,
+        Long userId,
+        String userName,
         Long shelterId,
         String shelterName,
         Long animalId,

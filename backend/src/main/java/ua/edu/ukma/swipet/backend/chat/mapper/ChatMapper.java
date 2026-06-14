@@ -16,6 +16,8 @@ public class ChatMapper {
     public ChatRoomResponse toRoomResponse(ChatRoom room, String lastMessage, Long unreadCount) {
         return new ChatRoomResponse(
                 room.getId(),
+                room.getUser().getId(),
+                room.getUser().getFullName(),
                 room.getShelter().getId(),
                 room.getShelter().getName(),
                 room.getAnimal().getId(),
