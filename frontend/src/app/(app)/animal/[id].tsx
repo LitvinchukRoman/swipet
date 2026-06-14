@@ -37,6 +37,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
   formatAge,
@@ -223,7 +224,21 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
   };
 
   return (
-    <View style={{ width, height, position: 'relative', backgroundColor: Platform.OS === 'web' ? '#000' : undefined }}>
+    <View style={{ width, height, position: 'relative', backgroundColor: Platform.OS === 'web' ? '#111' : undefined, overflow: 'hidden' }}>
+      {/* Blurred Cinematic Background (Web only) */}
+      {Platform.OS === 'web' && photos[index] && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <Image
+            source={{ uri: photos[index] }}
+            style={{ flex: 1, transform: [{ scale: 1.2 }] }}
+            contentFit="cover"
+            blurRadius={60}
+            transition={400}
+          />
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' }} />
+        </View>
+      )}
+
       <FlatList
         ref={listRef}
         data={photos}
@@ -235,12 +250,16 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
         style={{ width, height }}
         renderItem={({ item }) => (
-          <Image
-            source={{ uri: item }}
-            style={{ width, height }}
-            contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
-            transition={300}
-          />
+          item ? (
+            <Image
+              source={{ uri: item }}
+              style={{ width, height }}
+              contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
+              transition={300}
+            />
+          ) : (
+            <NoPhotoPlaceholder style={{ width, height }} iconSize={64} />
+          )
         )}
       />
 

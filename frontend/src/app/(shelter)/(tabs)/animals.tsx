@@ -14,6 +14,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatAge, SPECIES_EMOJI } from '@/lib/format';
 import { confirm, notify } from '@/lib/notify';
@@ -113,9 +114,7 @@ function AnimalRow({
       {animal.primaryPhotoUrl ? (
         <Image source={{ uri: animal.primaryPhotoUrl }} style={s.photo} contentFit="cover" transition={200} />
       ) : (
-        <View style={[s.photo, s.photoEmpty]}>
-          <PawPrint size={24} color={Colors.neutral[400]} />
-        </View>
+        <NoPhotoPlaceholder style={s.photo} iconSize={24} />
       )}
 
       <View style={{ flex: 1, marginLeft: Spacing[3] }}>

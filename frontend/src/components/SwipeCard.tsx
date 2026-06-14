@@ -4,6 +4,8 @@ import { Scissors, Shield } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
+
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { formatAge, formatDistance } from '@/lib/format';
 import type { Animal } from '@/types/models';
@@ -33,12 +35,16 @@ export function SwipeCard({ animal, likeStyle, nopeStyle, onPress }: SwipeCardPr
       style={styles.card}
     >
       {/* ── Photo ──────────────────────────── */}
-      <Image
-        source={{ uri: animal.primaryPhotoUrl }}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        transition={300}
-      />
+      {animal.primaryPhotoUrl ? (
+        <Image
+          source={{ uri: animal.primaryPhotoUrl }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={300}
+        />
+      ) : (
+        <NoPhotoPlaceholder style={StyleSheet.absoluteFill} iconSize={64} />
+      )}
 
       {/* ── Top vignette (subtle, for overlay badge readability) */}
       <LinearGradient

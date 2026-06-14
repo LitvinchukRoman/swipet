@@ -21,8 +21,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { donationService } from '@/services/donation';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { confirm, notify } from '@/lib/notify';
@@ -214,12 +217,16 @@ function GuardianshipCard({
           <View style={{ flexDirection: 'row', padding: Spacing[4], gap: Spacing[3], alignItems: 'flex-start' }}>
             {/* photo */}
             <View style={{ position: 'relative' }}>
-              <Image
-                source={{ uri: item.animal?.primaryPhotoUrl }}
-                style={{ width: 68, height: 68, borderRadius: 16 }}
-                contentFit="cover"
-                transition={200}
-              />
+              {item.animal?.primaryPhotoUrl ? (
+                <Image
+                  source={{ uri: item.animal?.primaryPhotoUrl }}
+                  style={{ width: 68, height: 68, borderRadius: 16 }}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : (
+                <NoPhotoPlaceholder style={{ width: 68, height: 68, borderRadius: 16 }} iconSize={24} />
+              )}
               {/* species icon — correct dog/cat/rabbit glyph from the live DTO */}
               <View
                 style={{

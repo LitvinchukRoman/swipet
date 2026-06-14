@@ -32,6 +32,7 @@ import {
 } from 'lucide-react-native';
 
 import { Avatar } from '@/components/ui/Avatar';
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatAge } from '@/lib/format';
 import { Colors, Duration, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
@@ -266,12 +267,16 @@ function AnimalCard({ animal, index }: { animal: Animal; index: number }) {
       >
         {/* Photo */}
         <View style={styles.animalPhotoWrap}>
-          <Image
-            source={{ uri: animal.primaryPhotoUrl }}
-            style={styles.animalPhoto}
-            contentFit="cover"
-            transition={250}
-          />
+          {animal.primaryPhotoUrl ? (
+            <Image
+              source={{ uri: animal.primaryPhotoUrl }}
+              style={styles.animalPhoto}
+              contentFit="cover"
+              transition={250}
+            />
+          ) : (
+            <NoPhotoPlaceholder style={styles.animalPhoto} iconSize={32} />
+          )}
           {/* Species badge */}
           <View style={styles.speciesBadge}>
             <SpeciesIcon size={18} color={Colors.primary[600]} strokeWidth={2.2} />

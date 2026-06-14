@@ -31,6 +31,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useState } from 'react';
 
 import { DonationSheet } from '@/components/common/DonationSheet';
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { formatAge, formatDistance, SPECIES_ICON } from '@/lib/format';
@@ -188,12 +189,16 @@ function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
         style={styles.infoRow}
       >
         <View style={styles.photoWrap}>
-          <Image
-            source={{ uri: animal.primaryPhotoUrl }}
-            style={styles.photo}
-            contentFit="cover"
-            transition={250}
-          />
+          {animal.primaryPhotoUrl ? (
+            <Image
+              source={{ uri: animal.primaryPhotoUrl }}
+              style={styles.photo}
+              contentFit="cover"
+              transition={250}
+            />
+          ) : (
+            <NoPhotoPlaceholder style={styles.photo} iconSize={32} />
+          )}
           <View style={styles.speciesBadge}>
             <SpeciesIcon size={18} color={Colors.neutral[500]} strokeWidth={1.8} />
           </View>
