@@ -35,16 +35,18 @@ export function SwipeCard({ animal, likeStyle, nopeStyle, onPress }: SwipeCardPr
       style={styles.card}
     >
       {/* ── Photo ──────────────────────────── */}
-      {animal.primaryPhotoUrl ? (
-        <Image
-          source={{ uri: animal.primaryPhotoUrl }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={300}
-        />
-      ) : (
-        <NoPhotoPlaceholder style={StyleSheet.absoluteFill} iconSize={64} />
-      )}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {animal.primaryPhotoUrl ? (
+          <Image
+            source={{ uri: animal.primaryPhotoUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={300}
+          />
+        ) : (
+          <NoPhotoPlaceholder style={StyleSheet.absoluteFill} iconSize={64} />
+        )}
+      </View>
 
       {/* ── Top vignette (subtle, for overlay badge readability) */}
       <LinearGradient

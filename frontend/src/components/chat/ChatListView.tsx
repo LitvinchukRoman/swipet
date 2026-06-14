@@ -139,8 +139,12 @@ export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
                 <MessageCircle size={40} color={Colors.primary[300]} strokeWidth={1.5} />
               </View>
               <EmptyState
-                title="All quiet here"
-                subtitle={"Messages will appear when\nsomeone reaches out about an animal"}
+                title="No messages yet"
+                subtitle={
+                  isShelterAdmin
+                    ? "Messages will appear here when\nusers reach out about your animals."
+                    : "Your conversations will appear here when\nyou message a shelter about an animal."
+                }
               />
             </View>
           }

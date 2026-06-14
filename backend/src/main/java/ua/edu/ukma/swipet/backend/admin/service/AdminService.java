@@ -51,6 +51,11 @@ public class AdminService {
     public UserResponse updateUserRole(Long userId, Role role) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> AppException.notFound("Користувача з ID " + userId + " не знайдено"));
+                
+        if ("admin@swipet.com".equals(user.getEmail())) {
+            throw AppException.badRequest("Неможливо змінити роль головного адміністратора.");
+        }
+        
         user.setRole(role);
         return UserResponse.from(userRepository.save(user));
     }

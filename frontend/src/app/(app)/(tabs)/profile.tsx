@@ -43,12 +43,15 @@ const ROLE_LABEL: Record<string, string> = {
 export default function ProfileScreen() {
   const { user, refreshToken, clearAuth, updateUser } = useAuthStore();
   const liked = useFeedStore((s) => s.liked);
+  const loadLiked = useFeedStore((s) => s.loadLiked);
   const [uploading, setUploading] = useState(false);
   const [wardsCount, setWardsCount] = useState(0);
   const [contactedCount, setContactedCount] = useState(0);
 
   // ── Load stats on mount ───────────────────
   useEffect(() => {
+    loadLiked();
+
     donationService.getMyGuardianships()
       .then(data => {
         if (Array.isArray(data)) setWardsCount(data.filter(g => g.isActive).length);

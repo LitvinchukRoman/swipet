@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
+  SectionList,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -18,11 +18,7 @@ import { confirm, notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { adminService, type AdminUser, type UserRole } from '@/services/admin';
 
-const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'USER', label: 'User' },
-  { value: 'SHELTER_ADMIN', label: 'Shelter' },
-  { value: 'ADMIN', label: 'Admin' },
-];
+
 
 export default function AdminUsersScreen() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -75,8 +71,12 @@ export default function AdminUsersScreen() {
           <ActivityIndicator size="large" color={Colors.primary[500]} />
         </View>
       ) : (
-        <FlatList
-          data={users}
+        <SectionList
+          sections={[
+            { title: 'Admins', data: users.filter((u) => u.role === 'ADMIN') },
+            { title: 'Shelters', data: users.filter((u) => u.role === 'SHELTER_ADMIN') },
+            { title: 'Users', data: users.filter((u) => u.role === 'USER') },
+          ].filter((s) => s.data.length > 0)}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={s.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[500]} />}
@@ -85,11 +85,15 @@ export default function AdminUsersScreen() {
               <EmptyState title="No users" subtitle="The list appears after sign-ups" />
             </View>
           }
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={s.sectionHeader}>{title}</Text>
+          )}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 40).springify().damping(18)}>
+            <Animated.View entering={FadeInDown.delay((index % 10) * 40).springify().damping(18)}>
               <UserRow user={item} onChangeRole={(role) => changeRole(item, role)} />
             </Animated.View>
           )}
+          stickySectionHeadersEnabled={false}
         />
       )}
     </SafeAreaView>
@@ -97,6 +101,8 @@ export default function AdminUsersScreen() {
 }
 
 function UserRow({ user, onChangeRole }: { user: AdminUser; onChangeRole: (role: UserRole) => void }) {
+  const isMainAdmin = user.email === 'admin@swipet.com';
+
   return (
     <View style={s.row}>
       <View style={s.rowTop}>
@@ -111,22 +117,29 @@ function UserRow({ user, onChangeRole }: { user: AdminUser; onChangeRole: (role:
         </View>
       </View>
 
-      <View style={s.roleRow}>
-        {ROLES.map((r) => {
-          const active = user.role === r.value;
-          return (
-            <Pressable
-              key={r.value}
-              onPress={() => onChangeRole(r.value)}
-              style={[s.roleChip, active ? s.roleChipActive : s.roleChipIdle]}
-            >
-              <Text style={[s.roleChipText, { color: active ? Colors.neutral[0] : Colors.neutral[600] }]}>
-                {r.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {user.role === 'USER' && (
+        <Pressable onPress={() => onChangeRole('ADMIN')} style={s.actionBtn}>
+          <Text style={s.actionBtnText}>Make Admin</Text>
+        </Pressable>
+      )}
+
+      {user.role === 'ADMIN' && !isMainAdmin && (
+        <Pressable onPress={() => onChangeRole('USER')} style={[s.actionBtn, s.actionBtnDanger]}>
+          <Text style={[s.actionBtnText, s.actionBtnDangerText]}>Make User</Text>
+        </Pressable>
+      )}
+
+      {user.role === 'SHELTER_ADMIN' && (
+        <View style={s.badge}>
+          <Text style={s.badgeText}>Managed via Shelters</Text>
+        </View>
+      )}
+
+      {isMainAdmin && (
+        <View style={s.badge}>
+          <Text style={s.badgeText}>Main Admin</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -156,9 +169,43 @@ const s = StyleSheet.create({
   name: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.neutral[900] },
   email: { fontSize: FontSize.xs, color: Colors.neutral[500], marginTop: 1 },
 
-  roleRow: { flexDirection: 'row', gap: Spacing[2], marginTop: Spacing[3] },
-  roleChip: { flex: 1, paddingVertical: Spacing[2], borderRadius: Radius.md, alignItems: 'center' },
-  roleChipActive: { backgroundColor: Colors.primary[500] },
-  roleChipIdle: { backgroundColor: Colors.neutral[100] },
-  roleChipText: { fontSize: FontSize.xs, fontWeight: FontWeight.bold },
+  sectionHeader: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral[800],
+    marginTop: Spacing[4],
+    marginBottom: Spacing[2],
+    paddingHorizontal: Spacing[1],
+  },
+
+  actionBtn: {
+    marginTop: Spacing[3],
+    backgroundColor: Colors.primary[100],
+    paddingVertical: 8,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
+  },
+  actionBtnText: {
+    color: Colors.primary[700],
+    fontWeight: FontWeight.bold,
+    fontSize: FontSize.sm,
+  },
+  actionBtnDanger: {
+    backgroundColor: Colors.neutral[100],
+  },
+  actionBtnDangerText: {
+    color: Colors.neutral[600],
+  },
+  badge: {
+    marginTop: Spacing[3],
+    backgroundColor: Colors.neutral[100],
+    paddingVertical: 8,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: Colors.neutral[500],
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.medium,
+  },
 });
