@@ -34,6 +34,10 @@ export default function AppLayout() {
         name="guardianship"
         options={{ headerShown: true, title: 'My Wards' }}
       />
+      <Stack.Screen
+        name="visits"
+        options={{ headerShown: true, title: 'My Visits' }}
+      />
     </Stack>
   );
 }

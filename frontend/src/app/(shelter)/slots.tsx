@@ -1,15 +1,15 @@
 import { Picker } from '@react-native-picker/picker';
 import { Stack } from 'expo-router';
-import { CalendarPlus, Clock, Users } from 'lucide-react-native';
+import { CalendarPlus, ChevronDown, ChevronUp, Clock, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { notify } from '@/lib/notify';
+import { confirm, notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
-import { bookingService, formatSlotTime, type Slot } from '@/services/booking';
+import { bookingService, formatSlotTime, type Slot, type SlotReservation } from '@/services/booking';
 import { useShelterStore } from '@/store/shelter';
 
 const DURATIONS = [30, 60, 90, 120];
@@ -152,32 +152,94 @@ export default function SlotsScreen() {
             </View>
           )
         }
-        renderItem={({ item }) => <SlotRow slot={item} />}
+        renderItem={({ item }) => <SlotRow slot={item} onChanged={load} />}
       />
     </SafeAreaView>
   );
 }
 
-function SlotRow({ slot }: { slot: Slot }) {
+function SlotRow({ slot, onChanged }: { slot: Slot; onChanged: () => void }) {
   const left = Math.max(0, slot.maxGuests - slot.bookedCount);
   const full = left === 0;
+
+  const [expanded, setExpanded] = useState(false);
+  const [reservations, setReservations] = useState<SlotReservation[] | null>(null);
+  const [loadingRes, setLoadingRes] = useState(false);
+
+  const toggle = async () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && reservations === null) {
+      setLoadingRes(true);
+      try {
+        setReservations(await bookingService.getSlotReservations(slot.id));
+      } catch {
+        setReservations([]);
+        notify('Error', "Couldn't load reservations");
+      } finally {
+        setLoadingRes(false);
+      }
+    }
+  };
+
+  const cancel = async (reservationId: number) => {
+    const ok = await confirm('Remove this booking?', 'The guest will lose their spot.');
+    if (!ok) return;
+    try {
+      await bookingService.cancelReservation(reservationId);
+      setReservations((prev) => (prev ? prev.filter((r) => r.id !== reservationId) : prev));
+      onChanged();
+    } catch {
+      notify('Error', "Couldn't remove the booking");
+    }
+  };
+
   return (
-    <View style={st.slotRow}>
-      <View style={st.slotIcon}>
-        <Clock size={18} color={full ? Colors.neutral[400] : Colors.primary[600]} strokeWidth={2} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={st.slotTime}>{formatSlotTime(slot.startTime, slot.endTime)}</Text>
-        <View style={st.slotMeta}>
-          <Users size={13} color={Colors.neutral[500]} strokeWidth={2} />
-          <Text style={st.slotMetaText}>{slot.bookedCount}/{slot.maxGuests} booked</Text>
+    <View style={st.slotCard}>
+      <Pressable style={st.slotRow} onPress={toggle}>
+        <View style={st.slotIcon}>
+          <Clock size={18} color={full ? Colors.neutral[400] : Colors.primary[600]} strokeWidth={2} />
         </View>
-      </View>
-      <View style={[st.badge, full ? st.badgeFull : st.badgeFree]}>
-        <Text style={[st.badgeText, { color: full ? Colors.neutral[500] : '#15803D' }]}>
-          {full ? 'Full' : `${left} left`}
-        </Text>
-      </View>
+        <View style={{ flex: 1 }}>
+          <Text style={st.slotTime}>{formatSlotTime(slot.startTime, slot.endTime)}</Text>
+          <View style={st.slotMeta}>
+            <Users size={13} color={Colors.neutral[500]} strokeWidth={2} />
+            <Text style={st.slotMetaText}>{slot.bookedCount}/{slot.maxGuests} booked</Text>
+          </View>
+        </View>
+        <View style={[st.badge, full ? st.badgeFull : st.badgeFree]}>
+          <Text style={[st.badgeText, { color: full ? Colors.neutral[500] : '#15803D' }]}>
+            {full ? 'Full' : `${left} left`}
+          </Text>
+        </View>
+        {expanded ? (
+          <ChevronUp size={18} color={Colors.neutral[400]} strokeWidth={2} />
+        ) : (
+          <ChevronDown size={18} color={Colors.neutral[400]} strokeWidth={2} />
+        )}
+      </Pressable>
+
+      {expanded && (
+        <View style={st.resWrap}>
+          {loadingRes ? (
+            <ActivityIndicator color={Colors.primary[500]} style={{ paddingVertical: Spacing[3] }} />
+          ) : reservations && reservations.length > 0 ? (
+            reservations.map((r) => (
+              <View key={r.id} style={st.resRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={st.resName} numberOfLines={1}>{r.userName}</Text>
+                  {r.notes ? <Text style={st.resNotes} numberOfLines={2}>{r.notes}</Text> : null}
+                </View>
+                <Pressable style={st.resCancel} onPress={() => cancel(r.id)}>
+                  <Text style={st.resCancelText}>Remove</Text>
+                </Pressable>
+              </View>
+            ))
+          ) : (
+            <Text style={st.resEmpty}>No one booked yet</Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -215,17 +277,28 @@ const st = StyleSheet.create({
 
   listHeading: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.neutral[900], marginTop: Spacing[4] },
 
+  slotCard: {
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius.xl,
+    marginTop: Spacing[3],
+    overflow: 'hidden',
+    ...Shadow.sm,
+  },
   slotRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing[3],
-    backgroundColor: Colors.neutral[0],
-    borderRadius: Radius.xl,
     padding: Spacing[3],
-    marginTop: Spacing[3],
-    ...Shadow.sm,
   },
   slotIcon: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.primary[50], alignItems: 'center', justifyContent: 'center' },
+
+  resWrap: { borderTopWidth: 1, borderTopColor: Colors.neutral[100], paddingHorizontal: Spacing[3], paddingVertical: Spacing[1] },
+  resRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2], paddingVertical: Spacing[2] },
+  resName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.neutral[800] },
+  resNotes: { fontSize: FontSize.xs, color: Colors.neutral[500], marginTop: 1 },
+  resCancel: { borderWidth: 1.5, borderColor: '#FECACA', borderRadius: Radius.md, paddingHorizontal: Spacing[3], paddingVertical: 4 },
+  resCancelText: { color: Colors.error, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  resEmpty: { fontSize: FontSize.sm, color: Colors.neutral[400], textAlign: 'center', paddingVertical: Spacing[2] },
   slotTime: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.neutral[900] },
   slotMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   slotMetaText: { fontSize: FontSize.xs, color: Colors.neutral[500] },

@@ -13,4 +13,7 @@ public interface BookingReservationRepository extends JpaRepository<BookingReser
     long countBySlot_IdAndStatus(Long slotId, ReservationStatus status);
 
     List<BookingReservation> findAllByUser_IdOrderByCreatedAtDesc(Long userId);
+
+    /** Бронювання конкретного слоту з певним статусом (для перегляду адміном «хто записаний»). */
+    List<BookingReservation> findBySlot_IdAndStatusOrderByCreatedAtAsc(Long slotId, ReservationStatus status);
 }

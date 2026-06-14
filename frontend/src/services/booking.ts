@@ -35,6 +35,31 @@ export interface Reservation {
   slotEndTime: string;
 }
 
+export type ReservationStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
+
+/** Моє бронювання (GET /me/reservations) — з контекстом притулку. */
+export interface MyReservation {
+  id: number;
+  slotId: number;
+  shelterId: number;
+  shelterName: string;
+  slotStartTime: string;
+  slotEndTime: string;
+  status: ReservationStatus;
+  notes?: string;
+}
+
+/** Бронювання слоту очима адміна притулку (GET /slots/:id/reservations). */
+export interface SlotReservation {
+  id: number;
+  userId: number;
+  userName: string;
+  userEmail: string;
+  notes?: string;
+  status: ReservationStatus;
+  createdAt: string;
+}
+
 /** Скільки місць лишилось у слоті. */
 export function spotsLeft(slot: Slot): number {
   return Math.max(0, slot.maxGuests - slot.bookedCount);
@@ -61,4 +86,16 @@ export const bookingService = {
   /** Забронювати слот. POST /slots/{slotId}/reservations */
   bookSlot: (slotId: number, notes?: string): Promise<Reservation> =>
     api.post<Reservation>(`/slots/${slotId}/reservations`, { notes }).then((r) => r.data),
+
+  /** Мої бронювання. GET /me/reservations */
+  getMyReservations: (): Promise<MyReservation[]> =>
+    api.get<MyReservation[]>('/me/reservations').then((r) => r.data),
+
+  /** Скасувати бронювання (власник / адмін притулку / ADMIN). DELETE /reservations/:id */
+  cancelReservation: (reservationId: number): Promise<void> =>
+    api.delete(`/reservations/${reservationId}`).then(() => undefined),
+
+  /** Хто записаний на слот (адмін притулку). GET /slots/:id/reservations */
+  getSlotReservations: (slotId: number): Promise<SlotReservation[]> =>
+    api.get<SlotReservation[]>(`/slots/${slotId}/reservations`).then((r) => r.data),
 };
