@@ -29,24 +29,16 @@ public class AnalyticsService {
     private final AnimalRepository animalRepository;
     private final ShelterRepository shelterRepository;
 
-    @Transactional
-    public void incrementView(Long animalId) {
-        bump(animalId, stat -> stat.setViewsCount(stat.getViewsCount() + 1));
-    }
-
-    /** Інкремент переглядів для цілої стрічки (AL-005) — в одній транзакції. */
-    @Transactional
-    public void incrementViews(List<Long> animalIds) {
-        if (animalIds == null) return;
-        for (Long animalId : animalIds) {
-            bump(animalId, stat -> stat.setViewsCount(stat.getViewsCount() + 1));
-        }
-    }
-
-    /** Інкремент свайпу вправо/вліво. */
+    /**
+     * Інкремент свайпу вправо/вліво. Свайп означає, що користувач реально побачив
+     * картку, тож це і є «перегляд» — тому тут же піднімаємо viewsCount. Завдяки
+     * unique-констрейнту свайпів (user+animal) кожен глядач рахується лише один раз,
+     * без накрутки від повторних завантажень/префетчів стрічки.
+     */
     @Transactional
     public void incrementSwipe(Long animalId, boolean liked) {
         bump(animalId, stat -> {
+            stat.setViewsCount(stat.getViewsCount() + 1);
             if (liked) {
                 stat.setSwipesRight(stat.getSwipesRight() + 1);
             } else {
