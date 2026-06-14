@@ -42,8 +42,8 @@ const TYPING_OFF_DELAY = 1500;
 //  ChatRoomView
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ChatRoomView() {
-  const { id, shelterName, animalName } = useLocalSearchParams<{
-    id: string; shelterName: string; animalName: string;
+  const { id, peerName, animalName } = useLocalSearchParams<{
+    id: string; peerName: string; animalName: string;
   }>();
   const roomId = Number(id);
   const insets = useSafeAreaInsets();
@@ -99,6 +99,10 @@ export default function ChatRoomView() {
   useEffect(() => {
     let cancelled = false;
 
+    // Позначаємо наявні непрочитані прочитаними одразу при відкритті (персист is_read
+    // на бекенді) — щоб лічильник у списку чатів обнулявся після перегляду.
+    chatService.markRead(roomId).catch(() => {});
+
     chatService
       .getMessages(roomId)
       .then((msgs) => {
@@ -127,7 +131,13 @@ export default function ChatRoomView() {
       });
       scrollToEnd(false);
     };
-    const onNewMessage   = (m: ChatMessageDTO) => { if (m.roomId !== roomId) return; upsertMessage(m); scrollToEnd(); };
+    const onNewMessage   = (m: ChatMessageDTO) => {
+      if (m.roomId !== roomId) return;
+      upsertMessage(m);
+      scrollToEnd();
+      // Повідомлення співрозмовника, отримане поки кімната відкрита, — одразу читаємо.
+      if (m.senderId !== myId) chatService.markRead(roomId).catch(() => {});
+    };
     const onUserTyping   = (p: { roomId: number; userId: number; isTyping: boolean }) => {
       if (p.roomId !== roomId || p.userId === myId) return;
       setOtherTyping(p.isTyping);
@@ -229,7 +239,7 @@ export default function ChatRoomView() {
         {/* Title block — left aligned */}
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {shelterName ?? 'Conversation'}
+            {peerName ?? 'Conversation'}
           </Text>
           {animalName ? (
             <Text style={styles.headerSub} numberOfLines={1}>

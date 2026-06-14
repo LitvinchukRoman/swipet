@@ -8,6 +8,8 @@ import type { ChatMessage, ChatRoom, Species } from '@/types/models';
 // Backend DTO: ChatRoomResponse.
 interface ChatRoomDTO {
   id: number;
+  userId: number;
+  userName: string;
   shelterId: number;
   shelterName: string;
   animalId: number;
@@ -37,6 +39,7 @@ interface Page<T> {
 function mapRoom(d: ChatRoomDTO): ChatRoom {
   return {
     id: d.id,
+    user: { id: d.userId, name: d.userName ?? '' },
     animal: {
       id: d.animalId,
       name: d.animalName,
@@ -81,9 +84,11 @@ export const chatService = {
       .then((r) => ({ roomId: r.data.id })),
 
   /**
-   * Позначити прочитаним. REST-ендпоінта на бекенді НЕМАЄ —
-   * read-квитанції йдуть через socket-подію `mark_read` (chat-service).
-   * Лишаємо no-op для сумісності інтерфейсу.
+   * Позначити повідомлення кімнати прочитаними (персистить is_read=true на бекенді).
+   * POST /chats/rooms/:id/read. Викликається при відкритті кімнати, щоб лічильник
+   * непрочитаних обнулявся у списку чатів. Socket-подія `mark_read` — окремо, для
+   * realtime read-receipt іншому учаснику.
    */
-  markRead: (_roomId: number): Promise<void> => Promise.resolve(),
+  markRead: (roomId: number): Promise<void> =>
+    api.post(`/chats/rooms/${roomId}/read`).then(() => undefined),
 };
