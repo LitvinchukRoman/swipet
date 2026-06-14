@@ -290,7 +290,7 @@ const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.neutral[50] },
   content: { padding: Spacing[4], gap: Spacing[3], paddingBottom: Spacing[10] },
 
-  photoWrap: { alignSelf: 'center', marginBottom: Spacing[2], position: 'relative' },
+  photoWrap: { alignSelf: 'center', marginBottom: Spacing[2], position: 'relative', marginTop: 8, marginRight: 8 },
   photo: { width: 120, height: 120, borderRadius: Radius.xl },
   photoEmpty: {
     width: 120,

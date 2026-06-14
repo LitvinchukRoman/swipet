@@ -18,6 +18,8 @@ import {
   Sparkles,
   Venus,
   House,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -31,6 +33,7 @@ import {
   ScrollView,
   Text,
   View,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -193,6 +196,7 @@ function HeartButton({
 function PhotoCarousel({ photos }: { photos: string[] }) {
   const [index, setIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const listRef = useRef<FlatList>(null);
 
   const onScroll = (e: any) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
@@ -205,9 +209,22 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
     }
   };
 
+  const goLeft = () => {
+    if (index > 0) {
+      listRef.current?.scrollToIndex({ index: index - 1, animated: true });
+    }
+  };
+
+  const goRight = () => {
+    if (index < photos.length - 1) {
+      listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+    }
+  };
+
   return (
     <View style={{ width: SCREEN_W, height: PHOTO_H, position: 'relative' }}>
       <FlatList
+        ref={listRef}
         data={photos}
         horizontal
         pagingEnabled
@@ -261,6 +278,24 @@ function PhotoCarousel({ photos }: { photos: string[] }) {
             {index + 1} / {photos.length}
           </Text>
         </View>
+      )}
+
+      {photos.length > 1 && Platform.OS === 'web' && index > 0 && (
+        <Pressable
+          onPress={goLeft}
+          style={{ position: 'absolute', left: 16, top: PHOTO_H / 2 - 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+        >
+          <ChevronLeft size={24} color="#fff" />
+        </Pressable>
+      )}
+
+      {photos.length > 1 && Platform.OS === 'web' && index < photos.length - 1 && (
+        <Pressable
+          onPress={goRight}
+          style={{ position: 'absolute', right: 16, top: PHOTO_H / 2 - 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+        >
+          <ChevronRight size={24} color="#fff" />
+        </Pressable>
       )}
     </View>
   );

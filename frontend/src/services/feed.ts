@@ -36,6 +36,7 @@ interface AnimalDTO {
   isSterilized: boolean;
   status: string;
   primaryPhotoUrl?: string;
+  photos?: { id: number; url: string; sortOrder: number }[];
 }
 
 /** FeedAnimalResponse → Animal (поля, яких немає у картці — дефолти; деталі тягне animalService.getById). */
@@ -72,8 +73,8 @@ function mapAnimal(d: AnimalDTO): Animal {
     isVaccinated: d.isVaccinated,
     isSterilized: d.isSterilized,
     status: d.status as Animal['status'],
-    primaryPhotoUrl: d.primaryPhotoUrl,
-    photos: d.primaryPhotoUrl ? [d.primaryPhotoUrl] : [],
+    primaryPhotoUrl: d.primaryPhotoUrl ?? d.photos?.[0]?.url,
+    photos: d.photos ?? [],
     shelterId: d.shelterId,
     shelterName: '',
   };

@@ -105,7 +105,7 @@ function mapAnimal(d: AnimalResponseDTO, shelterName = ''): Animal {
     isVaccinated: d.isVaccinated,
     isSterilized: d.isSterilized,
     status: d.status,
-    primaryPhotoUrl: d.primaryPhotoUrl,
+    primaryPhotoUrl: d.primaryPhotoUrl ?? d.photos?.[0]?.url,
     photos: d.photos ?? [],
     shelterId: d.shelterId,
     shelterName,
