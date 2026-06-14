@@ -21,6 +21,7 @@ export default function RootLayout() {
   // Маршрутизація за роллю: тримаємо користувача у його оболонці.
   useEffect(() => {
     if (isLoading) return;
+    if (!segments.length) return;
 
     const group = segments[0];
     const inAuthGroup = group === '(auth)';

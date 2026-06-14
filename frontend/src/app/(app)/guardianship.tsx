@@ -502,6 +502,7 @@ export default function GuardianshipScreen() {
   const active   = guardianships.filter(g => g.isActive);
   const inactive = guardianships.filter(g => !g.isActive);
 
+  /*
   const handleDebugTrigger = async () => {
     try {
       await donationService.debugTriggerBilling();
@@ -511,6 +512,7 @@ export default function GuardianshipScreen() {
       notify('Error', 'Failed to trigger billing');
     }
   };
+  */
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }} edges={['top']}>
@@ -562,11 +564,11 @@ export default function GuardianshipScreen() {
                   Cancelled
                 </Text>
               )}
-              {active.length > 0 && (
+              {/* active.length > 0 && (
                 <Pressable onPress={handleDebugTrigger} style={{ padding: 12, backgroundColor: Colors.neutral[100], borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing[8] }}>
                   <Text style={{ fontSize: 12, color: Colors.neutral[500], fontWeight: '600' }}>🛠 DEBUG: Fast-Forward 1 Month</Text>
                 </Pressable>
-              )}
+              ) */}
             </View>
           }
           contentContainerStyle={{

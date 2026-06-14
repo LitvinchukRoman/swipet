@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
-import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -75,7 +75,10 @@ const TopCard = forwardRef<TopCardRef, TopCardProps>(
       swipeRight: () => animateExit('RIGHT'),
     }));
  
+    const isWeb = Platform.OS === 'web';
+    
     const pan = Gesture.Pan()
+      .enabled(!isWeb)
       .onUpdate((e) => {
         x.value = e.translationX;
         y.value = e.translationY * 0.18;
@@ -126,7 +129,7 @@ const TopCard = forwardRef<TopCardRef, TopCardProps>(
             animal={animal}
             likeStyle={likeStyle}
             nopeStyle={nopeStyle}
-            onPress={onPress ? () => onPress() : undefined}
+            onPress={isWeb ? undefined : (onPress ? () => onPress() : undefined)}
           />
         </Animated.View>
       </GestureDetector>
