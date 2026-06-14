@@ -69,16 +69,18 @@ function usePress() {
 }
 
 // ─── PresetBtn (untouched) ────────────────────
-function PresetBtn({
-  amount,
-  selected,
-  onSelect,
+function PresetBtn({ 
+  amount, 
+  selected, 
+  onSelect, 
   popular,
-}: {
-  amount: number;
-  selected: boolean;
+  mode
+}: { 
+  amount: number; 
+  selected: boolean; 
   onSelect: () => void;
   popular?: boolean;
+  mode: 'ONE_TIME' | 'GUARDIANSHIP';
 }) {
   const { scale, onIn, onOut } = usePress();
   const bgAnim     = useRef(new Animated.Value(selected ? 1 : 0)).current;
@@ -118,7 +120,9 @@ function PresetBtn({
           )}
           <Text style={{ fontSize: 17, fontWeight: '800', color }}>₴{amount}</Text>
           <Text style={{ fontSize: 10, fontWeight: '500', color: selected ? 'rgba(255,255,255,0.7)' : Colors.neutral[400], marginTop: 1 }}>
-            per {amount <= 100 ? 'coffee' : amount <= 200 ? 'day' : 'month'}
+            {mode === 'ONE_TIME' 
+              ? (amount <= 50 ? 'на смаколик' : amount <= 100 ? 'на іграшку' : 'на корм')
+              : (amount <= 100 ? 'Хвостик-друг' : amount <= 200 ? 'Пухнастий спонсор' : 'Зоо-магнат')}
           </Text>
         </Animated.View>
       </Animated.View>
@@ -505,6 +509,7 @@ export function DonationSheet({
                   {presets.map((amt, i) => (
                     <PresetBtn
                       key={amt} amount={amt} popular={i === 1}
+                      mode={mode}
                       selected={selectedAmt === amt && !customAmt}
                       onSelect={() => { setSelectedAmt(amt); setCustomAmt(''); }}
                     />

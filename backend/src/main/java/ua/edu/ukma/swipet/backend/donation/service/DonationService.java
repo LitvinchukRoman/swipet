@@ -200,12 +200,12 @@ public class DonationService {
             }
         }
 
-        // 2) Рекурентний платіж: посуваємо наступне списання активного опікунства.
+        // 2) Рекурентний платіж: посуваємо наступне списання від поточної дати оплати.
         if (donation.getAnimal() != null) {
             guardianshipRepository
                 .findFirstByUser_IdAndAnimal_IdAndIsActiveTrueOrderByIdDesc(
                         donation.getUser().getId(), donation.getAnimal().getId())
-                .ifPresent(g -> g.setNextBillingAt(g.getNextBillingAt().plusMonths(1)));
+                .ifPresent(g -> g.setNextBillingAt(LocalDateTime.now().plusMonths(1)));
         }
     }
 
@@ -296,8 +296,8 @@ public class DonationService {
         List<VirtualGuardianship> guardianships = guardianshipRepository.findAllByUser_IdAndIsActiveTrue(userId);
         for (VirtualGuardianship g : guardianships) {
             g.setNextBillingAt(LocalDateTime.now().minusDays(1));
-            guardianshipRepository.save(g);
         }
+        guardianshipRepository.saveAllAndFlush(guardianships);
         processRecurringPayments();
     }
 
