@@ -54,7 +54,8 @@ import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal } from '@/types/models';
 import { DonationSheet } from '@/components/common/DonationSheet';
 
-import { Layout } from '@/lib/theme';
+const { width: SCREEN_W } = Dimensions.get('window');
+const PHOTO_H = SCREEN_W * 1.05;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -192,13 +193,13 @@ function HeartButton({
 }
 
 // ─── Photo carousel ───────────────────────────────────────────────────────────
-function PhotoCarousel({ photos, width, height }: { photos: string[], width: number, height: number }) {
+function PhotoCarousel({ photos }: { photos: string[] }) {
   const [index, setIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const listRef = useRef<FlatList>(null);
 
   const onScroll = (e: any) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
     if (i !== index) {
       setIndex(i);
       Animated.sequence([
@@ -223,7 +224,7 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
   };
 
   return (
-    <View style={{ width, height, position: 'relative' }}>
+    <View style={{ width: SCREEN_W, height: PHOTO_H, position: 'relative' }}>
       <FlatList
         ref={listRef}
         data={photos}
@@ -232,12 +233,12 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, i) => String(i)}
         onMomentumScrollEnd={onScroll}
-        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-        style={{ width, height }}
+        getItemLayout={(_, index) => ({ length: SCREEN_W, offset: SCREEN_W * index, index })}
+        style={{ width: SCREEN_W, height: PHOTO_H }}
         renderItem={({ item }) => (
           <Image
             source={{ uri: item }}
-            style={{ width, height }}
+            style={{ width: SCREEN_W, height: PHOTO_H }}
             contentFit="cover"
             transition={300}
           />
@@ -285,7 +286,7 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
       {photos.length > 1 && Platform.OS === 'web' && index > 0 && (
         <Pressable
           onPress={goLeft}
-          style={{ position: 'absolute', left: 16, top: height / 2 - 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+          style={{ position: 'absolute', left: 16, top: PHOTO_H / 2 - 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
         >
           <ChevronLeft size={24} color="#fff" />
         </Pressable>
@@ -294,7 +295,7 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
       {photos.length > 1 && Platform.OS === 'web' && index < photos.length - 1 && (
         <Pressable
           onPress={goRight}
-          style={{ position: 'absolute', right: 16, top: height / 2 - 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+          style={{ position: 'absolute', right: 16, top: PHOTO_H / 2 - 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
         >
           <ChevronRight size={24} color="#fff" />
         </Pressable>
@@ -364,10 +365,10 @@ function SkeletonBlock({ h, w = '100%', radius = 12 }: { h: number; w?: any; rad
   );
 }
 
-function LoadingSkeleton({ height }: { height: number }) {
+function LoadingSkeleton() {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
-      <SkeletonBlock h={height} radius={0} />
+      <SkeletonBlock h={PHOTO_H} radius={0} />
       <View style={{ padding: Spacing[6], gap: Spacing[4] }}>
         <SkeletonBlock h={32} w="60%" />
         <SkeletonBlock h={18} w="40%" />
@@ -383,11 +384,6 @@ function LoadingSkeleton({ height }: { height: number }) {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function AnimalDetailScreen() {
-  const { width: windowWidth } = Dimensions.get('window');
-  const isWeb = Platform.OS === 'web';
-  const contentWidth = isWeb ? Math.min(windowWidth, Layout.maxContentWidth) : windowWidth;
-  const photoHeight = contentWidth * 1.05;
-
   const { id } = useLocalSearchParams<{ id: string }>();
   const [animal,          setAnimal]          = useState<Animal | null>(null);
   const [loading,         setLoading]         = useState(true);
@@ -457,20 +453,12 @@ export default function AnimalDetailScreen() {
     });
   };
 
-  if (loading) return (
-    <View style={{ flex: 1, backgroundColor: Colors.neutral[0], alignItems: isWeb ? 'center' : undefined }}>
-      <View style={{ flex: 1, width: '100%', maxWidth: isWeb ? Layout.maxContentWidth : undefined }}>
-        <LoadingSkeleton height={photoHeight} />
-      </View>
-    </View>
-  );
+  if (loading) return <LoadingSkeleton />;
 
   if (!animal) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0], alignItems: isWeb ? 'center' : undefined }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: isWeb ? Layout.maxContentWidth : undefined }}>
-          <EmptyState title="Animal not found" />
-        </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
+        <EmptyState title="Animal not found" />
       </SafeAreaView>
     );
   }
@@ -478,13 +466,12 @@ export default function AnimalDetailScreen() {
   const photos = animal.photos?.length ? animal.photos.map((p) => p.url) : [animal.primaryPhotoUrl ?? ''];
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.neutral[0], alignItems: isWeb ? 'center' : undefined }}>
-      <View style={{ flex: 1, width: '100%', maxWidth: isWeb ? Layout.maxContentWidth : undefined, position: 'relative' }}>
-        <ScrollView showsVerticalScrollIndicator={false} bounces>
+    <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
+      <ScrollView showsVerticalScrollIndicator={false} bounces>
 
-          {/* ── Photo carousel ──────────────────────────── */}
-          <View>
-            <PhotoCarousel photos={photos} width={contentWidth} height={photoHeight} />
+        {/* ── Photo carousel ──────────────────────────── */}
+        <View>
+          <PhotoCarousel photos={photos} />
 
           <SafeAreaView
             edges={['top']}
@@ -699,16 +686,16 @@ export default function AnimalDetailScreen() {
         </SafeAreaView>
       </Animated.View>
 
-        {animal && (
-          <DonationSheet
-            visible={donationVisible}
-            onClose={() => setDonationVisible(false)}
-            animalId={animal.id}
-            animalName={animal.name}
-            shelterId={animal.shelterId}
-          />
-        )}
-      </View>
+      {/* ── Donation Sheet ───────────────────────────── */}
+      {animal && (
+        <DonationSheet
+          visible={donationVisible}
+          onClose={() => setDonationVisible(false)}
+          animalId={animal.id}
+          animalName={animal.name}
+          shelterId={animal.shelterId}
+        />
+      )}
     </View>
   );
 }
