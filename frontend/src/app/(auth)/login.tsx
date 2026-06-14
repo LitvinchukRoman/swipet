@@ -245,29 +245,6 @@ export default function LoginScreen() {
   const anim2 = useFadeSlide(200);
   const anim3 = useFadeSlide(300);
 
-  // ── Demo ─────────────────────────────────────────────────────────────────
-  // Реальний логін у seed-акаунти (пароль однаковий — "password"), щоб демо
-  // працювало проти живого бекенду (фейкові токени миттєво відлітали на 401).
-  const DEMO_ACCOUNTS = {
-    USER:    { email: 'demo@swipet.com',         label: 'User' },
-    SHELTER: { email: 'shelter_kyiv@swipet.com', label: 'Shelter' },
-    ADMIN:   { email: 'admin@swipet.com',        label: 'Admin' },
-  } as const;
-
-  const [demoLoading, setDemoLoading] = useState<keyof typeof DEMO_ACCOUNTS | null>(null);
-
-  const demoLogin = async (kind: keyof typeof DEMO_ACCOUNTS) => {
-    setDemoLoading(kind);
-    try {
-      const data = await authService.login({ email: DEMO_ACCOUNTS[kind].email, password: 'password' });
-      await setAuth(data.user, data.accessToken, data.refreshToken);
-      router.replace(homePathForRole(data.user.role));
-    } catch {
-      notify('Demo unavailable', 'Seed accounts are missing. Run the backend with seed migrations.');
-    } finally {
-      setDemoLoading(null);
-    }
-  };
 
   // ── Validate ─────────────────────────────────────────────────────────────
   const validate = () => {
@@ -404,42 +381,6 @@ export default function LoginScreen() {
               </Pressable>
             </Animated.View>
 
-            {/* ── Divider ──────────────────────────────── */}
-            <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: Spacing[3], marginVertical: Spacing[5] }, anim2]}>
-              <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[200] }} />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: Colors.neutral[400] }}>TRY A DEMO</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[200] }} />
-            </Animated.View>
-
-            {/* ── Demo logins (real seed accounts) ───────── */}
-            <Animated.View style={[{ flexDirection: 'row', gap: Spacing[2] }, anim2]}>
-              {(['USER', 'SHELTER', 'ADMIN'] as const).map((kind) => (
-                <Pressable
-                  key={kind}
-                  onPress={() => demoLogin(kind)}
-                  disabled={demoLoading !== null}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    height: 46,
-                    borderRadius: Radius.lg,
-                    borderWidth: 1.5,
-                    borderColor: Colors.neutral[200],
-                    backgroundColor: pressed ? Colors.neutral[50] : Colors.neutral[0],
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: demoLoading !== null && demoLoading !== kind ? 0.5 : 1,
-                  })}
-                >
-                  {demoLoading === kind ? (
-                    <ActivityIndicator color={Colors.primary[500]} />
-                  ) : (
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.neutral[700] }}>
-                      {DEMO_ACCOUNTS[kind].label}
-                    </Text>
-                  )}
-                </Pressable>
-              ))}
-            </Animated.View>
 
             {/* ── Footer ───────────────────────────────── */}
             <Animated.View style={[{ alignItems: 'center', marginTop: Spacing[8] }, anim3]}>

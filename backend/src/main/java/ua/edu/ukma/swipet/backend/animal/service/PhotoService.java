@@ -75,4 +75,19 @@ public class PhotoService {
             animal.setPrimaryPhotoUrl(nextPrimaryUrl);
         }
     }
+
+    @Transactional
+    public void setPrimaryPhoto(Long animalId, Long photoId) {
+        Animal animal = animalRepository.findById(animalId)
+                .orElseThrow(() -> AppException.notFound("Тварину не знайдено"));
+
+        AnimalPhoto photo = animalPhotoRepository.findById(photoId)
+                .orElseThrow(() -> AppException.notFound("Фото не знайдено"));
+
+        if (!photo.getAnimal().getId().equals(animalId)) {
+            throw AppException.forbidden("Це фото не належить вказаній тварині");
+        }
+
+        animal.setPrimaryPhotoUrl(photo.getUrl());
+    }
 }

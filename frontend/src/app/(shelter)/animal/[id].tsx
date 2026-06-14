@@ -58,6 +58,7 @@ export default function AnimalFormScreen() {
     existing?.photos?.map((p) => ({ id: p.id, uri: p.url })) ?? []
   );
   const [photosToDelete, setPhotosToDelete] = useState<number[]>([]);
+  const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState(0);
 
   const [saving, setSaving] = useState(false);
 
@@ -90,6 +91,12 @@ export default function AnimalFormScreen() {
     const newPhotos = [...photos];
     newPhotos.splice(index, 1);
     setPhotos(newPhotos);
+
+    if (primaryPhotoIndex === index) {
+      setPrimaryPhotoIndex(0);
+    } else if (primaryPhotoIndex > index) {
+      setPrimaryPhotoIndex(primaryPhotoIndex - 1);
+    }
   };
 
   const uploadPhoto = async (animalId: number, uri: string) => {
@@ -100,7 +107,7 @@ export default function AnimalFormScreen() {
     } else {
       form.append('file', { uri, type: 'image/jpeg', name: 'animal.jpg' } as any);
     }
-    await shelterService.uploadAnimalPhoto(animalId, form);
+    return shelterService.uploadAnimalPhoto(animalId, form);
   };
 
   const handleSave = async () => {
@@ -140,15 +147,23 @@ export default function AnimalFormScreen() {
 
       const newPhotos = photos.filter((p) => !p.id);
       for (const p of newPhotos) {
-        await uploadPhoto(animal.id, p.uri).catch(() => {
+        try {
+          const res = await uploadPhoto(animal.id, p.uri);
+          p.id = res.id;
+        } catch {
           notify('Notice', "Profile saved, but some photos didn't upload.");
-        });
+        }
       }
 
       for (const pid of photosToDelete) {
         await shelterService.deleteAnimalPhoto(animal.id, pid).catch(() => {
           console.warn('Failed to delete photo', pid);
         });
+      }
+
+      const primaryPhoto = photos[primaryPhotoIndex];
+      if (primaryPhoto && primaryPhoto.id) {
+        await shelterService.setPrimaryPhoto(animal.id, primaryPhoto.id).catch(() => console.warn('Failed to set primary photo'));
       }
 
       await reload();
@@ -174,10 +189,17 @@ export default function AnimalFormScreen() {
               >
                 <X size={14} color="#fff" strokeWidth={2.5} />
               </Pressable>
-              {i === 0 && (
+              {i === primaryPhotoIndex ? (
                 <View style={{ position: 'absolute', bottom: 6, left: 6, backgroundColor: Colors.primary[500], paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
                   <Text style={{ fontSize: 10, color: '#fff', fontWeight: 'bold' }}>PRIMARY</Text>
                 </View>
+              ) : (
+                <Pressable
+                  style={{ position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}
+                  onPress={() => setPrimaryPhotoIndex(i)}
+                >
+                  <Text style={{ fontSize: 10, color: '#fff', fontWeight: 'bold' }}>MAKE PRIMARY</Text>
+                </Pressable>
               )}
             </View>
           ))}

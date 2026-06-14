@@ -183,6 +183,9 @@ export const shelterService = {
   deleteAnimalPhoto: (animalId: number, photoId: number): Promise<void> =>
     api.delete(`/animals/${animalId}/photos/${photoId}`).then(() => undefined),
 
+  setPrimaryPhoto: (animalId: number, photoId: number): Promise<void> =>
+    api.put(`/animals/${animalId}/photos/${photoId}/primary`).then(() => undefined),
+
   /** Зареєструвати притулок. POST /shelters */
   registerShelter: (payload: ShelterPayload): Promise<Shelter> =>
     api.post<ShelterResponseDTO>('/shelters', payload).then((r) => mapShelter(r.data)),

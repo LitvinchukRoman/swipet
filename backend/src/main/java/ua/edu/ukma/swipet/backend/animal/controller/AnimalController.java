@@ -92,4 +92,15 @@ public class AnimalController {
         ownershipGuard.assertCanManageAnimal(currentUser, id);
         photoService.deletePhoto(id, photoId);
     }
+
+    @PutMapping("/{id}/photos/{photoId}/primary")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
+    public void setPrimaryPhoto(
+            @CurrentUser AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @PathVariable Long photoId) {
+        ownershipGuard.assertCanManageAnimal(currentUser, id);
+        photoService.setPrimaryPhoto(id, photoId);
+    }
 }
