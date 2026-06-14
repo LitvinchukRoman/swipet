@@ -20,6 +20,8 @@ import {
   RefreshControl,
   Text,
   View,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -167,6 +169,7 @@ function GuardianshipCard({
 }) {
   const { opacity, translateY } = useFadeSlide(index * 60);
   const scale = useRef(new Animated.Value(1)).current;
+  const [paying, setPaying] = useState(false);
 
   const onIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, damping: 12 }).start();
   const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
@@ -186,6 +189,20 @@ function GuardianshipCard({
       `You'll stop supporting ${item.animal?.name ?? 'this animal'} and won't be charged next month.`,
     );
     if (ok) onCancel(item.id);
+  };
+
+  const handlePay = async () => {
+    try {
+      setPaying(true);
+      const res = await donationService.getPendingGuardianshipPayment(item.id);
+      if (res.paymentUrl) {
+        Linking.openURL(res.paymentUrl);
+      }
+    } catch (err: any) {
+      notify('Error', err?.response?.data?.message ?? "Couldn't fetch payment link");
+    } finally {
+      setPaying(false);
+    }
   };
 
   return (
@@ -324,6 +341,32 @@ function GuardianshipCard({
                 </Text>
               </View>
 
+              {daysUntil <= 0 && (
+                <Pressable
+                  onPress={handlePay}
+                  disabled={paying}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingHorizontal: Spacing[3],
+                    paddingVertical: Spacing[2],
+                    borderRadius: Radius.full,
+                    backgroundColor: pressed ? Colors.primary[600] : Colors.primary[500],
+                    opacity: paying ? 0.7 : 1,
+                  })}
+                >
+                  {paying ? (
+                    <ActivityIndicator size="small" color={Colors.neutral[0]} />
+                  ) : (
+                    <>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.neutral[0] }}>Pay Now</Text>
+                      <ChevronRight size={14} color={Colors.neutral[0]} strokeWidth={2.5} />
+                    </>
+                  )}
+                </Pressable>
+              )}
+
               <Pressable
                 onPress={handleCancel}
                 style={({ pressed }) => ({
@@ -459,6 +502,16 @@ export default function GuardianshipScreen() {
   const active   = guardianships.filter(g => g.isActive);
   const inactive = guardianships.filter(g => !g.isActive);
 
+  const handleDebugTrigger = async () => {
+    try {
+      await donationService.debugTriggerBilling();
+      notify('Success', 'Billing dates shifted back. Refreshing...');
+      fetchData();
+    } catch (err) {
+      notify('Error', 'Failed to trigger billing');
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }} edges={['top']}>
       {loading ? (
@@ -503,13 +556,18 @@ export default function GuardianshipScreen() {
             active.length > 0 ? <StatsBanner guardianships={guardianships} /> : null
           }
           ListFooterComponent={
-            inactive.length > 0 ? (
-              <View style={{ paddingHorizontal: Spacing[5], marginTop: Spacing[3] }}>
+            <View style={{ paddingHorizontal: Spacing[5], marginTop: Spacing[3], paddingBottom: Spacing[10] }}>
+              {inactive.length > 0 && (
                 <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.neutral[400], marginBottom: Spacing[3], letterSpacing: 0.4, textTransform: 'uppercase' }}>
                   Cancelled
                 </Text>
-              </View>
-            ) : null
+              )}
+              {active.length > 0 && (
+                <Pressable onPress={handleDebugTrigger} style={{ padding: 12, backgroundColor: Colors.neutral[100], borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing[8] }}>
+                  <Text style={{ fontSize: 12, color: Colors.neutral[500], fontWeight: '600' }}>🛠 DEBUG: Fast-Forward 1 Month</Text>
+                </Pressable>
+              )}
+            </View>
           }
           contentContainerStyle={{
             paddingHorizontal: Spacing[5],

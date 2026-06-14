@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { ChevronRight, Heart, LogOut, Pencil, Star } from 'lucide-react-native';
 import type { ComponentType } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Alert,
   Platform,
@@ -25,6 +25,8 @@ import { Button } from '@/components/ui/Button';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
 import { userService } from '@/services/user';
+import { donationService } from '@/services/donation';
+import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/store/auth';
 import { useFeedStore } from '@/store/feed';
 
@@ -42,6 +44,21 @@ export default function ProfileScreen() {
   const { user, refreshToken, clearAuth, updateUser } = useAuthStore();
   const liked = useFeedStore((s) => s.liked);
   const [uploading, setUploading] = useState(false);
+  const [wardsCount, setWardsCount] = useState(0);
+  const [contactedCount, setContactedCount] = useState(0);
+
+  // ── Load stats on mount ───────────────────
+  useEffect(() => {
+    donationService.getMyGuardianships()
+      .then(data => {
+        if (Array.isArray(data)) setWardsCount(data.filter(g => g.isActive).length);
+      })
+      .catch(console.error);
+
+    chatService.getRooms()
+      .then(rooms => setContactedCount(rooms.length))
+      .catch(console.error);
+  }, []);
 
   // ── Avatar upload (web + mobile) ─────────
    const handleAvatarPress = async () => {
@@ -154,9 +171,9 @@ const handleLogout = () => {
         >
           <StatCell value={liked.length} label="Favorites" />
           <View style={styles.statDivider} />
-          <StatCell value={0} label="Wards" />
+          <StatCell value={wardsCount} label="Wards" />
           <View style={styles.statDivider} />
-          <StatCell value={0} label="Contacted" />
+          <StatCell value={contactedCount} label="Contacted" />
         </Animated.View>
 
         {/* ── Account section ─────────────── */}

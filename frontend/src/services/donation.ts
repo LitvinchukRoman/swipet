@@ -67,6 +67,14 @@ export const donationService = {
   cancelGuardianship: (id: number): Promise<void> =>
     api.delete(`/donations/guardianship/${id}`).then(() => undefined),
 
+  /** Отримати посилання на оплату простроченого/очікуючого опікунства */
+  getPendingGuardianshipPayment: (id: number): Promise<PaymentResponse> =>
+    api.get<PaymentResponse>(`/donations/guardianship/${id}/pay`).then((r) => r.data),
+
+  /** DEBUG: штучно пересунути дати і згенерувати інвойси */
+  debugTriggerBilling: (): Promise<void> =>
+    api.post(`/donations/debug/trigger-billing`).then(() => undefined),
+
   /** Мої підопічні. GET /donations/my-guardianships */
   getMyGuardianships: (): Promise<VirtualGuardianship[]> =>
     api

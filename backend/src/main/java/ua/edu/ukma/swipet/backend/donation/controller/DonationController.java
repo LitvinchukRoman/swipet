@@ -60,6 +60,16 @@ public class DonationController {
         return donationService.getMyGuardianships(currentUser.id());
     }
 
+    @GetMapping("/guardianship/{id}/pay")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, String> getGuardianshipPaymentLink(
+        @CurrentUser AuthenticatedUser currentUser,
+        @PathVariable Long id) {
+
+        String paymentUrl = donationService.getGuardianshipPaymentLink(currentUser.id(), id);
+        return Map.of("paymentUrl", paymentUrl);
+    }
+
     @GetMapping("/verify-session")
     @ResponseStatus(HttpStatus.OK)
     public VerifySessionResponse verifySession(
@@ -67,6 +77,12 @@ public class DonationController {
         @RequestParam("session_id") String sessionId) {
 
         return donationService.verifySession(currentUser.id(), sessionId);
+    }
+
+    @PostMapping("/debug/trigger-billing")
+    @ResponseStatus(HttpStatus.OK)
+    public void debugTriggerBilling(@CurrentUser AuthenticatedUser currentUser) {
+        donationService.debugTriggerBilling(currentUser.id());
     }
 
     @PostMapping("/webhook")

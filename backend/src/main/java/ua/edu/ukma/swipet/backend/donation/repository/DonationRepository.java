@@ -17,6 +17,9 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     boolean existsByUser_IdAndAnimal_IdAndTypeAndStatus(
             Long userId, Long animalId, DonationType type, DonationStatus status);
 
+    Optional<Donation> findFirstByUser_IdAndAnimal_IdAndTypeAndStatusOrderByIdDesc(
+            Long userId, Long animalId, DonationType type, DonationStatus status);
+
     /**
      * Транзакційний advisory-lock Postgres для серіалізації крон-задачі рекурентних
      * платежів між кількома інстансами застосунку. Автоматично звільняється в кінці

@@ -267,6 +267,40 @@ public class DonationService {
             .collect(java.util.stream.Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public String getGuardianshipPaymentLink(Long userId, Long guardianshipId) {
+        VirtualGuardianship guardianship = guardianshipRepository.findById(guardianshipId)
+            .orElseThrow(() -> AppException.notFound("Опікунство не знайдено"));
+
+        if (!guardianship.getUser().getId().equals(userId)) {
+            throw AppException.forbidden("Доступ заборонено");
+        }
+
+        // Знаходимо очікуючий платіж для цієї тварини (оскільки опікунство одне на тварину)
+        Donation pendingDonation = donationRepository.findFirstByUser_IdAndAnimal_IdAndTypeAndStatusOrderByIdDesc(
+            userId, guardianship.getAnimal().getId(), DonationType.SUBSCRIPTION, DonationStatus.PENDING)
+            .orElseThrow(() -> AppException.notFound("Немає очікуючих платежів для цього опікунства"));
+
+        // Отримуємо URL сесії зі Stripe за externalTxId
+        try {
+            com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(pendingDonation.getExternalTxId());
+            return session.getUrl();
+        } catch (com.stripe.exception.StripeException e) {
+            log.error("Помилка отримання Stripe Checkout Session: {}", e.getMessage());
+            throw AppException.badRequest("Не вдалося отримати посилання на оплату. Спробуйте пізніше.");
+        }
+    }
+
+    @Transactional
+    public void debugTriggerBilling(Long userId) {
+        List<VirtualGuardianship> guardianships = guardianshipRepository.findAllByUser_IdAndIsActiveTrue(userId);
+        for (VirtualGuardianship g : guardianships) {
+            g.setNextBillingAt(LocalDateTime.now().minusDays(1));
+            guardianshipRepository.save(g);
+        }
+        processRecurringPayments();
+    }
+
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void processRecurringPayments() {
