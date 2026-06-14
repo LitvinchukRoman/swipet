@@ -75,4 +75,13 @@ public class BookingController {
             @PathVariable Long slotId) {
         return bookingService.getSlotReservations(slotId, currentUser);
     }
+
+    @DeleteMapping("/slots/{slotId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SHELTER_ADMIN', 'ADMIN')")
+    public void deleteSlot(
+            @CurrentUser AuthenticatedUser currentUser,
+            @PathVariable Long slotId) {
+        bookingService.deleteSlot(slotId, currentUser);
+    }
 }

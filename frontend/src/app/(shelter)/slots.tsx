@@ -1,6 +1,6 @@
 import { Picker } from '@react-native-picker/picker';
 import { Stack } from 'expo-router';
-import { CalendarPlus, ChevronDown, ChevronUp, Clock, Users } from 'lucide-react-native';
+import { CalendarPlus, ChevronDown, ChevronUp, Clock, Trash2, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -194,6 +194,17 @@ function SlotRow({ slot, onChanged }: { slot: Slot; onChanged: () => void }) {
     }
   };
 
+  const remove = async () => {
+    const ok = await confirm('Delete this slot?', 'The slot and all its bookings will be permanently removed.');
+    if (!ok) return;
+    try {
+      await bookingService.deleteSlot(slot.id);
+      onChanged();
+    } catch {
+      notify('Error', "Couldn't delete the slot");
+    }
+  };
+
   return (
     <View style={st.slotCard}>
       <Pressable style={st.slotRow} onPress={toggle}>
@@ -238,6 +249,11 @@ function SlotRow({ slot, onChanged }: { slot: Slot; onChanged: () => void }) {
           ) : (
             <Text style={st.resEmpty}>No one booked yet</Text>
           )}
+
+          <Pressable style={st.deleteSlotBtn} onPress={remove}>
+            <Trash2 size={15} color={Colors.error} strokeWidth={2.2} />
+            <Text style={st.deleteSlotText}>Delete slot</Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -299,6 +315,19 @@ const st = StyleSheet.create({
   resCancel: { borderWidth: 1.5, borderColor: '#FECACA', borderRadius: Radius.md, paddingHorizontal: Spacing[3], paddingVertical: 4 },
   resCancelText: { color: Colors.error, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
   resEmpty: { fontSize: FontSize.sm, color: Colors.neutral[400], textAlign: 'center', paddingVertical: Spacing[2] },
+  deleteSlotBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: Spacing[1],
+    marginBottom: Spacing[2],
+    paddingVertical: Spacing[2],
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+  },
+  deleteSlotText: { color: Colors.error, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
   slotTime: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.neutral[900] },
   slotMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   slotMetaText: { fontSize: FontSize.xs, color: Colors.neutral[500] },

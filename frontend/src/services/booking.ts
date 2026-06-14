@@ -98,4 +98,8 @@ export const bookingService = {
   /** Хто записаний на слот (адмін притулку). GET /slots/:id/reservations */
   getSlotReservations: (slotId: number): Promise<SlotReservation[]> =>
     api.get<SlotReservation[]>(`/slots/${slotId}/reservations`).then((r) => r.data),
+
+  /** Видалити слот разом з усіма бронями (адмін притулку). DELETE /slots/:id */
+  deleteSlot: (slotId: number): Promise<void> =>
+    api.delete(`/slots/${slotId}`).then(() => undefined),
 };

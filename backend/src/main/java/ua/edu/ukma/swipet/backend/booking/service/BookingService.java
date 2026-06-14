@@ -193,4 +193,15 @@ public class BookingService {
                 ))
                 .collect(Collectors.toList());
     }
+
+    /** Видаляє слот разом з усіма його бронюваннями. Лише власник притулку або ADMIN. */
+    @Transactional
+    public void deleteSlot(Long slotId, AuthenticatedUser currentUser) {
+        BookingSlot slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> AppException.notFound("Слот не знайдено"));
+        ownershipGuard.assertCanManageShelter(currentUser, slot.getShelter().getId());
+
+        reservationRepository.deleteBySlot_Id(slotId); // прибираємо брони (FK), потім сам слот
+        slotRepository.delete(slot);
+    }
 }

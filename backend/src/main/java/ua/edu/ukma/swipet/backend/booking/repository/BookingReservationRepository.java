@@ -16,4 +16,7 @@ public interface BookingReservationRepository extends JpaRepository<BookingReser
 
     /** Бронювання конкретного слоту з певним статусом (для перегляду адміном «хто записаний»). */
     List<BookingReservation> findBySlot_IdAndStatusOrderByCreatedAtAsc(Long slotId, ReservationStatus status);
+
+    /** Видаляє всі бронювання слоту (перед видаленням самого слоту — щоб не порушити FK). */
+    void deleteBySlot_Id(Long slotId);
 }
