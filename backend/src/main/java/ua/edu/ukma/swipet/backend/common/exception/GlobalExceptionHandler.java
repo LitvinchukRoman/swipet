@@ -86,6 +86,13 @@ public class GlobalExceptionHandler {
                         HttpStatus.FORBIDDEN.value(), req.getRequestURI()));
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxSizeException(org.springframework.web.multipart.MaxUploadSizeExceededException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ErrorResponse.of("PAYLOAD_TOO_LARGE", "Розмір файлу перевищує допустимий ліміт (5 МБ)",
+                        HttpStatus.PAYLOAD_TOO_LARGE.value(), req.getRequestURI()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest req) {
         log.error("Unhandled exception at {}: {}", req.getRequestURI(), ex.getMessage(), ex);

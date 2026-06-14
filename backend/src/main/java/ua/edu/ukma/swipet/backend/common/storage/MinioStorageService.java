@@ -48,7 +48,7 @@ public class MinioStorageService implements StorageService {
             "image/jpeg", "image/png", "image/webp", "image/gif"
     );
 
-    private static final long MAX_BYTES = 5L * 1024L * 1024L; // 5 MiB
+    private static final long MAX_BYTES = 15L * 1024L * 1024L; // 15 MiB
     private static final DateTimeFormatter DATE_PREFIX = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.ROOT);
 
     private final MinioClient client;
@@ -60,7 +60,7 @@ public class MinioStorageService implements StorageService {
             throw AppException.badRequest("File is empty");
         }
         if (file.getSize() > MAX_BYTES) {
-            throw AppException.badRequest("File too large (max 5 MiB)");
+            throw AppException.badRequest("File too large (max 15 MiB)");
         }
 
         String contentType = file.getContentType() != null

@@ -2,6 +2,7 @@ package ua.edu.ukma.swipet.backend.common.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import ua.edu.ukma.swipet.backend.animal.entity.Animal;
 import ua.edu.ukma.swipet.backend.animal.repository.AnimalRepository;
 import ua.edu.ukma.swipet.backend.auth.entity.Role;
@@ -20,6 +21,7 @@ import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
  */
 @Component
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ShelterOwnershipGuard {
 
     private final ShelterRepository shelterRepository;
