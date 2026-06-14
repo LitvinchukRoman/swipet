@@ -60,6 +60,7 @@ export interface AnimalPayload {
   description?: string;
   isVaccinated: boolean;
   isSterilized: boolean;
+  status?: AnimalStatus;
 }
 
 export interface ShelterPayload {

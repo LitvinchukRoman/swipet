@@ -64,6 +64,10 @@ public class AnimalService {
         animal.setIsVaccinated(request.isVaccinated());
         animal.setIsSterilized(request.isSterilized());
 
+        if (request.status() != null) {
+            animal.setStatus(request.status());
+        }
+
         // Збереження викликати не обов'язково через брудну перевірку (Dirty Checking), але можна залишити для наочності
         return animalMapper.toResponse(animal);
     }
@@ -74,12 +78,5 @@ public class AnimalService {
             throw AppException.notFound("Тварину з ID " + id);
         }
         animalRepository.deleteById(id);
-    }
-    
-    @Transactional
-    public void updateAnimalStatus(Long id, AnimalStatus newStatus) {
-        Animal animal = animalRepository.findById(id)
-                .orElseThrow(() -> AppException.notFound("Тварину з ID " + id));
-        animal.setStatus(newStatus);
     }
 }

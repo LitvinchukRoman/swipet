@@ -22,7 +22,7 @@ public class AnimalMapper {
                 .description(request.description())
                 .isVaccinated(request.isVaccinated())
                 .isSterilized(request.isSterilized())
-                .status(AnimalStatus.AVAILABLE)
+                .status(request.status() != null ? request.status() : AnimalStatus.AVAILABLE)
                 .build();
     }
 

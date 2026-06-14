@@ -27,6 +27,12 @@ import type { AnimalSize, Gender, Species } from '@/types/models';
 const SPECIES: Species[] = ['DOG', 'CAT', 'RABBIT', 'OTHER'];
 const SIZES: AnimalSize[] = ['SMALL', 'MEDIUM', 'LARGE'];
 const GENDERS: Gender[] = ['MALE', 'FEMALE'];
+const STATUSES: Animal['status'][] = ['AVAILABLE', 'RESERVED', 'ADOPTED'];
+const STATUS_LABEL: Record<Animal['status'], string> = {
+  AVAILABLE: 'Available',
+  RESERVED: 'Reserved',
+  ADOPTED: 'Adopted',
+};
 
 export default function AnimalFormScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,6 +52,7 @@ export default function AnimalFormScreen() {
   const [description, setDescription] = useState(existing?.description ?? '');
   const [isVaccinated, setIsVaccinated] = useState(existing?.isVaccinated ?? false);
   const [isSterilized, setIsSterilized] = useState(existing?.isSterilized ?? false);
+  const [status, setStatus] = useState<Animal['status']>(existing?.status ?? 'AVAILABLE');
   const [photoUri, setPhotoUri] = useState<string | null>(existing?.primaryPhotoUrl ?? null);
 
   const [saving, setSaving] = useState(false);
@@ -102,6 +109,7 @@ export default function AnimalFormScreen() {
       description: description.trim() || undefined,
       isVaccinated,
       isSterilized,
+      status: isEdit ? status : undefined,
     };
 
     setSaving(true);
@@ -144,6 +152,12 @@ export default function AnimalFormScreen() {
         <Field label="Name">
           <TextInput value={name} onChangeText={setName} placeholder="e.g. Rex" placeholderTextColor={Colors.neutral[300]} style={st.input} />
         </Field>
+
+        {isEdit && (
+          <Field label="Adoption Status">
+            <PickerBox selected={status} onChange={setStatus} options={STATUSES} labelMap={STATUS_LABEL} />
+          </Field>
+        )}
 
         <Row>
           <Field label="Species" flex>

@@ -35,5 +35,7 @@ public record AnimalRequest(
         Boolean isVaccinated,
 
         @NotNull(message = "Статус стерилізації має бути вказаний")
-        Boolean isSterilized
+        Boolean isSterilized,
+
+        ua.edu.ukma.swipet.backend.animal.entity.AnimalStatus status
 ) {}
