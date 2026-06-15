@@ -65,7 +65,6 @@ const AGE_OPTIONS: { value: number; label: string }[] = [
   { value: 1,  label: 'Under 1 year'  },
   { value: 3,  label: 'Under 3 years' },
   { value: 7,  label: 'Under 7 years' },
-  { value: 99, label: 'Any age'       },
 ];
 
 export interface FilterBottomSheetProps {

@@ -340,15 +340,6 @@ export default function LoginScreen() {
               />
             </Animated.View>
 
-            {/* ── Forgot ───────────────────────────────── */}
-            <Animated.View style={[{ alignItems: 'flex-end', marginTop: Spacing[3] }, anim1]}>
-              <Pressable hitSlop={8}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.primary[500] }}>
-                  Forgot password?
-                </Text>
-              </Pressable>
-            </Animated.View>
-
             {/* ── CTA ──────────────────────────────────── */}
             <Animated.View style={[{ marginTop: Spacing[5], width: '100%' }, anim2]}>
               <Pressable

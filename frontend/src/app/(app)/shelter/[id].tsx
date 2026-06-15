@@ -1,11 +1,13 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { ComponentType, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,7 +23,6 @@ import {
   Dog,
   ExternalLink,
   Globe,
-  Heart,
   MapPin,
   PawPrint,
   Phone,
@@ -294,57 +295,6 @@ function AnimalCard({ animal, index }: { animal: Animal; index: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  HeartButton — self-contained like toggle (matches AnimalDetailScreen)
-// ─────────────────────────────────────────────────────────────────────────────
-function HeartButton({ size = 44, darkMode = false }: { size?: number; darkMode?: boolean }) {
-  const [liked, setLiked] = useState(false);
-  const scale  = useRef(new Animated.Value(1)).current;
-  const bgAnim = useRef(new Animated.Value(0)).current;
-
-  const toggle = () => {
-    const next = !liked;
-    setLiked(next);
-    Animated.sequence([
-      Animated.spring(scale, { toValue: 1.22, useNativeDriver: true, damping: 4, stiffness: 300 }),
-      Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
-    ]).start();
-    Animated.timing(bgAnim, {
-      toValue: next ? 1 : 0,
-      duration: Duration.normal,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const bg = bgAnim.interpolate({
-    inputRange:  [0, 1],
-    outputRange: darkMode
-      ? ['rgba(0,0,0,0.35)', 'rgba(239,68,68,0.55)']
-      : [Colors.neutral[100], '#FEE2E2'],
-  });
-
-  return (
-    <Pressable onPress={toggle} hitSlop={8}>
-      <Animated.View
-        style={{
-          width: size, height: size, borderRadius: size / 2,
-          alignItems: 'center', justifyContent: 'center',
-          backgroundColor: bg,
-        }}
-      >
-        <Animated.View style={{ transform: [{ scale }] }}>
-          <Heart
-            size={size * 0.5}
-            color={liked ? '#EF4444' : (darkMode ? '#fff' : Colors.neutral[400])}
-            fill={liked ? '#EF4444' : 'transparent'}
-            strokeWidth={1.8}
-          />
-        </Animated.View>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  Section header
 // ─────────────────────────────────────────────────────────────────────────────
 function SectionHeader({ title, count }: { title: string; count?: number }) {
@@ -389,6 +339,8 @@ export default function ShelterDetailScreen() {
 
   // Back button scale
   const backScale = useRef(new Animated.Value(1)).current;
+  // Share button scale
+  const shareScale = useRef(new Animated.Value(1)).current;
 
   // Entrance animations
   const heroAnim   = useRef(new Animated.Value(0)).current;
@@ -431,6 +383,14 @@ export default function ShelterDetailScreen() {
 
   const animalCount = shelter.animals?.length ?? 0;
 
+  const copyLink = async () => {
+    const url = Platform.OS === 'web'
+      ? window.location.href
+      : `https://swipet.com/shelter/${id}`;
+    await Clipboard.setStringAsync(url);
+    notify('Link copied', 'The link has been copied to your clipboard.');
+  };
+
   // Кімнати чату прив'язані до тварини, тож "Contact Shelter" відкриває діалог
   // про першу тварину притулку. Якщо тварин немає — фолбек на телефон/нотіфай.
   const handleContactShelter = async () => {
@@ -471,7 +431,7 @@ export default function ShelterDetailScreen() {
         <Text style={styles.stickyTitle} numberOfLines={1}>{shelter.name}</Text>
       </Animated.View>
 
-      {/* ── Back + Share + Like floating buttons ──────────────────────── */}
+      {/* ── Back + Share floating buttons ─────────────────────────────── */}
       <View style={[styles.floatingNav, { top: insets.top + Spacing[2] }]}>
         <Animated.View style={{ transform: [{ scale: backScale }] }}>
           <Pressable
@@ -489,22 +449,33 @@ export default function ShelterDetailScreen() {
         </Animated.View>
 
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-          <Pressable style={styles.navBtn}>
-            <Share2 size={18} color="#fff" strokeWidth={2} />
-          </Pressable>
-          <HeartButton size={40} darkMode />
+          <Animated.View style={{ transform: [{ scale: shareScale }] }}>
+            <Pressable
+              onPressIn={() =>
+                Animated.spring(shareScale, { toValue: 0.88, useNativeDriver: true, tension: 400, friction: 18 }).start()
+              }
+              onPressOut={() =>
+                Animated.spring(shareScale, { toValue: 1.0, useNativeDriver: true, tension: 400, friction: 18 }).start()
+              }
+              onPress={copyLink}
+              style={styles.navBtn}
+            >
+              <Share2 size={18} color="#fff" strokeWidth={2} />
+            </Pressable>
+          </Animated.View>
         </View>
       </View>
 
       {/* ── Scrollable content ──────────────────────────────────────────── */}
       <Animated.ScrollView
+        style={{ flex: 1 }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: true },
         )}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ paddingBottom: Spacing[6] }}
       >
         {/* ── Hero banner ─────────────────────────────────────────────── */}
         <Animated.View style={[styles.hero, { transform: [{ scale: headerScale }] }]}>
@@ -1001,10 +972,6 @@ const styles = StyleSheet.create({
 
   // ── Bottom dual-action panel
   ctaBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     gap: Spacing[3],
     paddingHorizontal: Spacing[5],
