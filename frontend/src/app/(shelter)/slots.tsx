@@ -2,7 +2,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Stack } from 'expo-router';
 import { CalendarPlus, ChevronDown, ChevronUp, Clock, Trash2, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
@@ -128,6 +128,11 @@ export default function SlotsScreen() {
                       <Picker.Item key={d} label={`${d} min`} value={d} />
                     ))}
                   </Picker>
+                  {Platform.OS !== 'android' && (
+                    <View style={st.pickerIcon} pointerEvents="none">
+                      <ChevronDown size={18} color={Colors.neutral[500]} />
+                    </View>
+                  )}
                 </View>
               </Field>
               <Field label="Spots" flex={1}>
@@ -287,9 +292,41 @@ const st = StyleSheet.create({
     paddingVertical: Spacing[3],
     fontSize: FontSize.base,
     color: Colors.neutral[900],
+    minHeight: 48,
   },
-  pickerBox: { backgroundColor: Colors.neutral[50], borderWidth: 1, borderColor: Colors.neutral[200], borderRadius: Radius.lg, justifyContent: 'center' },
-  picker: { color: Colors.neutral[900] },
+  pickerBox: { 
+    backgroundColor: Colors.neutral[50], 
+    borderWidth: 1, 
+    borderColor: Colors.neutral[200], 
+    borderRadius: Radius.lg, 
+    justifyContent: 'center',
+    minHeight: 48,
+    overflow: 'hidden',
+  },
+  pickerIcon: {
+    position: 'absolute',
+    right: Spacing[3],
+    top: '50%',
+    marginTop: -9,
+  },
+  picker: { 
+    color: Colors.neutral[900],
+    flex: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          borderWidth: 0,
+          outlineStyle: 'none',
+          appearance: 'none',
+          backgroundColor: 'transparent',
+          paddingHorizontal: Spacing[3],
+          paddingVertical: Spacing[3],
+          fontSize: FontSize.base,
+          cursor: 'pointer',
+        } as any)
+      : {
+          ...(Platform.OS === 'ios' ? { height: 48 } : {}),
+        }),
+  },
 
   listHeading: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.neutral[900], marginTop: Spacing[4] },
 

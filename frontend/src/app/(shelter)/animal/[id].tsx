@@ -2,7 +2,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Camera, Check, X } from 'lucide-react-native';
+import { Camera, Check, ChevronDown, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   Platform,
@@ -287,6 +287,11 @@ function PickerBox<T extends string>({
           <Picker.Item key={opt} label={labelMap[opt]} value={opt} />
         ))}
       </Picker>
+      {Platform.OS !== 'android' && (
+        <View style={st.pickerIcon} pointerEvents="none">
+          <ChevronDown size={18} color={Colors.neutral[500]} />
+        </View>
+      )}
     </View>
   );
 }
@@ -342,6 +347,7 @@ const st = StyleSheet.create({
     paddingVertical: Spacing[3],
     fontSize: FontSize.base,
     color: Colors.neutral[900],
+    minHeight: 48,
   },
   textArea: { minHeight: 90, textAlignVertical: 'top' },
 
@@ -351,9 +357,33 @@ const st = StyleSheet.create({
     borderColor: Colors.neutral[200],
     borderRadius: Radius.lg,
     justifyContent: 'center',
-    ...(Platform.OS === 'android' ? {} : { paddingHorizontal: Spacing[2] }),
+    minHeight: 48,
+    overflow: 'hidden',
   },
-  picker: { color: Colors.neutral[900] },
+  pickerIcon: {
+    position: 'absolute',
+    right: Spacing[3],
+    top: '50%',
+    marginTop: -9,
+  },
+  picker: {
+    color: Colors.neutral[900],
+    flex: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          borderWidth: 0,
+          outlineStyle: 'none',
+          appearance: 'none',
+          backgroundColor: 'transparent',
+          paddingHorizontal: Spacing[4],
+          paddingVertical: Spacing[3],
+          fontSize: FontSize.base,
+          cursor: 'pointer',
+        } as any)
+      : {
+          ...(Platform.OS === 'ios' ? { height: 48 } : {}),
+        }),
+  },
 
   toggleRow: {
     flexDirection: 'row',
