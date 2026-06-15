@@ -568,6 +568,8 @@ export default function AnimalDetailScreen() {
   const about   = useFadeSlide(160);
   const shelter = useFadeSlide(240);
   const actions = useFadeSlide(320);
+  // Share button scale
+  const shareScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     animalService
@@ -650,12 +652,20 @@ export default function AnimalDetailScreen() {
                 <ArrowLeft size={20} color="#fff" strokeWidth={2} />
               </Pressable>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                <Pressable
-                  onPress={copyLink}
-                  style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' })}
-                >
-                  <Share2 size={18} color="#fff" strokeWidth={2} />
-                </Pressable>
+                <Animated.View style={{ transform: [{ scale: shareScale }] }}>
+                  <Pressable
+                    onPressIn={() =>
+                      Animated.spring(shareScale, { toValue: 0.88, useNativeDriver: true, tension: 400, friction: 18 }).start()
+                    }
+                    onPressOut={() =>
+                      Animated.spring(shareScale, { toValue: 1.0, useNativeDriver: true, tension: 400, friction: 18 }).start()
+                    }
+                    onPress={copyLink}
+                    style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' })}
+                  >
+                    <Share2 size={18} color="#fff" strokeWidth={2} />
+                  </Pressable>
+                </Animated.View>
                 <HeartButton size={40} darkMode liked={isLiked} onToggle={toggleLike} />
               </View>
             </View>
@@ -710,12 +720,20 @@ export default function AnimalDetailScreen() {
                 <ArrowLeft size={20} color="#fff" strokeWidth={2} />
               </Pressable>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                <Pressable
-                  onPress={copyLink}
-                  style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' })}
-                >
-                  <Share2 size={18} color="#fff" strokeWidth={2} />
-                </Pressable>
+                <Animated.View style={{ transform: [{ scale: shareScale }] }}>
+                  <Pressable
+                    onPressIn={() =>
+                      Animated.spring(shareScale, { toValue: 0.88, useNativeDriver: true, tension: 400, friction: 18 }).start()
+                    }
+                    onPressOut={() =>
+                      Animated.spring(shareScale, { toValue: 1.0, useNativeDriver: true, tension: 400, friction: 18 }).start()
+                    }
+                    onPress={copyLink}
+                    style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' })}
+                  >
+                    <Share2 size={18} color="#fff" strokeWidth={2} />
+                  </Pressable>
+                </Animated.View>
                 <HeartButton size={40} darkMode liked={isLiked} onToggle={toggleLike} />
               </View>
             </View>
