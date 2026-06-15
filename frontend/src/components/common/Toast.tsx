@@ -1,15 +1,12 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Animated, {
-  FadeIn,
-  FadeOut,
   SlideInDown,
   SlideOutUp,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
-  withSpring,
-  withTiming,
+  withSpring
 } from 'react-native-reanimated';
 
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing, ZIndex } from '@/lib/theme';

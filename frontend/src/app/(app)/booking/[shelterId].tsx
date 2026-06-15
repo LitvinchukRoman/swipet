@@ -14,14 +14,13 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -35,10 +34,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useBookingStore } from '@/store/booking';
-import { spotsLeft, type Slot } from '@/services/booking';
-import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { notify } from '@/lib/notify';
+import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
+import { spotsLeft, type Slot } from '@/services/booking';
+import { useBookingStore } from '@/store/booking';
 
 // ─── Helpers ──────────────────────────────────
 /** Ключ дати без зсуву таймзони — беремо префікс ISO LocalDateTime. */

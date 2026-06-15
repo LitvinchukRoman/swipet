@@ -28,8 +28,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
 import { countActiveFilters } from '@/lib/filters';
+import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { AnimalSize, FeedFilters, Species } from '@/types/models';
 
 // ─── Constants ────────────────────────────────

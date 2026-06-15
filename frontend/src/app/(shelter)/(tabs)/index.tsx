@@ -12,7 +12,7 @@ import {
   Store,
   TrendingUp,
 } from 'lucide-react-native';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -22,7 +22,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/EmptyState';

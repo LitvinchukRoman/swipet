@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import {
   CheckCircle,
@@ -23,8 +22,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
-  TouchableOpacity
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, {
@@ -36,8 +35,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { notify } from '@/lib/notify';
+import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { donationService } from '@/services/donation';
 
 // ─── Types ────────────────────────────────────

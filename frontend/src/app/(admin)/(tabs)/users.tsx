@@ -2,9 +2,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  SectionList,
   Pressable,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   View,

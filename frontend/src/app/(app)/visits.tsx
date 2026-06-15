@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { CalendarX2, Clock3, MapPin, X } from 'lucide-react-native';
+import { Clock3, MapPin, X } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,

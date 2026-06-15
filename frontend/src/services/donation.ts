@@ -1,5 +1,5 @@
-import { api } from './api';
 import type { Species, VirtualGuardianship } from '@/types/models';
+import { api } from './api';
 
 // Donations & Guardianship API (ТЗ 3.7) — підключено до живого бекенду
 // (DonationController /api/v1/donations). Платіж — через Stripe (повертається paymentUrl).

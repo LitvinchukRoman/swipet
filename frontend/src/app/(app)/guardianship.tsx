@@ -13,25 +13,23 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   FlatList,
+  Linking,
   Pressable,
   RefreshControl,
   Text,
   View,
-  Linking,
-  ActivityIndicator,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { donationService } from '@/services/donation';
-import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
-import { confirm, notify } from '@/lib/notify';
 import { SPECIES_ICON, SPECIES_LABEL } from '@/lib/format';
+import { confirm, notify } from '@/lib/notify';
+import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
+import { donationService } from '@/services/donation';
 import type { VirtualGuardianship } from '@/types/models';
 
 // ─── useFadeSlide ─────────────────────────────────────────────────────────────

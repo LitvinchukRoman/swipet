@@ -14,8 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { notify } from '@/lib/notify';
+import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 

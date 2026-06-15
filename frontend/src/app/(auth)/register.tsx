@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, User, PawPrint, CheckCircle, XCircle } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail, PawPrint, User, XCircle } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,11 +15,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { authService } from '@/services/auth';
-import { useAuthStore } from '@/store/auth';
-import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { analyzePassword, validatePassword, type Strength } from '@/lib/password';
 import { homePathForRole } from '@/lib/roles';
+import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
+import { authService } from '@/services/auth';
+import { useAuthStore } from '@/store/auth';
 
 // ─── Password strength ───────────────────────────────────────────────────────
 const STRENGTH_CFG: Record<Strength, { label: string; color: string; width: number }> = {

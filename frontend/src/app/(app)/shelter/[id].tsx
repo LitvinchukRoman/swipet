@@ -1,20 +1,6 @@
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Clipboard from 'expo-clipboard';
-import { ComponentType, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   CalendarDays,
@@ -31,15 +17,28 @@ import {
   Star,
   Users,
 } from 'lucide-react-native';
+import { ComponentType, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
-import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { formatAge } from '@/lib/format';
+import { notify } from '@/lib/notify';
 import { Colors, Duration, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { animalService } from '@/services/animal';
 import { chatService } from '@/services/chat';
-import { notify } from '@/lib/notify';
 import type { Animal, Shelter, Species } from '@/types/models';
 
 // ─── Species icon map ─────────────────────────────────────────────────────────

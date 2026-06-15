@@ -15,11 +15,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { homePathForRole } from '@/lib/roles';
+import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
-import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
-import { homePathForRole } from '@/lib/roles';
-import { notify } from '@/lib/notify';
 
 // ─── useShake ────────────────────────────────────────────────────────────────
 const useShake = () => {

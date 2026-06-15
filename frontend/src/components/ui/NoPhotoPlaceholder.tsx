@@ -1,6 +1,6 @@
-import { PawPrint } from 'lucide-react-native';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Colors } from '@/lib/theme';
+import { PawPrint } from 'lucide-react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 interface Props {
   style?: StyleProp<ViewStyle>;

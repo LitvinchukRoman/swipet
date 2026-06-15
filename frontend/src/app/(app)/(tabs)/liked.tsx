@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import type { ComponentType } from 'react';
 import {
   Building2,
   ChevronRight,
@@ -9,7 +8,8 @@ import {
   MessageCircle,
   Star,
 } from 'lucide-react-native';
-import { useEffect } from 'react';
+import type { ComponentType } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -28,14 +28,13 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
 
 import { DonationSheet } from '@/components/common/DonationSheet';
-import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { formatAge, formatDistance, SPECIES_ICON } from '@/lib/format';
 import { notify } from '@/lib/notify';
+import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { chatService } from '@/services/chat';
 import { useFeedStore } from '@/store/feed';
 import type { Animal } from '@/types/models';

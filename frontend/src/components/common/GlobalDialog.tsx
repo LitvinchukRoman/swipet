@@ -1,0 +1,133 @@
+import { AlertCircle, Info } from 'lucide-react-native';
+import React from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+
+import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
+import { useDialogStore } from '@/store/dialog';
+
+export function GlobalDialog() {
+  const { current, closeDialog } = useDialogStore();
+
+  if (!current) return null;
+
+  const isAlert = current.type === 'alert';
+  const isDestructive = current.isDestructive ?? false;
+
+  const Icon = isAlert || isDestructive ? AlertCircle : Info;
+  const iconColor = isAlert || isDestructive ? Colors.error : Colors.primary[500];
+  const iconBg = isAlert || isDestructive ? '#FEE2E2' : Colors.primary[50];
+
+  const confirmBg = isAlert || isDestructive ? Colors.error : Colors.primary[500];
+
+  return (
+    <Modal transparent visible={!!current} animationType="none">
+      <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => closeDialog(false)} />
+
+        <Animated.View
+          entering={ZoomIn.duration(250).springify().damping(18)}
+          style={styles.card}
+        >
+          <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+            <Icon size={24} color={iconColor} strokeWidth={2} />
+          </View>
+
+          <Text style={styles.title}>{current.title}</Text>
+          {!!current.message && <Text style={styles.message}>{current.message}</Text>}
+
+          <View style={styles.buttonRow}>
+            {!isAlert && (
+              <Pressable
+                onPress={() => closeDialog(false)}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.cancelButton,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={styles.cancelText}>{current.cancelText ?? 'Cancel'}</Text>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => closeDialog(true)}
+              style={({ pressed }) => [
+                styles.button,
+                { backgroundColor: confirmBg },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Text style={styles.okText}>{current.confirmText ?? 'OK'}</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: Colors.overlay.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing[5],
+  },
+  card: {
+    backgroundColor: Colors.neutral[0],
+    borderRadius: Radius['2xl'],
+    padding: Spacing[6],
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+    ...Shadow.lg,
+  },
+  iconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing[4],
+  },
+  title: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.extrabold,
+    color: Colors.neutral[900],
+    textAlign: 'center',
+    marginBottom: Spacing[2],
+  },
+  message: {
+    fontSize: FontSize.sm,
+    color: Colors.neutral[500],
+    textAlign: 'center',
+    marginBottom: Spacing[6],
+    lineHeight: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: Spacing[3],
+    width: '100%',
+  },
+  button: {
+    flex: 1,
+    height: 44,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: Colors.neutral[100],
+  },
+  cancelText: {
+    color: Colors.neutral[600],
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+  },
+  okText: {
+    color: Colors.neutral[0],
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+  },
+});

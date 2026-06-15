@@ -1,12 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckCircle, Clock, XCircle } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Text, View } from 'react-native';
-import { Pressable } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { donationService, type PaymentVerificationStatus } from '@/services/donation';
 import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
+import { donationService, type PaymentVerificationStatus } from '@/services/donation';
 
 // Один екран на три результати: success / pending / failed.
 // Status беремо реально з бекенду (verify-session → Stripe), а не optimistic.

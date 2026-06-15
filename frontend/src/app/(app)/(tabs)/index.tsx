@@ -6,12 +6,12 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { EmptyState } from '@/components/ui/EmptyState';
 import { SwipeDeck } from '@/components/SwipeDeck';
-import { Toast, type ToastType } from '@/components/common/Toast';
 import { FilterBottomSheet } from '@/components/common/FilterBottomSheet';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
+import { Toast, type ToastType } from '@/components/common/Toast';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { countActiveFilters } from '@/lib/filters';
+import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { useFeedStore } from '@/store/feed';
 import type { Animal, FeedFilters, SwipeDirection } from '@/types/models';
 

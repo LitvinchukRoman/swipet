@@ -5,9 +5,10 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { useAuthStore } from '@/store/auth';
-import { homePathForRole } from '@/lib/roles';
+import { GlobalDialog } from '@/components/common/GlobalDialog';
 import { roleFromToken } from '@/lib/jwt';
+import { homePathForRole } from '@/lib/roles';
+import { useAuthStore } from '@/store/auth';
 
 export default function RootLayout() {
   const { accessToken, user, isLoading, loadFromStorage } = useAuthStore();
@@ -57,6 +58,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Slot />
+      <GlobalDialog />
     </GestureHandlerRootView>
   );
 }

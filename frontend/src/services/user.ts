@@ -1,5 +1,5 @@
-import { api } from './api';
 import type { User } from '@/store/auth';
+import { api } from './api';
 
 // User profile API (ТЗ 3.2) — підключено до живого бекенду (UserController /api/v1/users).
 

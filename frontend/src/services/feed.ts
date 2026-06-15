@@ -1,5 +1,5 @@
-import { api } from './api';
 import type { Animal, AnimalSize, FeedFilters, Species, SwipeDirection } from '@/types/models';
+import { api } from './api';
 
 export interface FeedCoords {
   lat: number;

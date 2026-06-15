@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { ArrowLeft, XCircle } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';

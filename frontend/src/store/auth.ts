@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-import { storage } from '@/lib/storage';
 import { disconnectSocket } from '@/lib/socket';
+import { storage } from '@/lib/storage';
 
 export interface User {
   id: number;

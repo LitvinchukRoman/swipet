@@ -1,5 +1,5 @@
-import type { AnimalSize, Gender, Species, AnimalStatus } from '@/types/models';
-import { Cat, Dog, Rabbit, PawPrint } from 'lucide-react-native';
+import type { AnimalSize, AnimalStatus, Gender, Species } from '@/types/models';
+import { Cat, Dog, PawPrint, Rabbit } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 
 export function formatAge(ageMonths: number): string {

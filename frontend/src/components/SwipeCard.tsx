@@ -6,8 +6,8 @@ import Animated from 'react-native-reanimated';
 
 import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 
-import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { formatAge, formatDistance } from '@/lib/format';
+import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal } from '@/types/models';
 
 // ─── Types ────────────────────────────────────

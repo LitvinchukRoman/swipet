@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Camera } from 'lucide-react-native';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
  
-import { Colors, Radius, Shadow } from '@/lib/theme';
+import { Colors, Shadow } from '@/lib/theme';
  
 interface AvatarProps {
   uri?: string;

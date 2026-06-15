@@ -1,5 +1,5 @@
+import type { Animal, AnimalSize, Shelter, Species } from '@/types/models';
 import { api } from './api';
-import type { Animal, AnimalSize, Gender, Shelter, Species } from '@/types/models';
 
 // Animals + Shelters API (ТЗ 3.3, 3.4) — підключено до живого бекенду.
 

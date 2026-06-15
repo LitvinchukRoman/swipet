@@ -1,10 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { CalendarDays, ChevronRight, Heart, LogOut, Pencil, Star, RotateCcw } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, Heart, LogOut, Pencil, RotateCcw, Star } from 'lucide-react-native';
 import type { ComponentType } from 'react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -22,12 +21,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { confirm, notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
-import { userService } from '@/services/user';
-import { donationService } from '@/services/donation';
 import { chatService } from '@/services/chat';
+import { donationService } from '@/services/donation';
 import { feedService } from '@/services/feed';
+import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 import { useFeedStore } from '@/store/feed';
 
@@ -65,10 +65,10 @@ export default function ProfileScreen() {
   }, []);
 
   // ── Avatar upload (web + mobile) ─────────
-   const handleAvatarPress = async () => {
+  const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow photo library access in Settings.');
+      notify('Permission needed', 'Please allow photo library access in Settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -101,72 +101,43 @@ export default function ProfileScreen() {
       const updated   = await userService.updateMe({ avatarUrl });
       await updateUser(updated);
     } catch {
-      Alert.alert('Upload failed', 'Could not update your photo. Please try again.');
+      notify('Upload failed', 'Could not update your photo. Please try again.');
     } finally {
       setUploading(false);
     }
   };
 
-  // ── Logout ────────────────────────────────
-const handleLogout = () => {
-  const performLogout = async () => {
-    try {
-      if (refreshToken) await authService.logout(refreshToken);
-    } finally {
-      await clearAuth();
-      router.replace('/(auth)/login');
-    }
-  };
+    const handleLogout = async () => {
+    const performLogout = async () => {
+      try {
+        if (refreshToken) await authService.logout(refreshToken);
+      } finally {
+        await clearAuth();
+        router.replace('/(auth)/login');
+      }
+    };
 
-  if (Platform.OS === 'web') {
-    const confirmed = window.confirm('Are you sure you want to log out?');
+    const confirmed = await confirm('Log Out', 'Are you sure you want to log out?', true);
     if (confirmed) {
       performLogout();
     }
-  } else {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: performLogout,
-      },
-    ]);
-  }
-};
+  };
 
-const handleResetSwipes = () => {
-  if (Platform.OS === 'web') {
-    const confirmed = window.confirm('Зкинути історію переглядів? Це дозволить вам знову побачити всіх тварин у стрічці. Ваші вподобайки також будуть скинуті.');
-    if (confirmed) {
-      feedService.resetSwipes().then(() => {
-        window.alert('Історію переглядів скинуто!');
-      }).catch(() => {
-        window.alert('Не вдалося скинути історію.');
-      });
-    }
-  } else {
-    Alert.alert(
+  const handleResetSwipes = async () => {
+    const confirmed = await confirm(
       'Зкинути історію переглядів?',
       'Це дозволить вам знову побачити всіх тварин у стрічці. Ваші вподобайки також будуть скинуті.',
-      [
-        { text: 'Скасувати', style: 'cancel' },
-        {
-          text: 'Зкинути',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await feedService.resetSwipes();
-              Alert.alert('Успіх', 'Історію переглядів скинуто!');
-            } catch (e) {
-              Alert.alert('Помилка', 'Не вдалося скинути історію.');
-            }
-          },
-        },
-      ]
+      true
     );
-  }
-};
+    if (confirmed) {
+      try {
+        await feedService.resetSwipes();
+        notify('Успіх', 'Історію переглядів скинуто!');
+      } catch (e) {
+        notify('Помилка', 'Не вдалося скинути історію.');
+      }
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-stone-50" edges={['top']}>

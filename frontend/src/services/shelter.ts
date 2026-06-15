@@ -1,4 +1,3 @@
-import { api } from './api';
 import type {
   Animal,
   AnimalAnalyticsRow,
@@ -9,6 +8,7 @@ import type {
   Shelter,
   Species,
 } from '@/types/models';
+import { api } from './api';
 
 // Shelter-admin API — підключено до ЖИВОГО бекенду (ТЗ 3.3, 3.4).
 // `api` має baseURL `/api/v1` та інтерсептор з Bearer-токеном.

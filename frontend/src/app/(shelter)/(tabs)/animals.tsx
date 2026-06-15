@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
-import { Eye, Heart, PawPrint, Plus, Trash2 } from 'lucide-react-native';
+import { Eye, Heart, Plus, Trash2 } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,8 +14,8 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import { formatAge, SPECIES_EMOJI } from '@/lib/format';
 import { confirm, notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';

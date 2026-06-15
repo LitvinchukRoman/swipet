@@ -1,5 +1,5 @@
-import { Stack } from 'expo-router';
 import { Colors, FontSize, FontWeight } from '@/lib/theme';
+import { Stack } from 'expo-router';
 
 export default function AppLayout() {
   return (

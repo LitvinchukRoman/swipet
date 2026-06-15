@@ -1,5 +1,5 @@
-import { api } from './api';
 import type { ChatMessage, ChatRoom, Species } from '@/types/models';
+import { api } from './api';
 
 // Chat REST API (ТЗ 3.6) — підключено до живого бекенду (ChatController /api/v1/chats).
 // Real-time (socket) — окремо у lib/socket.ts + chat-service. Авторизація — Bearer (інтерсептор).

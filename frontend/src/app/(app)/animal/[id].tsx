@@ -1,13 +1,17 @@
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Clipboard from 'expo-clipboard';
 import {
   ArrowLeft,
   Calendar,
   CalendarDays,
   Cat,
+  ChevronLeft,
+  ChevronRight,
   Dog,
   Heart,
+  House,
+  Info,
   MapPin,
   Mars,
   MessageCircle,
@@ -18,29 +22,25 @@ import {
   ShieldCheck,
   Sparkles,
   Venus,
-  House,
-  ChevronLeft,
-  ChevronRight,
-  Info,
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   Text,
-  View,
-  Platform,
   useWindowDimensions,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
+import { DonationSheet } from '@/components/common/DonationSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
 import {
   formatAge,
   formatDistance,
@@ -49,14 +49,12 @@ import {
   SPECIES_LABEL,
   STATUS_LABEL,
 } from '@/lib/format';
-import type { Species } from '@/types/models';
+import { notify } from '@/lib/notify';
+import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { animalService } from '@/services/animal';
 import { chatService } from '@/services/chat';
-import { notify } from '@/lib/notify';
 import { useFeedStore } from '@/store/feed';
-import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
-import type { Animal } from '@/types/models';
-import { DonationSheet } from '@/components/common/DonationSheet';
+import type { Animal, Species } from '@/types/models';
 
 // Constants removed in favor of dynamic dimensions
 

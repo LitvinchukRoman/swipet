@@ -1,3 +1,4 @@
+import { Heart, Info, X } from 'lucide-react-native';
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -5,17 +6,16 @@ import Animated, {
   Extrapolation,
   interpolate,
   runOnJS,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-  SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Heart, Info, X } from 'lucide-react-native';
  
 import { SwipeCard } from '@/components/SwipeCard';
-import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
+import { Colors, Shadow, Spacing } from '@/lib/theme';
 import type { Animal, SwipeDirection } from '@/types/models';
  
 // ─── Constants ───────────────────────────────
