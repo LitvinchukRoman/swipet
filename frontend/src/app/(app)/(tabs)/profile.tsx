@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { ChevronRight, Heart, LogOut, Pencil, Star } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, Heart, LogOut, Pencil, Star } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useState, useEffect } from 'react';
 import {
@@ -203,6 +203,13 @@ const handleLogout = () => {
               iconBg="rgba(239,68,68,0.08)"
               label="Favorites"
               onPress={() => router.push('/(app)/(tabs)/liked')}
+            />
+            <MenuRow
+              icon={CalendarDays}
+              iconColor={Colors.info}
+              iconBg="rgba(59,130,246,0.08)"
+              label="My Visits"
+              onPress={() => router.push('/(app)/visits')}
               isLast
             />
           </View>

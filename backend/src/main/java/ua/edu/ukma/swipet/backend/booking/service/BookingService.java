@@ -18,6 +18,11 @@ import ua.edu.ukma.swipet.backend.booking.repository.BookingSlotRepository;
 import ua.edu.ukma.swipet.backend.common.exception.AppException;
 import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
+import ua.edu.ukma.swipet.backend.auth.entity.Role;
+import ua.edu.ukma.swipet.backend.auth.security.AuthenticatedUser;
+import ua.edu.ukma.swipet.backend.booking.dto.MyReservationResponse;
+import ua.edu.ukma.swipet.backend.booking.dto.SlotReservationResponse;
+import ua.edu.ukma.swipet.backend.common.security.ShelterOwnershipGuard;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +37,7 @@ public class BookingService {
     private final BookingReservationRepository reservationRepository;
     private final ShelterRepository shelterRepository;
     private final UserRepository userRepository;
+    private final ShelterOwnershipGuard ownershipGuard;
 
     @Transactional
     public BookingSlotResponse createSlot(Long shelterId, BookingSlotRequest request) {
@@ -121,5 +127,81 @@ public class BookingService {
                 slot.getStartTime(),
                 slot.getEndTime()
         );
+    }
+
+    /** Бронювання поточного користувача (з контекстом притулку). */
+    @Transactional(readOnly = true)
+    public List<MyReservationResponse> getMyReservations(Long userId) {
+        return reservationRepository.findAllByUser_IdOrderByCreatedAtDesc(userId).stream()
+                .map(r -> {
+                    BookingSlot slot = r.getSlot();
+                    Shelter shelter = slot.getShelter();
+                    return new MyReservationResponse(
+                            r.getId(),
+                            slot.getId(),
+                            shelter.getId(),
+                            shelter.getName(),
+                            slot.getStartTime(),
+                            slot.getEndTime(),
+                            r.getStatus(),
+                            r.getNotes()
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Скасування бронювання (soft → CANCELLED, звільняє місце). Дозволено: власнику
+     * брони, адміну притулку цього слоту або платформеному ADMIN.
+     */
+    @Transactional
+    public void cancelReservation(Long reservationId, Long authUserId, Role authRole) {
+        BookingReservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> AppException.notFound("Бронювання не знайдено"));
+
+        Shelter shelter = reservation.getSlot().getShelter();
+        boolean isOwner = reservation.getUser().getId().equals(authUserId);
+        boolean isShelterAdmin = authRole == Role.SHELTER_ADMIN
+                && shelter.getAdminUser() != null
+                && shelter.getAdminUser().getId().equals(authUserId);
+        boolean isPlatformAdmin = authRole == Role.ADMIN;
+        if (!isOwner && !isShelterAdmin && !isPlatformAdmin) {
+            throw AppException.forbidden("Немає доступу до цього бронювання");
+        }
+
+        if (reservation.getStatus() == ReservationStatus.ACTIVE) {
+            reservation.setStatus(ReservationStatus.CANCELLED);
+        }
+    }
+
+    /** Список тих, хто записаний на слот (для адміна притулку — з перевіркою володіння). */
+    @Transactional(readOnly = true)
+    public List<SlotReservationResponse> getSlotReservations(Long slotId, AuthenticatedUser currentUser) {
+        BookingSlot slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> AppException.notFound("Слот не знайдено"));
+        ownershipGuard.assertCanManageShelter(currentUser, slot.getShelter().getId());
+
+        return reservationRepository.findBySlot_IdAndStatusOrderByCreatedAtAsc(slotId, ReservationStatus.ACTIVE).stream()
+                .map(r -> new SlotReservationResponse(
+                        r.getId(),
+                        r.getUser().getId(),
+                        r.getUser().getFullName(),
+                        r.getUser().getEmail(),
+                        r.getNotes(),
+                        r.getStatus(),
+                        r.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /** Видаляє слот разом з усіма його бронюваннями. Лише власник притулку або ADMIN. */
+    @Transactional
+    public void deleteSlot(Long slotId, AuthenticatedUser currentUser) {
+        BookingSlot slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> AppException.notFound("Слот не знайдено"));
+        ownershipGuard.assertCanManageShelter(currentUser, slot.getShelter().getId());
+
+        reservationRepository.deleteBySlot_Id(slotId); // прибираємо брони (FK), потім сам слот
+        slotRepository.delete(slot);
     }
 }

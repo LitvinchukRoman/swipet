@@ -85,7 +85,7 @@ export default function BookingScreen() {
   const shelterName = params.shelterName ?? 'Shelter';
   const animalName = params.animalName;
 
-  const { slots, isLoading, error, fetchSlots, bookSlot } = useBookingStore();
+  const { slots, myReservations, isLoading, error, fetchSlots, bookSlot, cancelReservation } = useBookingStore();
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [confirmSlot, setConfirmSlot] = useState<Slot | null>(null);
@@ -121,6 +121,21 @@ export default function BookingScreen() {
   );
 
   const availableCount = visibleSlots.filter((s) => spotsLeft(s) > 0 && !isPast(s.startTime)).length;
+
+  // slotId → reservationId для активних броней поточного користувача
+  const myActiveBySlot = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const r of myReservations) if (r.status === 'ACTIVE') m.set(r.slotId, r.id);
+    return m;
+  }, [myReservations]);
+
+  const handleCancel = async (reservationId: number) => {
+    try {
+      await cancelReservation(reservationId);
+    } catch (e: any) {
+      notify('Cancel failed', e?.message ?? 'Please try again.');
+    }
+  };
 
   return (
     <>
@@ -178,9 +193,19 @@ export default function BookingScreen() {
                 )}
               </Animated.View>
 
-              {visibleSlots.map((slot, index) => (
-                <SlotCard key={slot.id} slot={slot} index={index} onBook={() => setConfirmSlot(slot)} />
-              ))}
+              {visibleSlots.map((slot, index) => {
+                const reservationId = myActiveBySlot.get(slot.id);
+                return (
+                  <SlotCard
+                    key={slot.id}
+                    slot={slot}
+                    index={index}
+                    reservationId={reservationId}
+                    onBook={() => setConfirmSlot(slot)}
+                    onCancel={reservationId != null ? () => handleCancel(reservationId) : undefined}
+                  />
+                );
+              })}
             </>
           )}
         </ScrollView>
@@ -224,13 +249,26 @@ function DateCell({ dateKeyStr, selected, onPress }: { dateKeyStr: string; selec
 }
 
 // ─── SlotCard ──────────────────────────────────
-function SlotCard({ slot, index, onBook }: { slot: Slot; index: number; onBook: () => void }) {
+function SlotCard({
+  slot,
+  index,
+  reservationId,
+  onBook,
+  onCancel,
+}: {
+  slot: Slot;
+  index: number;
+  reservationId?: number;
+  onBook: () => void;
+  onCancel?: () => void;
+}) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const left = spotsLeft(slot);
   const past = isPast(slot.startTime);
   const full = left === 0;
-  const stripColor = past || full ? Colors.neutral[300] : Colors.success;
+  const booked = reservationId != null;
+  const stripColor = booked ? Colors.primary[500] : past || full ? Colors.neutral[300] : Colors.success;
 
   return (
     <Animated.View entering={FadeInRight.delay(index * 55).springify().damping(18)} style={[styles.slotCard, animStyle]}>
@@ -258,7 +296,19 @@ function SlotCard({ slot, index, onBook }: { slot: Slot; index: number; onBook: 
         </View>
 
         <View style={styles.slotAction}>
-          {past ? (
+          {booked ? (
+            <View style={styles.bookedRow}>
+              <View style={styles.bookedChip}>
+                <CheckCircle2 size={13} color={Colors.primary[600]} strokeWidth={2.2} />
+                <Text style={styles.bookedChipText}>You&apos;re booked</Text>
+              </View>
+              {!past && (
+                <Pressable onPress={onCancel} style={styles.cancelBtn}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : past ? (
             <Text style={styles.pastLabel}>Past</Text>
           ) : full ? (
             <View style={styles.fullChip}>
@@ -497,6 +547,11 @@ const styles = StyleSheet.create({
   fullChip: { backgroundColor: Colors.neutral[100], borderRadius: Radius.md, paddingHorizontal: Spacing[3], paddingVertical: Spacing[2] },
   fullChipText: { color: Colors.neutral[400], fontSize: FontSize.sm, fontWeight: FontWeight.medium },
   pastLabel: { color: Colors.neutral[300], fontSize: FontSize.sm, fontWeight: FontWeight.medium },
+  bookedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2] },
+  bookedChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary[50], borderRadius: Radius.full, paddingHorizontal: Spacing[3], paddingVertical: 4 },
+  bookedChipText: { color: Colors.primary[700], fontSize: FontSize.xs, fontWeight: FontWeight.bold },
+  cancelBtn: { borderRadius: Radius.md, paddingHorizontal: Spacing[3], paddingVertical: Spacing[2], borderWidth: 1.5, borderColor: Colors.neutral[200] },
+  cancelBtnText: { color: Colors.neutral[600], fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 
   loadingWrap: { alignItems: 'center', marginTop: Spacing[16], gap: Spacing[4] },
   loadingText: { color: Colors.neutral[400], fontSize: FontSize.base },
