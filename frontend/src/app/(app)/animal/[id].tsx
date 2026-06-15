@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import {
   ArrowLeft,
   Calendar,
@@ -612,6 +613,14 @@ export default function AnimalDetailScreen() {
     }
   };
 
+  const copyLink = async () => {
+    const url = Platform.OS === 'web' 
+      ? window.location.href 
+      : `https://swipet.com/animal/${id}`;
+    await Clipboard.setStringAsync(url);
+    notify('Link copied', 'The link has been copied to your clipboard.');
+  };
+
   const openBooking = () => {
     if (!animal) return;
     router.push({
@@ -652,6 +661,7 @@ export default function AnimalDetailScreen() {
               </Pressable>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <Pressable
+                  onPress={copyLink}
                   style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' })}
                 >
                   <Share2 size={18} color="#fff" strokeWidth={2} />
@@ -706,6 +716,7 @@ export default function AnimalDetailScreen() {
               </Pressable>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <Pressable
+                  onPress={copyLink}
                   style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: pressed ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' })}
                 >
                   <Share2 size={18} color="#fff" strokeWidth={2} />
