@@ -13,7 +13,7 @@ public record DonationRequest(
         Long animalId,
 
         @NotNull(message = "Сума донату є обов'язковою")
-        @DecimalMin(value = "10.00", message = "Мінімальна сума донату - 10 грн")
+        @DecimalMin(value = "50.00", message = "Мінімальна сума донату - 50 грн")
         BigDecimal amount
 ) {
     /** Має бути вказано принаймні одне: притулок або тварина. */

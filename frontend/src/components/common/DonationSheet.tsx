@@ -55,8 +55,8 @@ export interface DonationSheetProps {
 const SCREEN_H = Dimensions.get('window').height;
 const ONE_TIME_PRESETS     = [50, 100, 200];
 const GUARDIANSHIP_PRESETS = [100, 200, 500];
-// Мінімуми мають збігатися з бекендом: одноразовий ₴10, опікунство ₴50/міс.
-const MIN_ONE_TIME      = 10;
+// Мінімуми мають збігатися з бекендом: одноразовий ₴50, опікунство ₴50/міс.
+const MIN_ONE_TIME      = 50;
 const MIN_GUARDIANSHIP  = 50;
 
 // ─── Spring press hook (untouched) ────────────
