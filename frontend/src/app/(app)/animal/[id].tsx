@@ -21,6 +21,7 @@ import {
   House,
   ChevronLeft,
   ChevronRight,
+  Info,
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -46,6 +47,7 @@ import {
   GENDER_LABEL,
   SIZE_LABEL,
   SPECIES_LABEL,
+  STATUS_LABEL,
 } from '@/lib/format';
 import type { Species } from '@/types/models';
 import { animalService } from '@/services/animal';
@@ -445,6 +447,11 @@ function AnimalContentInner({
         </View>
 
         <View className="flex-row flex-wrap gap-2 mt-4">
+          <Badge 
+            label={STATUS_LABEL[animal.status] || animal.status} 
+            icon={<Info size={14} color={animal.status === 'AVAILABLE' ? Colors.success : animal.status === 'RESERVED' ? Colors.primary[500] : Colors.neutral[500]} strokeWidth={1.8} />} 
+            tone={animal.status === 'AVAILABLE' ? 'success' : animal.status === 'RESERVED' ? 'orange' : 'default'}
+          />
           <Badge label={SIZE_LABEL[animal.size]} icon={<Ruler size={14} color={Colors.neutral[500]} strokeWidth={1.8} />} />
           {animal.isVaccinated && (
             <Badge label="Vaccinated" icon={<ShieldCheck size={14} color={Colors.success} strokeWidth={1.8} />} tone="success" />

@@ -1,4 +1,4 @@
-import type { AnimalSize, Gender, Species } from '@/types/models';
+import type { AnimalSize, Gender, Species, AnimalStatus } from '@/types/models';
 import { Cat, Dog, Rabbit, PawPrint } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 
@@ -66,4 +66,10 @@ export const SPECIES_ICON: Record<
   CAT:    Cat,
   RABBIT: Rabbit,
   OTHER:  PawPrint,
+};
+
+export const STATUS_LABEL: Record<AnimalStatus, string> = {
+  AVAILABLE: 'Available',
+  RESERVED:  'Reserved',
+  ADOPTED:   'Adopted',
 };
