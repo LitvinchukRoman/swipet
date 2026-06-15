@@ -108,4 +108,7 @@ export const feedService = {
     api
       .get<AnimalDTO[]>('/feed/liked', { params: { page, limit } })
       .then((r) => r.data.map(mapAnimal)),
+
+  /** Зкинути всі свайпи. DELETE /feed/swipe/reset */
+  resetSwipes: (): Promise<void> => api.delete('/feed/swipe/reset'),
 };

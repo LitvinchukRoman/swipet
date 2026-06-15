@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { CalendarDays, ChevronRight, Heart, LogOut, Pencil, Star } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, Heart, LogOut, Pencil, Star, RotateCcw } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { useState, useEffect } from 'react';
 import {
@@ -27,6 +27,7 @@ import { authService } from '@/services/auth';
 import { userService } from '@/services/user';
 import { donationService } from '@/services/donation';
 import { chatService } from '@/services/chat';
+import { feedService } from '@/services/feed';
 import { useAuthStore } from '@/store/auth';
 import { useFeedStore } from '@/store/feed';
 
@@ -134,6 +135,39 @@ const handleLogout = () => {
   }
 };
 
+const handleResetSwipes = () => {
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm('Зкинути історію переглядів? Це дозволить вам знову побачити всіх тварин у стрічці. Ваші вподобайки також будуть скинуті.');
+    if (confirmed) {
+      feedService.resetSwipes().then(() => {
+        window.alert('Історію переглядів скинуто!');
+      }).catch(() => {
+        window.alert('Не вдалося скинути історію.');
+      });
+    }
+  } else {
+    Alert.alert(
+      'Зкинути історію переглядів?',
+      'Це дозволить вам знову побачити всіх тварин у стрічці. Ваші вподобайки також будуть скинуті.',
+      [
+        { text: 'Скасувати', style: 'cancel' },
+        {
+          text: 'Зкинути',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await feedService.resetSwipes();
+              Alert.alert('Успіх', 'Історію переглядів скинуто!');
+            } catch (e) {
+              Alert.alert('Помилка', 'Не вдалося скинути історію.');
+            }
+          },
+        },
+      ]
+    );
+  }
+};
+
   return (
     <SafeAreaView className="flex-1 bg-stone-50" edges={['top']}>
       <ScrollView
@@ -210,6 +244,13 @@ const handleLogout = () => {
               iconBg="rgba(59,130,246,0.08)"
               label="My Visits"
               onPress={() => router.push('/(app)/visits')}
+            />
+            <MenuRow
+              icon={RotateCcw}
+              iconColor={Colors.warning}
+              iconBg="rgba(234,179,8,0.10)"
+              label="Зкинути історію переглядів"
+              onPress={handleResetSwipes}
               isLast
             />
           </View>

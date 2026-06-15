@@ -63,4 +63,9 @@ public class SwipeService {
 
         return Map.of("swipeId", savedSwipe.getId());
     }
+
+    @Transactional
+    public void resetSwipes(Long userId) {
+        swipeRepository.deleteByUserId(userId);
+    }
 }

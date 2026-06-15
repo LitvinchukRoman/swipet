@@ -12,6 +12,8 @@ import ua.edu.ukma.swipet.backend.swipe.entity.SwipeDirection;
 public interface SwipeRepository extends JpaRepository<Swipe, Long> {
     boolean existsByUserIdAndAnimalId(Long userId, Long animalId);
 
+    void deleteByUserId(Long userId);
+
     @Query("SELECT s.animal FROM Swipe s WHERE s.user.id = :userId AND s.direction = :direction ORDER BY s.swipedAt DESC") java.util.List<Animal> findLikedAnimalsByUserId(
         @Param("userId") Long userId,
         @Param("direction") SwipeDirection direction,

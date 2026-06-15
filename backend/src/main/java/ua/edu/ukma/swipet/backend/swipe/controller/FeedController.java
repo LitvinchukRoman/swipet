@@ -49,6 +49,12 @@ public class FeedController {
         return swipeService.recordSwipe(currentUser.id(), request);
     }
 
+    @DeleteMapping("/swipe/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetSwipes(@CurrentUser AuthenticatedUser currentUser) {
+        swipeService.resetSwipes(currentUser.id());
+    }
+
     @GetMapping("/liked")
     @ResponseStatus(HttpStatus.OK)
     public List<ua.edu.ukma.swipet.backend.animal.dto.AnimalResponse> getLikedAnimals(
