@@ -26,6 +26,7 @@ export default function EditProfileScreen() {
   const { user, updateUser } = useAuthStore();
   const [fullName,  setFullName]  = useState(user?.fullName ?? '');
   const [phone,     setPhone]     = useState(user?.phone    ?? '');
+  const [phoneError, setPhoneError] = useState('');
   const [saving,    setSaving]    = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -77,11 +78,23 @@ export default function EditProfileScreen() {
       notify('Name required', 'Full name cannot be empty.');
       return;
     }
+
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone) {
+      const cleanedPhone = trimmedPhone.replace(/[\s\-()]/g, '');
+      const uaPhoneRegex = /^(?:\+380|380|0)\d{9}$/;
+      
+      if (!uaPhoneRegex.test(cleanedPhone)) {
+        setPhoneError('Please enter a valid phone number');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const updated = await userService.updateMe({
         fullName: fullName.trim(),
-        phone: phone.trim() || undefined,
+        phone: trimmedPhone || undefined,
       });
       await updateUser(updated);
       router.back();
@@ -134,9 +147,13 @@ export default function EditProfileScreen() {
           <Field
             label="Phone"
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(text) => {
+              setPhone(text);
+              if (phoneError) setPhoneError('');
+            }}
             placeholder="+380…"
             keyboardType="phone-pad"
+            error={phoneError}
           />
         </Animated.View>
 
@@ -162,12 +179,15 @@ interface FieldProps {
   placeholder?: string;
   keyboardType?: 'default' | 'phone-pad' | 'email-address';
   autoCapitalize?: 'none' | 'words' | 'sentences';
+  error?: string;
 }
 
-function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', autoCapitalize = 'sentences' }: FieldProps) {
+function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', autoCapitalize = 'sentences', error }: FieldProps) {
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, error ? styles.fieldLabelError : null]}>
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -177,6 +197,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType = 'defaul
         autoCapitalize={autoCapitalize}
         style={styles.fieldInput}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -226,11 +247,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: Spacing[1],
   },
+  fieldLabelError: {
+    color: '#ef4444'
+  },
   fieldInput: {
     color: Colors.neutral[900],
     fontSize: FontSize.md,
     fontWeight: FontWeight.medium,
     paddingVertical: Spacing[1],
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: FontSize.xs,
+    marginTop: Spacing[1],
   },
   fieldDivider: {
     height: 1,
