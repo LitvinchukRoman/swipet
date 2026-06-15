@@ -172,12 +172,6 @@ export default function ShelterDashboardScreen() {
           onPress={() => router.push('/(shelter)/analytics')}
         />
         <NavCard
-          icon={<CalendarDays size={20} color={Colors.primary[600]} strokeWidth={2} />}
-          label="Visit slots"
-          hint="Create and review bookings"
-          onPress={() => router.push('/(shelter)/slots')}
-        />
-        <NavCard
           icon={<Store size={20} color={Colors.primary[600]} strokeWidth={2} />}
           label="Shelter profile"
           hint="Name, description, logo, contacts"
