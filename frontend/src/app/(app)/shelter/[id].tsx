@@ -21,7 +21,6 @@ import {
   Dog,
   ExternalLink,
   Globe,
-  Heart,
   MapPin,
   PawPrint,
   Phone,
@@ -294,57 +293,6 @@ function AnimalCard({ animal, index }: { animal: Animal; index: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  HeartButton — self-contained like toggle (matches AnimalDetailScreen)
-// ─────────────────────────────────────────────────────────────────────────────
-function HeartButton({ size = 44, darkMode = false }: { size?: number; darkMode?: boolean }) {
-  const [liked, setLiked] = useState(false);
-  const scale  = useRef(new Animated.Value(1)).current;
-  const bgAnim = useRef(new Animated.Value(0)).current;
-
-  const toggle = () => {
-    const next = !liked;
-    setLiked(next);
-    Animated.sequence([
-      Animated.spring(scale, { toValue: 1.22, useNativeDriver: true, damping: 4, stiffness: 300 }),
-      Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
-    ]).start();
-    Animated.timing(bgAnim, {
-      toValue: next ? 1 : 0,
-      duration: Duration.normal,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const bg = bgAnim.interpolate({
-    inputRange:  [0, 1],
-    outputRange: darkMode
-      ? ['rgba(0,0,0,0.35)', 'rgba(239,68,68,0.55)']
-      : [Colors.neutral[100], '#FEE2E2'],
-  });
-
-  return (
-    <Pressable onPress={toggle} hitSlop={8}>
-      <Animated.View
-        style={{
-          width: size, height: size, borderRadius: size / 2,
-          alignItems: 'center', justifyContent: 'center',
-          backgroundColor: bg,
-        }}
-      >
-        <Animated.View style={{ transform: [{ scale }] }}>
-          <Heart
-            size={size * 0.5}
-            color={liked ? '#EF4444' : (darkMode ? '#fff' : Colors.neutral[400])}
-            fill={liked ? '#EF4444' : 'transparent'}
-            strokeWidth={1.8}
-          />
-        </Animated.View>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  Section header
 // ─────────────────────────────────────────────────────────────────────────────
 function SectionHeader({ title, count }: { title: string; count?: number }) {
@@ -492,7 +440,6 @@ export default function ShelterDetailScreen() {
           <Pressable style={styles.navBtn}>
             <Share2 size={18} color="#fff" strokeWidth={2} />
           </Pressable>
-          <HeartButton size={40} darkMode />
         </View>
       </View>
 
