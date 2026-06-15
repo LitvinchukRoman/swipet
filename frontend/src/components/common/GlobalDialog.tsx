@@ -1,7 +1,7 @@
 import { AlertCircle, Info } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { useDialogStore } from '@/store/dialog';
@@ -9,10 +9,23 @@ import { useDialogStore } from '@/store/dialog';
 export function GlobalDialog() {
   const { current, closeDialog } = useDialogStore();
 
-  if (!current) return null;
+  const [data, setData] = useState(current);
+  const [isVisible, setIsVisible] = useState(false);
 
-  const isAlert = current.type === 'alert';
-  const isDestructive = current.isDestructive ?? false;
+  useEffect(() => {
+    if (current) {
+      setData(current);
+      setIsVisible(true);
+    } else if (isVisible) {
+      const timer = setTimeout(() => setIsVisible(false), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [current, isVisible]);
+
+  if (!isVisible || !data) return null;
+
+  const isAlert = data.type === 'alert';
+  const isDestructive = data.isDestructive ?? false;
 
   const Icon = isAlert || isDestructive ? AlertCircle : Info;
   const iconColor = isAlert || isDestructive ? Colors.error : Colors.primary[500];
@@ -21,47 +34,53 @@ export function GlobalDialog() {
   const confirmBg = isAlert || isDestructive ? Colors.error : Colors.primary[500];
 
   return (
-    <Modal transparent visible={!!current} animationType="none">
-      <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={() => closeDialog(false)} />
-
+    <Modal transparent visible={isVisible} animationType="none">
+      {!!current && (
         <Animated.View
-          entering={ZoomIn.duration(250).springify().damping(18)}
-          style={styles.card}
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(200)}
+          style={styles.backdrop}
         >
-          <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-            <Icon size={24} color={iconColor} strokeWidth={2} />
-          </View>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => closeDialog(false)} />
 
-          <Text style={styles.title}>{current.title}</Text>
-          {!!current.message && <Text style={styles.message}>{current.message}</Text>}
+          <Animated.View
+            entering={ZoomIn.duration(250).springify().damping(18)}
+            style={styles.card}
+          >
+            <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+              <Icon size={24} color={iconColor} strokeWidth={2} />
+            </View>
 
-          <View style={styles.buttonRow}>
-            {!isAlert && (
+            <Text style={styles.title}>{data.title}</Text>
+            {!!data.message && <Text style={styles.message}>{data.message}</Text>}
+
+            <View style={styles.buttonRow}>
+              {!isAlert && (
+                <Pressable
+                  onPress={() => closeDialog(false)}
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.cancelButton,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text style={styles.cancelText}>{data.cancelText ?? 'Cancel'}</Text>
+                </Pressable>
+              )}
               <Pressable
-                onPress={() => closeDialog(false)}
+                onPress={() => closeDialog(true)}
                 style={({ pressed }) => [
                   styles.button,
-                  styles.cancelButton,
-                  pressed && { opacity: 0.7 },
+                  { backgroundColor: confirmBg },
+                  pressed && { opacity: 0.8 },
                 ]}
               >
-                <Text style={styles.cancelText}>{current.cancelText ?? 'Cancel'}</Text>
+                <Text style={styles.okText}>{data.confirmText ?? 'OK'}</Text>
               </Pressable>
-            )}
-            <Pressable
-              onPress={() => closeDialog(true)}
-              style={({ pressed }) => [
-                styles.button,
-                { backgroundColor: confirmBg },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <Text style={styles.okText}>{current.confirmText ?? 'OK'}</Text>
-            </Pressable>
-          </View>
+            </View>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      )}
     </Modal>
   );
 }
