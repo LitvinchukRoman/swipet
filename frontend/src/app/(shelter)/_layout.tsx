@@ -1,9 +1,28 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 import { Colors, FontSize, FontWeight } from '@/lib/theme';
+import { useShelterStore } from '@/store/shelter';
 
 // Shelter-admin shell (SHELTER_ADMIN). Access is gated by the root _layout by role.
 export default function ShelterLayout() {
+  const { status, load } = useShelterStore();
+
+  useEffect(() => {
+    if (status === 'idle') {
+      load();
+    }
+  }, [status, load]);
+
+  if (status === 'idle' || status === 'loading') {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.neutral[50], alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.primary[500]} />
+      </View>
+    );
+  }
+
   return (
     <Stack
       screenOptions={{

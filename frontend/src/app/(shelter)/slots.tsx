@@ -29,6 +29,7 @@ function tomorrowDate(): string {
 
 export default function SlotsScreen() {
   const shelterId = useShelterStore((st) => st.shelter?.id);
+  const shelterStatus = useShelterStore((st) => st.status);
 
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,13 @@ export default function SlotsScreen() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
-    if (!shelterId) return;
+    if (!shelterId) {
+      if (shelterStatus === 'error' || shelterStatus === 'no-shelter') {
+        setLoading(false);
+        setError(true);
+      }
+      return;
+    }
     try {
       setSlots(await bookingService.getSlots(shelterId));
       setError(false);
@@ -50,11 +57,13 @@ export default function SlotsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [shelterId]);
+  }, [shelterId, shelterStatus]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (shelterStatus !== 'idle' && shelterStatus !== 'loading') {
+      load();
+    }
+  }, [load, shelterStatus]);
 
   const create = async () => {
     if (!shelterId) return;
