@@ -43,7 +43,7 @@ export interface Shelter {
 export interface ChatRoom {
   id: number;
   /** Усиновлювач — автор кімнати (видно імʼя притулку-адміну). */
-  user: { id: number; name: string };
+  user: { id: number; name: string; avatarUrl?: string };
   animal: Pick<Animal, 'id' | 'name' | 'primaryPhotoUrl' | 'species'>;
   shelter: Pick<Shelter, 'id' | 'name' | 'logoUrl'>;
   lastMessage?: string;

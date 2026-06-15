@@ -6,6 +6,7 @@ public record ChatRoomResponse(
         Long id,
         Long userId,
         String userName,
+        String userAvatarUrl,
         Long shelterId,
         String shelterName,
         Long animalId,

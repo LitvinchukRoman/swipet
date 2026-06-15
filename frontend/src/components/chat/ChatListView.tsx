@@ -199,8 +199,9 @@ function ChatRow({
         {/* Avatar + unread dot */}
         <View style={styles.avatarWrap}>
           <Avatar
-            uri={room.animal.primaryPhotoUrl}
-            emoji={SPECIES_EMOJI[room.animal.species]}
+            uri={isShelterAdmin ? room.user.avatarUrl : room.animal.primaryPhotoUrl}
+            name={isShelterAdmin ? room.user.name : undefined}
+            emoji={!isShelterAdmin ? SPECIES_EMOJI[room.animal.species] : undefined}
             size={56}
           />
           {hasUnread && <View style={styles.onlineDot} />}

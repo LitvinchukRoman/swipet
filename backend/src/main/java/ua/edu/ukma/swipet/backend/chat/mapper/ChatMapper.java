@@ -18,6 +18,7 @@ public class ChatMapper {
                 room.getId(),
                 room.getUser().getId(),
                 room.getUser().getFullName(),
+                room.getUser().getAvatarUrl(),
                 room.getShelter().getId(),
                 room.getShelter().getName(),
                 room.getAnimal().getId(),

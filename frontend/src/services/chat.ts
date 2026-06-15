@@ -10,6 +10,7 @@ interface ChatRoomDTO {
   id: number;
   userId: number;
   userName: string;
+  userAvatarUrl?: string;
   shelterId: number;
   shelterName: string;
   animalId: number;
@@ -39,7 +40,7 @@ interface Page<T> {
 function mapRoom(d: ChatRoomDTO): ChatRoom {
   return {
     id: d.id,
-    user: { id: d.userId, name: d.userName ?? '' },
+    user: { id: d.userId, name: d.userName ?? '', avatarUrl: d.userAvatarUrl },
     animal: {
       id: d.animalId,
       name: d.animalName,
