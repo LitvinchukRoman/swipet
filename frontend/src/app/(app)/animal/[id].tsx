@@ -71,16 +71,6 @@ function useFadeSlide(delay = 0, fromY = 20) {
   return { anim: { opacity, transform: [{ translateY }] }, run };
 }
 
-function useSpringPop() {
-  const scale = useRef(new Animated.Value(1)).current;
-  const pop = () =>
-    Animated.sequence([
-      Animated.spring(scale, { toValue: 1.18, useNativeDriver: true, damping: 4, stiffness: 300 }),
-      Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
-    ]).start();
-  return { scaleStyle: { transform: [{ scale }] }, pop };
-}
-
 // ─── Badge ────────────────────────────────────────────────────────────────────
 function Badge({
   label,
@@ -703,7 +693,12 @@ export default function AnimalDetailScreen() {
   // NARROW SCREEN / MOBILE LAYOUT
   return (
     <View style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
-      <ScrollView showsVerticalScrollIndicator={false} bounces>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        bounces
+        contentContainerStyle={{ paddingBottom: Spacing[4] }}
+      >
         <View>
           <PhotoCarousel photos={photos} width={contentWidth} height={photoHeight} />
           <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0 }} pointerEvents="box-none">
@@ -736,14 +731,13 @@ export default function AnimalDetailScreen() {
           }}
         >
           <AnimalContentInner animal={animal} header={header} stats={stats} about={about} shelter={shelter} />
-          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
 
       <Animated.View style={actions.anim}>
         <SafeAreaView
           edges={['bottom']}
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: Colors.neutral[0], borderTopWidth: 1, borderTopColor: Colors.neutral[100], ...Shadow.md }}
+          style={{ backgroundColor: Colors.neutral[0], borderTopWidth: 1, borderTopColor: Colors.neutral[100], ...Shadow.md }}
         >
           <View style={{ flexDirection: 'row', gap: Spacing[2], paddingHorizontal: Spacing[4], paddingTop: Spacing[3], paddingBottom: Spacing[2] }}>
             <ActionBtn label="Support" variant="outline" icon={<Heart size={16} color={Colors.primary[500]} strokeWidth={1.8} />} onPress={() => setDonationVisible(true)} />
