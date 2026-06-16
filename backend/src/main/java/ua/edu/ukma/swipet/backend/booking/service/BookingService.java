@@ -28,6 +28,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервіс для управління розкладом візитів (Booking Slots) та бронюванням візитів користувачами.
+ * Містить логіку запобігання накладання слотів, захисту від овербукінгу за допомогою write-lock
+ * та розмежування прав при скасуванні/видаленні.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,16 @@ public class BookingService {
     private final UserRepository userRepository;
     private final ShelterOwnershipGuard ownershipGuard;
 
+    /**
+     * Створює новий часовий слот для візитів у притулок.
+     * Запобігає створенню слотів, які перетинаються в часі для одного й того ж притулку.
+     *
+     * @param shelterId ID притулку
+     * @param request Параметри слоту (час початку, завершення, максимальна кількість гостей)
+     * @return Створений слот візиту
+     * @throws AppException.badRequest якщо час початку більший або дорівнює часу завершення
+     * @throws AppException.conflict якщо слот перетинається за часом з іншим наявним слотом притулку
+     */
     @Transactional
     public BookingSlotResponse createSlot(Long shelterId, BookingSlotRequest request) {
         if (request.startTime().isAfter(request.endTime()) || request.startTime().isEqual(request.endTime())) {
@@ -48,6 +63,7 @@ public class BookingService {
         Shelter shelter = shelterRepository.findById(shelterId)
                 .orElseThrow(() -> AppException.notFound("Притулок не знайдено"));
 
+        // Перевірка перетину слотів у часі
         boolean isOverlapping = slotRepository.isSlotOverlapping(shelterId, request.startTime(), request.endTime());
         if (isOverlapping) {
             throw AppException.conflict("Цей часовий слот перетинається з уже існуючим");
@@ -72,6 +88,12 @@ public class BookingService {
         );
     }
 
+    /**
+     * Повертає список доступних майбутніх слотів для конкретного притулку разом із кількістю зайнятих місць.
+     *
+     * @param shelterId ID притулку
+     * @return Список доступних слотів
+     */
     @Transactional(readOnly = true)
     public List<BookingSlotResponse> getAvailableSlots(Long shelterId) {
         LocalDateTime now = LocalDateTime.now();
@@ -90,9 +112,21 @@ public class BookingService {
         }).collect(Collectors.toList());
     }
 
+    /**
+     * Бронює місце у часовому слоті притулку для користувача.
+     * Використовує песимістичне блокування (write-lock) для запобігання овербукінгу
+     * при одночасному бронюванні кількома користувачами.
+     *
+     * @param userId ID користувача
+     * @param slotId ID часового слоту
+     * @param request Додаткові примітки до бронювання
+     * @return Інформація про створене бронювання
+     * @throws AppException.badRequest якщо слот уже розпочався або минув
+     * @throws AppException.conflict якщо всі місця в цьому слоті заброньовано
+     */
     @Transactional
     public BookingReservationResponse bookSlot(Long userId, Long slotId, BookingReservationRequest request) {
-        // Беремо слот під write-локом, щоб конкурентні бронювання серіалізувались
+        // Беремо слот під write-локом (SELECT ... FOR UPDATE), щоб конкурентні бронювання серіалізувались
         // і сумарна кількість не перевищила maxGuests (захист від овербукінгу).
         BookingSlot slot = slotRepository.findByIdForUpdate(slotId)
                 .orElseThrow(() -> AppException.notFound("Слот не знайдено"));
@@ -129,7 +163,12 @@ public class BookingService {
         );
     }
 
-    /** Бронювання поточного користувача (з контекстом притулку). */
+    /**
+     * Отримує список бронювань поточного користувача.
+     *
+     * @param userId ID користувача
+     * @return Список бронювань користувача
+     */
     @Transactional(readOnly = true)
     public List<MyReservationResponse> getMyReservations(Long userId) {
         return reservationRepository.findAllByUser_IdOrderByCreatedAtDesc(userId).stream()
@@ -151,8 +190,13 @@ public class BookingService {
     }
 
     /**
-     * Скасування бронювання (soft → CANCELLED, звільняє місце). Дозволено: власнику
-     * брони, адміну притулку цього слоту або платформеному ADMIN.
+     * Скасовує бронювання візиту (soft-delete → статус змінюється на CANCELLED).
+     * Дозволено лише автору бронювання, адміністратору відповідного притулку або платформеному ADMIN.
+     *
+     * @param reservationId ID бронювання
+     * @param authUserId ID поточного авторизованого користувача
+     * @param authRole Роль поточного авторизованого користувача
+     * @throws AppException.forbidden якщо у користувача немає прав на скасування цього бронювання
      */
     @Transactional
     public void cancelReservation(Long reservationId, Long authUserId, Role authRole) {
@@ -174,7 +218,14 @@ public class BookingService {
         }
     }
 
-    /** Список тих, хто записаний на слот (для адміна притулку — з перевіркою володіння). */
+    /**
+     * Отримує список активних бронювань для конкретного слоту.
+     * Дозволено лише для адміністраторів відповідного притулку.
+     *
+     * @param slotId ID часового слоту
+     * @param currentUser Інформація про поточного авторизованого користувача
+     * @return Список зареєстрованих візитерів на слот
+     */
     @Transactional(readOnly = true)
     public List<SlotReservationResponse> getSlotReservations(Long slotId, AuthenticatedUser currentUser) {
         BookingSlot slot = slotRepository.findById(slotId)
@@ -194,7 +245,13 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
-    /** Видаляє слот разом з усіма його бронюваннями. Лише власник притулку або ADMIN. */
+    /**
+     * Видаляє часовий слот разом з усіма його бронюваннями.
+     * Дозволено лише адміністратору відповідного притулку або платформеному ADMIN.
+     *
+     * @param slotId ID часового слоту
+     * @param currentUser Інформація про поточного авторизованого користувача
+     */
     @Transactional
     public void deleteSlot(Long slotId, AuthenticatedUser currentUser) {
         BookingSlot slot = slotRepository.findById(slotId)

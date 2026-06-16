@@ -17,16 +17,27 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.List;
 
+/**
+ * Глобальний обробник виключень для REST-контролерів.
+ * Перехоплює системні та бізнес-помилки, мапить їх на відповідні HTTP-статуси
+ * та повертає уніфіковану JSON-відповідь клієнту (ErrorResponse).
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Обробляє кастомні бізнес-виключення додатку (AppException).
+     */
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleApp(AppException ex, HttpServletRequest req) {
         return ResponseEntity.status(ex.getStatus())
                 .body(ErrorResponse.of(ex.getCode(), ex.getMessage(), ex.getStatus().value(), req.getRequestURI()));
     }
 
+    /**
+     * Обробляє помилки валідації тіла запиту (@Valid на DTO / MethodArgumentNotValidException).
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
         List<ErrorResponse.FieldViolation> violations = ex.getBindingResult().getFieldErrors().stream()
@@ -37,6 +48,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI(), violations));
     }
 
+    /**
+     * Обробляє помилки порушення обмежень БД чи Hibernate Validator (ConstraintViolationException).
+     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest req) {
         List<ErrorResponse.FieldViolation> violations = ex.getConstraintViolations().stream()
@@ -47,7 +61,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI(), violations));
     }
 
-    // Відсутній обов'язковий request-параметр чи заголовок — це помилка клієнта (400), а не 500.
+    /**
+     * Відсутній обов'язковий request-параметр чи заголовок — це помилка клієнта (400), а не 500.
+     */
     @ExceptionHandler(ServletRequestBindingException.class)
     public ResponseEntity<ErrorResponse> handleBindingException(ServletRequestBindingException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -55,7 +71,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
     }
 
-    // Невалідний тип параметра шляху/запиту (напр. /animals/abc) — це 400, а не 500.
+    /**
+     * Невалідний тип параметра шляху/запиту (напр. передача рядка замість ID типу Long) — це 400, а не 500.
+     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
         String msg = "Invalid value for parameter '" + ex.getName() + "'";
@@ -64,7 +82,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
     }
 
-    // Нечитабельне/невалідне тіло запиту (зламаний JSON, невідоме значення enum) — це 400, а не 500.
+    /**
+     * Нечитабельне/невалідне тіло запиту (зламаний JSON, невідоме значення enum) — це 400, а не 500.
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -72,6 +92,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST.value(), req.getRequestURI()));
     }
 
+    /**
+     * Перехоплює виключення авторизації (невірний логін/пароль або відсутній токен).
+     */
     @ExceptionHandler({AuthenticationException.class, BadCredentialsException.class})
     public ResponseEntity<ErrorResponse> handleAuth(AuthenticationException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -79,6 +102,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.UNAUTHORIZED.value(), req.getRequestURI()));
     }
 
+    /**
+     * Перехоплює помилки доступу до ресурсів при недостатніх ролях чи правах (403 Forbidden).
+     */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(AccessDeniedException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -86,6 +112,9 @@ public class GlobalExceptionHandler {
                         HttpStatus.FORBIDDEN.value(), req.getRequestURI()));
     }
 
+    /**
+     * Обробляє помилки перевищення максимального дозволеного розміру завантажуваних файлів.
+     */
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxSizeException(org.springframework.web.multipart.MaxUploadSizeExceededException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
@@ -93,6 +122,10 @@ public class GlobalExceptionHandler {
                         HttpStatus.PAYLOAD_TOO_LARGE.value(), req.getRequestURI()));
     }
 
+    /**
+     * Загальний обробник для будь-яких непередбачених внутрішніх помилок сервера (500 Internal Server Error).
+     * Логує повний стек помилки та приховує деталі реалізації від клієнта.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest req) {
         log.error("Unhandled exception at {}: {}", req.getRequestURI(), ex.getMessage(), ex);

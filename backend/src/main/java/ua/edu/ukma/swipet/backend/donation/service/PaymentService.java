@@ -19,6 +19,11 @@ import ua.edu.ukma.swipet.backend.donation.dto.PaymentVerificationStatus;
 
 import java.math.BigDecimal;
 
+/**
+ * Сервіс для інтеграції з платіжною системою Stripe.
+ * Дозволяє ініціалізувати платіжні сесії Checkout, верифікувати статуси сесій
+ * та безпечно обробляти вхідні Stripe-вебхуки.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -32,18 +37,31 @@ public class PaymentService {
     @Value("${app.frontend-url:http://localhost:8081}")
     private String frontendUrl;
 
+    /**
+     * Ініціалізує Stripe API після створення біна за допомогою налаштованих properties.
+     */
     @PostConstruct
     public void init() {
         Stripe.apiKey = stripeProperties.apiKey();
         log.info("Stripe API ініціалізовано");
     }
 
+    /**
+     * Створює Stripe Checkout Session для оплати донату або опіки.
+     *
+     * @param amount Сума платежу (у гривнях)
+     * @param description Опис призначення платежу (відображається користувачу на платіжній сторінці)
+     * @return Об'єкт відповіді з платіжним лінком та ID сесії
+     * @throws AppException.badRequest якщо Stripe API повертає помилку
+     */
     public PaymentInitResponse initPayment(BigDecimal amount, String description) {
         try {
+            // Stripe приймає суму в центах/копійках, тому множимо UAH на 100
             long amountInCents = amount.multiply(new BigDecimal("100")).longValue();
 
             SessionCreateParams params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
+                // {CHECKOUT_SESSION_ID} буде замінено Stripe на реальний ID сесії при редиректі
                 .setSuccessUrl(frontendUrl + "/payment-success?session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(frontendUrl + "/payment-cancel")
                 .addLineItem(
@@ -85,6 +103,9 @@ public class PaymentService {
      *  - payment_status == "paid" | "no_payment_required" → SUCCESS
      *  - status == "expired"                              → FAILED
      *  - інакше (status "open", payment_status "unpaid")  → PENDING
+     *
+     * @param sessionId ID сесії Stripe Checkout
+     * @return Внутрішній статус верифікації платежу (SUCCESS, FAILED, PENDING)
      */
     public PaymentVerificationStatus getCheckoutStatus(String sessionId) {
         try {
@@ -107,8 +128,13 @@ public class PaymentService {
     }
 
     /**
-     * Верифікує підпис Stripe-вебхука та повертає розпарсену подію.
-     * Винесено окремим методом, щоб ізолювати статичний виклик Stripe SDK (мокабельний у тестах).
+     * Верифікує автентичність Stripe-вебхука за допомогою HMAC-підпису та розпаршує подію.
+     * Запобігає атакам підміни тіла запиту (Payload Replay Attacks).
+     *
+     * @param payload Сире тіло запиту (JSON-строка)
+     * @param sigHeader Заголовок Stripe-Signature з підписом
+     * @return Перевірений об'єкт події Stripe
+     * @throws AppException.unauthorized якщо підпис недійсний
      */
     public Event verifyWebhook(String payload, String sigHeader) {
         try {

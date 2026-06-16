@@ -12,12 +12,11 @@ import ua.edu.ukma.swipet.backend.shelter.entity.Shelter;
 import ua.edu.ukma.swipet.backend.shelter.repository.ShelterRepository;
 
 /**
- * Перевірки володіння притулком. Роль (SHELTER_ADMIN/ADMIN) гейтиться через
- * {@code @PreAuthorize} на рівні контролера, але цього недостатньо: адмін одного
- * притулку не повинен мати змоги редагувати тварин/слоти/профіль ЧУЖОГО притулку.
- *
- * <p>Платформенний {@link Role#ADMIN} проходить будь-яку перевірку. Для
- * {@link Role#SHELTER_ADMIN} ресурс має належати притулку, де він — {@code adminUser}.
+ * Компонент для додаткової авторизації на рівні бізнес-ресурсів (притулків та тварин).
+ * Запобігає несанкціонованому редагуванню даних адміністратором одного притулку в профілі чужого.
+ * 
+ * <p>Платформенний ADMIN проходить будь-яку перевірку. Для SHELTER_ADMIN ресурс має
+ * належати саме тому притулку, де цей користувач зареєстрований як adminUser.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -27,7 +26,15 @@ public class ShelterOwnershipGuard {
     private final ShelterRepository shelterRepository;
     private final AnimalRepository animalRepository;
 
-    /** Чи може користувач керувати цим притулком. */
+    /**
+     * Перевіряє, чи має авторизований користувач права на управління притулком.
+     * Пропускає перевірку, якщо користувач є платформеним адміністратором.
+     *
+     * @param user Поточний авторизований користувач
+     * @param shelterId ID притулку для перевірки
+     * @throws AppException.notFound якщо притулок не знайдено
+     * @throws AppException.forbidden якщо користувач не є адміністратором цього притулку
+     */
     public void assertCanManageShelter(AuthenticatedUser user, Long shelterId) {
         if (isPlatformAdmin(user)) {
             return;
@@ -37,7 +44,15 @@ public class ShelterOwnershipGuard {
         ensureOwner(user, shelter);
     }
 
-    /** Чи може користувач керувати твариною (через притулок, до якого вона належить). */
+    /**
+     * Перевіряє, чи має авторизований користувач права на управління конкретною твариною.
+     * Права визначаються через приналежність тварини до притулку користувача.
+     *
+     * @param user Поточний авторизований користувач
+     * @param animalId ID тварини для перевірки
+     * @throws AppException.notFound якщо тварину не знайдено
+     * @throws AppException.forbidden якщо тварина належить притулку іншого адміністратора
+     */
     public void assertCanManageAnimal(AuthenticatedUser user, Long animalId) {
         if (isPlatformAdmin(user)) {
             return;
@@ -47,6 +62,9 @@ public class ShelterOwnershipGuard {
         ensureOwner(user, animal.getShelter());
     }
 
+    /**
+     * Допоміжний метод для перевірки рівності власника притулку та авторизованого користувача.
+     */
     private void ensureOwner(AuthenticatedUser user, Shelter shelter) {
         if (shelter == null || shelter.getAdminUser() == null
                 || !shelter.getAdminUser().getId().equals(user.id())) {
@@ -54,6 +72,9 @@ public class ShelterOwnershipGuard {
         }
     }
 
+    /**
+     * Перевіряє, чи має користувач глобальну роль адміністратора платформи (ADMIN).
+     */
     private boolean isPlatformAdmin(AuthenticatedUser user) {
         return user.role() == Role.ADMIN;
     }

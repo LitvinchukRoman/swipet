@@ -17,6 +17,10 @@ import ua.edu.ukma.swipet.backend.swipe.repository.SwipeRepository;
 
 import java.util.Map;
 
+/**
+ * Сервіс для реєстрації та управління реакціями (свайпами) користувачів на анкет тварин.
+ * Також оновлює статистику аналітики притулків при кожному свайпі.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,10 +29,17 @@ public class SwipeService {
     private final SwipeRepository swipeRepository;
     private final AnimalRepository animalRepository;
     private final AnalyticsService analyticsService;
-
-
     private final ua.edu.ukma.swipet.backend.auth.repository.UserRepository userRepository;
 
+    /**
+     * Фіксує реакцію користувача (лайк або дизлайк) на анкету тварини.
+     * Запобігає повторним свайпам та оновлює метрики аналітики.
+     *
+     * @param userId ID користувача, який здійснює реакцію
+     * @param request Запит із ID тварини та напрямком свайпу (LEFT / RIGHT)
+     * @return Мапа з ID створеного запису свайпу
+     * @throws AppException.conflict якщо користувач уже реагував на цю анкету
+     */
     @Transactional
     public Map<String, Long> recordSwipe(Long userId, SwipeRequest request) {
         if (swipeRepository.existsByUserIdAndAnimalId(userId, request.animalId())) {
@@ -52,18 +63,25 @@ public class SwipeService {
         try {
             savedSwipe = swipeRepository.save(swipe);
         } catch (DataIntegrityViolationException e) {
+            // Запобігання дублюванню записів при швидких повторних кліках (Race Condition)
             log.warn("Спрацював захист від Race Condition: користувач {} вже свайпнув тварину {}",
                 userId, request.animalId());
 
             throw AppException.conflict("Ви вже відреагували на цю анкету");
         }
 
-        // Аналітика притулку: свайп вправо/вліво
+        // Оновлюємо метрики притулку (лайк чи дизлайк)
         analyticsService.incrementSwipe(request.animalId(), request.direction() == SwipeDirection.RIGHT);
 
         return Map.of("swipeId", savedSwipe.getId());
     }
 
+    /**
+     * Повністю очищує історію свайпів (реакцій) користувача.
+     * Використовується для повторного відображення раніше переглянутих карток у стрічці.
+     *
+     * @param userId ID користувача
+     */
     @Transactional
     public void resetSwipes(Long userId) {
         swipeRepository.deleteByUserId(userId);
