@@ -36,9 +36,9 @@ import { useFeedStore } from '@/store/feed';
  * Displays user information, settings, and navigation to guardianships or edit profile screens.
  */
 const ROLE_LABEL: Record<string, string> = {
-  USER:          'Adopter',
+  USER: 'Adopter',
   SHELTER_ADMIN: 'Shelter Admin',
-  ADMIN:         'Administrator',
+  ADMIN: 'Administrator',
 };
 
 //  Screen
@@ -77,27 +77,27 @@ export default function ProfileScreen() {
       quality: 0.85,
     });
     if (result.canceled) return;
- 
+
     const asset = result.assets[0];
     setUploading(true);
     try {
       const formData = new FormData();
       if (Platform.OS === 'web') {
-        const res  = await fetch(asset.uri);
+        const res = await fetch(asset.uri);
         const blob = await res.blob();
         formData.append('file', blob, 'avatar.jpg');
       } else {
         formData.append('file', {
-          uri:  asset.uri,
+          uri: asset.uri,
           type: asset.mimeType ?? 'image/jpeg',
           name: 'avatar.jpg',
         } as any);
       }
- 
+
       // POST /users/me/avatar → { avatarUrl }
       // PATCH /users/me       → updated user
       const avatarUrl = await userService.uploadAvatar(formData);
-      const updated   = await userService.updateMe({ avatarUrl });
+      const updated = await userService.updateMe({ avatarUrl });
       await updateUser(updated);
     } catch {
       notify('Upload failed', 'Could not update your photo. Please try again.');
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
     }
   };
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     const performLogout = async () => {
       try {
         if (refreshToken) await authService.logout(refreshToken);
@@ -124,16 +124,16 @@ export default function ProfileScreen() {
 
   const handleResetSwipes = async () => {
     const confirmed = await confirm(
-      'Зкинути історію переглядів?',
-      'Це дозволить вам знову побачити всіх тварин у стрічці. Ваші вподобайки також будуть скинуті.',
+      'Reset history?',
+      'This will allow you to see all animals in the feed again. Your likes will also be reset.',
       true
     );
     if (confirmed) {
       try {
         await feedService.resetSwipes();
-        notify('Успіх', 'Історію переглядів скинуто!');
+        notify('Success', 'History has been reset!');
       } catch (e) {
-        notify('Помилка', 'Не вдалося скинути історію.');
+        notify('Error', 'Could not reset history.');
       }
     }
   };
@@ -279,7 +279,7 @@ function MenuRow({ icon: Icon, iconColor, iconBg, label, onPress, isLast }: Menu
   return (
     <Pressable
       onPressIn={() => { scale.value = withSpring(0.97, { damping: 14, stiffness: 320 }); }}
-      onPressOut={() => { scale.value = withSpring(1,    { damping: 14, stiffness: 320 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 14, stiffness: 320 }); }}
       onPress={onPress}
       style={!isLast && styles.menuRowBorder}
     >

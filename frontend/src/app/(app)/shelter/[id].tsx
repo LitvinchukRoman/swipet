@@ -378,32 +378,7 @@ export default function ShelterDetailScreen() {
     notify('Link copied', 'The link has been copied to your clipboard.');
   };
 
-  // Кімнати чату прив'язані до тварини, тож "Contact Shelter" відкриває діалог
-  // про першу тварину притулку. Якщо тварин немає — фолбек на телефон/нотіфай.
-  const handleContactShelter = async () => {
-    const firstAnimal = shelter.animals?.[0];
-    if (!firstAnimal) {
-      if (shelter.phone) {
-        Linking.openURL(`tel:${shelter.phone}`);
-      } else {
-        notify('Contact unavailable', 'This shelter has no animals to start a chat about yet.');
-      }
-      return;
-    }
-    try {
-      const { roomId } = await chatService.createRoom(firstAnimal.id, shelter.id);
-      router.push({
-        pathname: '/(app)/chat/[id]',
-        params: {
-          id:          String(roomId),
-          shelterName: shelter.name,
-          animalName:  firstAnimal.name,
-        },
-      });
-    } catch {
-      notify('Could not open chat', 'Please try again in a moment.');
-    }
-  };
+
 
   return (
     <View style={styles.root}>
@@ -631,12 +606,12 @@ export default function ShelterDetailScreen() {
         </Animated.View>
       </Animated.ScrollView>
 
-      {/* ── CTA dual-action bottom panel ────────────────────────────────── */}
+      {/* ── CTA bottom panel ────────────────────────────────── */}
       <View style={[styles.ctaBar, { paddingBottom: insets.bottom + Spacing[3] }]}>
         <ActionBtn
           label="Book Visit"
-          variant="outline"
-          icon={<CalendarDays size={18} color={Colors.primary[500]} strokeWidth={1.8} />}
+          variant="primary"
+          icon={<CalendarDays size={18} color={Colors.neutral[0]} strokeWidth={1.8} />}
           onPress={() => router.push({
             pathname: '/(app)/booking/[shelterId]',
             params: {
@@ -644,12 +619,6 @@ export default function ShelterDetailScreen() {
               shelterName: shelter.name,
             },
           })}
-        />
-        <ActionBtn
-          label="Contact Shelter"
-          variant="primary"
-          icon={<PawPrint size={18} color={Colors.neutral[0]} strokeWidth={1.8} />}
-          onPress={handleContactShelter}
         />
       </View>
     </View>

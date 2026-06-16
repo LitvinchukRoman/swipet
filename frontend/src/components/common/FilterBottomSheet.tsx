@@ -15,6 +15,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -437,27 +438,23 @@ export function FilterBottomSheet({
           </ScrollView>
 
           {/* Apply CTA */}
-          <View style={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[4], width: '100%' }}>
-            <View style={{ width: '100%', borderRadius: Radius.lg, ...Shadow.orange }}>
-              <Pressable
-                onPress={handleApply}
-                style={({ pressed }) => [
-                  {
-                    backgroundColor: Colors.primary[500],
-                    borderRadius: Radius.lg,
-                    height: 56,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                  },
-                  { opacity: pressed ? 0.8 : 1 }
-                ]}
-              >
-                <Text style={{ color: Colors.neutral[0], fontSize: 16, fontWeight: '700' }}>
-                  Show results{activeCount > 0 ? ` · ${activeCount} active` : ''}
-                </Text>
-              </Pressable>
-            </View>
+          <View style={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[4] }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleApply}
+              style={{
+                backgroundColor: Colors.primary[500],
+                borderRadius: Radius.lg,
+                height: 56,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...Shadow.orange,
+              }}
+            >
+              <Text style={{ color: Colors.neutral[0], fontSize: 16, fontWeight: '700' }}>
+                Show results{activeCount > 0 ? ` · ${activeCount} active` : ''}
+              </Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
       </GestureHandlerRootView>

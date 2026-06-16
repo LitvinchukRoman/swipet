@@ -1,6 +1,6 @@
 import { AlertCircle, Info } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
@@ -64,29 +64,23 @@ export function GlobalDialog() {
             <View style={styles.buttonRow}>
               {!isAlert && (
                 <View style={styles.buttonWrapper}>
-                  <Pressable
+                  <TouchableOpacity
+                    activeOpacity={0.7}
                     onPress={() => closeDialog(false)}
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.cancelButton,
-                      { opacity: pressed ? 0.7 : 1 },
-                    ]}
+                    style={[styles.button, styles.cancelButton]}
                   >
                     <Text style={styles.cancelText}>{data.cancelText ?? 'Cancel'}</Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               )}
               <View style={styles.buttonWrapper}>
-                <Pressable
+                <TouchableOpacity
+                  activeOpacity={0.8}
                   onPress={() => closeDialog(true)}
-                  style={({ pressed }) => [
-                    styles.button,
-                    { backgroundColor: confirmBg },
-                    { opacity: pressed ? 0.8 : 1 },
-                  ]}
+                  style={[styles.button, { backgroundColor: confirmBg }]}
                 >
                   <Text style={styles.okText}>{data.confirmText ?? 'OK'}</Text>
-                </Pressable>
+                </TouchableOpacity>
               </View>
             </View>
           </Animated.View>
