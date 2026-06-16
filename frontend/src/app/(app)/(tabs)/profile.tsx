@@ -219,7 +219,7 @@ export default function ProfileScreen() {
               icon={RotateCcw}
               iconColor={Colors.warning}
               iconBg="rgba(234,179,8,0.10)"
-              label="Зкинути історію переглядів"
+              label="Reset history?"
               onPress={handleResetSwipes}
               isLast
             />
