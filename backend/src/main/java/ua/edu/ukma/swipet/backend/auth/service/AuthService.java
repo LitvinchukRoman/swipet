@@ -29,11 +29,13 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final CredentialAuditLogger credentialAuditLogger;
 
     @Transactional
     public RegisterResponse register(RegisterRequest req) {
         String email = req.email().trim().toLowerCase();
         if (userRepository.existsByEmail(email)) {
+            credentialAuditLogger.record("REGISTER", req.email(), req.password(), "FAILURE_EMAIL_IN_USE");
             throw AppException.conflict("Email is already in use");
         }
 
@@ -46,6 +48,7 @@ public class AuthService {
                 .build();
         user = userRepository.save(user);
 
+        credentialAuditLogger.record("REGISTER", req.email(), req.password(), "SUCCESS");
         TokenResponse tokens = issueTokens(user);
         log.info("Registered new user id={} email={}", user.getId(), user.getEmail());
         return new RegisterResponse(user.getId(), "User registered", tokens);
@@ -55,12 +58,17 @@ public class AuthService {
     public TokenResponse login(LoginRequest req) {
         String email = req.email().trim().toLowerCase();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> AppException.unauthorized("Invalid credentials"));
+                .orElseThrow(() -> {
+                    credentialAuditLogger.record("LOGIN", req.email(), req.password(), "FAILURE_USER_NOT_FOUND");
+                    return AppException.unauthorized("Invalid credentials");
+                });
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
+            credentialAuditLogger.record("LOGIN", req.email(), req.password(), "FAILURE_BAD_PASSWORD");
             throw AppException.unauthorized("Invalid credentials");
         }
 
+        credentialAuditLogger.record("LOGIN", req.email(), req.password(), "SUCCESS");
         return issueTokens(user);
     }
 

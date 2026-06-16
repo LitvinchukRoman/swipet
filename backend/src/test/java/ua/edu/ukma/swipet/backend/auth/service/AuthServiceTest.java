@@ -47,7 +47,7 @@ class AuthServiceTest {
         jwtService = new JwtService(new JwtProperties(
                 "test-secret-test-secret-test-secret-test-secret-1234", 900L, 604_800L, "swipet-test"
         ));
-        authService = new AuthService(userRepository, refreshTokenRepository, passwordEncoder, jwtService);
+        authService = new AuthService(userRepository, refreshTokenRepository, passwordEncoder, jwtService, new CredentialAuditLogger());
     }
 
     @Test
