@@ -1,7 +1,7 @@
 import { api } from './api';
 
-// Admin API — підключено до живого бекенду (AdminController, /api/v1/admin).
-// Усі ендпоінти вимагають ролі ADMIN.
+// Admin API - connected to the backend (AdminController, /api/v1/admin).
+// All endpoints require the ADMIN role.
 
 export type UserRole = 'USER' | 'SHELTER_ADMIN' | 'ADMIN';
 
@@ -56,27 +56,27 @@ function mapShelter(d: ShelterResponseDTO): AdminShelter {
 }
 
 export const adminService = {
-  /** Зведена статистика. GET /admin/stats */
+  /** Aggregate platform statistics. GET /admin/stats */
   getStats: (): Promise<AdminStats> =>
     api.get<AdminStats>('/admin/stats').then((r) => r.data),
 
-  /** Усі користувачі. GET /admin/users */
+  /** Fetch all users. GET /admin/users */
   getUsers: (): Promise<AdminUser[]> =>
     api.get<AdminUser[]>('/admin/users').then((r) => r.data),
 
-  /** Змінити роль користувача. PATCH /admin/users/:id/role */
+  /** Update user role. PATCH /admin/users/:id/role */
   updateUserRole: (id: number, role: UserRole): Promise<AdminUser> =>
     api.patch<AdminUser>(`/admin/users/${id}/role`, { role }).then((r) => r.data),
 
-  /** Усі притулки. GET /admin/shelters */
+  /** Fetch all shelters. GET /admin/shelters */
   getShelters: (): Promise<AdminShelter[]> =>
     api.get<ShelterResponseDTO[]>('/admin/shelters').then((r) => r.data.map(mapShelter)),
 
-  /** Створити притулок і призначити адміна. POST /admin/shelters */
+  /** Create a shelter and assign an admin. POST /admin/shelters */
   createShelter: (payload: CreateShelterPayload): Promise<AdminShelter> =>
     api.post<ShelterResponseDTO>('/admin/shelters', payload).then((r) => mapShelter(r.data)),
 
-  /** Верифікувати / зняти верифікацію. PATCH /admin/shelters/:id/verify */
+  /** Verify / unverify a shelter. PATCH /admin/shelters/:id/verify */
   verifyShelter: (id: number, verified: boolean): Promise<AdminShelter> =>
     api.patch<ShelterResponseDTO>(`/admin/shelters/${id}/verify`, { verified }).then((r) => mapShelter(r.data)),
 };

@@ -3,6 +3,9 @@ import { Stack } from 'expo-router';
 import { Colors, FontSize, FontWeight } from '@/lib/theme';
 
 // Admin shell (ADMIN). Access is gated by the root _layout by role.
+/**
+ * Root layout for the authenticated system administrator role.
+ */
 export default function AdminLayout() {
   return (
     <Stack

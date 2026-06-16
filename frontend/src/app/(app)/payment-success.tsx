@@ -9,6 +9,10 @@ import { donationService, type PaymentVerificationStatus } from '@/services/dona
 
 // Один екран на три результати: success / pending / failed.
 // Status беремо реально з бекенду (verify-session → Stripe), а не optimistic.
+/**
+ * Screen displayed after a successful Stripe payment.
+ * Verifies the checkout session and confirms the donation or guardianship.
+ */
 type ViewStatus = PaymentVerificationStatus;
 
 const COPY: Record<ViewStatus, {

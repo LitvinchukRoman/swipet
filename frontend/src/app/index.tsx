@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 
 export default function Index() {
-  // Цей файл просто запобігає помилці "Missing route" на кореневому URL `/`.
-  // _layout.tsx автоматично перенаправить користувача у відповідну оболонку.
+  // This file simply prevents a "Missing route" error on the root URL `/`.
+  // _layout.tsx will automatically redirect the user to the correct route group.
   return <Redirect href="/(auth)/login" />;
 }

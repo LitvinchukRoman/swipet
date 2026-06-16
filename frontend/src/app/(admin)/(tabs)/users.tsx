@@ -20,6 +20,10 @@ import { adminService, type AdminUser, type UserRole } from '@/services/admin';
 
 
 
+/**
+ * "Users" tab for system administrators.
+ * Lists all users and allows role management or banning.
+ */
 export default function AdminUsersScreen() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +33,6 @@ export default function AdminUsersScreen() {
     try {
       setUsers(await adminService.getUsers());
     } catch {
-      // keep list — EmptyState below
     } finally {
       setLoading(false);
     }

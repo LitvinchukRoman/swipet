@@ -22,9 +22,11 @@ import { useAuthStore } from '@/store/auth';
 import type { ChatRoom } from '@/types/models';
 
 // Динамічний маршрут кімнати чату — різний для застосунку та притулку.
+/**
+ * Component rendering a list of chat rooms for both users and shelters.
+ */
 type RoomPathname = '/(app)/chat/[id]' | '/(shelter)/chat/[id]';
 
-// ─── Skeleton loader ──────────────────────────────────────────────────────────
 function SkeletonRow() {
   const pulse = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
@@ -48,9 +50,7 @@ function SkeletonRow() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ChatListView
-// ─────────────────────────────────────────────────────────────────────────────
 export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
   const [rooms,      setRooms]      = useState<ChatRoom[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -159,9 +159,7 @@ export function ChatListView({ roomPathname }: { roomPathname: RoomPathname }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ChatRow
-// ─────────────────────────────────────────────────────────────────────────────
 function ChatRow({
   room,
   roomPathname,
@@ -242,16 +240,13 @@ function ChatRow({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Styles
-// ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: Colors.neutral[50],
   },
 
-  // ── Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,7 +296,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Skeleton
   skeletonWrap: {
     paddingHorizontal: Spacing[4],
     gap: Spacing[3],
@@ -328,7 +322,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral[200],
   },
 
-  // ── List
   listContent: {
     paddingHorizontal: Spacing[4],
     paddingBottom: Spacing[20],
@@ -346,7 +339,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[4],
   },
 
-  // ── Row
   row: {
     flexDirection: 'row',
     alignItems: 'center',

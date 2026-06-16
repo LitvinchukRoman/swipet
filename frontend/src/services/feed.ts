@@ -6,9 +6,9 @@ export interface FeedCoords {
   lng: number;
 }
 
-// Feed API (ТЗ 3.5) — підключено до живого бекенду (FeedController /api/v1/feed).
+// Feed API - connected to the backend (FeedController /api/v1/feed).
 
-// Backend DTO: FeedAnimalResponse (картка стрічки — лише essentials).
+// Backend DTO: FeedAnimalResponse (feed card - essentials only).
 interface FeedAnimalDTO {
   id: number;
   name: string;
@@ -21,7 +21,7 @@ interface FeedAnimalDTO {
   distanceKm?: number;
 }
 
-// Backend DTO: AnimalResponse (повна анкета — для /feed/liked).
+// Backend DTO: AnimalResponse (full profile - for /feed/liked).
 interface AnimalDTO {
   id: number;
   shelterId: number;
@@ -39,7 +39,7 @@ interface AnimalDTO {
   photos?: { id: number; url: string; sortOrder: number }[];
 }
 
-/** FeedAnimalResponse → Animal (поля, яких немає у картці — дефолти; деталі тягне animalService.getById). */
+/** Maps FeedAnimalResponse to Animal (missing card fields get defaults; details fetched via animalService.getById). */
 function mapFeedAnimal(d: FeedAnimalDTO): Animal {
   return {
     id: d.id,
@@ -59,7 +59,7 @@ function mapFeedAnimal(d: FeedAnimalDTO): Animal {
   };
 }
 
-/** AnimalResponse → Animal (повна анкета). */
+/** Maps AnimalResponse to Animal (full profile). */
 function mapAnimal(d: AnimalDTO): Animal {
   return {
     id: d.id,
@@ -81,7 +81,7 @@ function mapAnimal(d: AnimalDTO): Animal {
 }
 
 export const feedService = {
-  /** Стрічка карток. GET /feed?lat&lng&radiusKm&species&size&ageMax&excludeIds&limit */
+  /** Fetch feed cards. GET /feed?lat&lng&radiusKm&species&size&ageMax&excludeIds&limit */
   getFeed: (coords: FeedCoords, filters?: FeedFilters, excludeIds?: number[]): Promise<Animal[]> =>
     api
       .get<FeedAnimalDTO[]>('/feed', {
@@ -91,7 +91,7 @@ export const feedService = {
           radiusKm: filters?.radiusKm,
           species: filters?.species,
           size: filters?.size,
-          // фільтр приходить у роках → бекенд чекає місяці
+          // The filter comes in years, but the backend expects months.
           ageMax: filters?.ageMax != null ? filters.ageMax * 12 : undefined,
           excludeIds: excludeIds?.length ? excludeIds.join(',') : undefined,
           limit: 100,
@@ -99,16 +99,16 @@ export const feedService = {
       })
       .then((r) => r.data.map(mapFeedAnimal)),
 
-  /** Записати свайп. POST /feed/swipe */
+  /** Record a swipe. POST /feed/swipe */
   swipe: (animalId: number, direction: SwipeDirection): Promise<{ swipeId: number }> =>
     api.post<{ swipeId: number }>('/feed/swipe', { animalId, direction }).then((r) => r.data),
 
-  /** Лайкнуті тварини. GET /feed/liked */
+  /** Fetch liked animals. GET /feed/liked */
   getLiked: (page = 1, limit = 100): Promise<Animal[]> =>
     api
       .get<AnimalDTO[]>('/feed/liked', { params: { page, limit } })
       .then((r) => r.data.map(mapAnimal)),
 
-  /** Зкинути всі свайпи. DELETE /feed/swipe/reset */
+  /** Reset all swipes. DELETE /feed/swipe/reset */
   resetSwipes: (): Promise<void> => api.delete('/feed/swipe/reset'),
 };

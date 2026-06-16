@@ -32,7 +32,9 @@ import { countActiveFilters } from '@/lib/filters';
 import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { AnimalSize, FeedFilters, Species } from '@/types/models';
 
-// ─── Constants ────────────────────────────────
+/**
+ * Bottom sheet component providing filter options (species, age, size) for the animal feed.
+ */
 const SCREEN_H   = Dimensions.get('window').height;
 const THUMB_SIZE = 28;
 const MIN_KM     = 5;
@@ -74,7 +76,6 @@ export interface FilterBottomSheetProps {
   onApply: (filters: FeedFilters) => void;
 }
 
-// ─── Chip ─────────────────────────────────────
 function ChipRow<T extends string | number>({
   options,
   selected,
@@ -120,7 +121,6 @@ function Chip({ active, onPress, children }: { active: boolean; onPress: () => v
   );
 }
 
-// ─── SectionLabel ────────────────────────────
 function SectionLabel({ label }: { label: string }) {
   return (
     <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.neutral[500], letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: Spacing[3] }}>
@@ -129,7 +129,6 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-// ─── RadiusSlider ─────────────────────────────
 function RadiusSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const trackWidthSV = useSharedValue(0);
   const thumbX       = useSharedValue(0);
@@ -237,7 +236,6 @@ function RadiusSlider({ value, onChange }: { value: number; onChange: (v: number
   );
 }
 
-// ─── Main component ───────────────────────────
 export function FilterBottomSheet({
   visible,
   onClose,
@@ -461,7 +459,6 @@ export function FilterBottomSheet({
   );
 }
 
-// ─── Slider styles ────────────────────────────
 const sliderStyles = StyleSheet.create({
   wrapper: {
     paddingTop: 44, // room for the floating badge

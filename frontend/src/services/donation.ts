@@ -1,18 +1,18 @@
 import type { Species, VirtualGuardianship } from '@/types/models';
 import { api } from './api';
 
-// Donations & Guardianship API (ТЗ 3.7) — підключено до живого бекенду
-// (DonationController /api/v1/donations). Платіж — через Stripe (повертається paymentUrl).
+// Donations & Guardianship API - connected to the backend
+// (DonationController /api/v1/donations). Payment is handled via Stripe (returns paymentUrl).
 
 export interface OneTimePayload {
-  shelterId?: number; // опційно — бекенд резолвить притулок з animalId
+  shelterId?: number; // optional - the backend resolves the shelter from the animalId
   animalId?: number;
   amount: number; // UAH
 }
 
 export interface GuardianshipPayload {
   animalId: number;
-  monthlyAmount: number; // UAH/міс
+  monthlyAmount: number; // UAH/month
 }
 
 export interface PaymentResponse {
@@ -21,7 +21,7 @@ export interface PaymentResponse {
 
 export type PaymentVerificationStatus = 'success' | 'pending' | 'failed';
 
-// Backend DTO: VirtualGuardianshipResponse (плоский — animalName/photo окремими полями).
+// Backend DTO: VirtualGuardianshipResponse (flat - animalName/photo as separate fields).
 interface GuardianshipDTO {
   id: number;
   animalId: number;
@@ -38,7 +38,7 @@ interface GuardianshipDTO {
 function mapGuardianship(d: GuardianshipDTO): VirtualGuardianship {
   return {
     id: d.id,
-    userId: 0, // бекенд не повертає (резолвиться з JWT)
+    userId: 0, // not returned by the backend (resolved from JWT)
     animalId: d.animalId,
     monthlyAmount: d.monthlyAmount,
     isActive: d.isActive,
@@ -55,36 +55,36 @@ function mapGuardianship(d: GuardianshipDTO): VirtualGuardianship {
 }
 
 export const donationService = {
-  /** Разовий донат. POST /donations/one-time → { paymentUrl } */
+  /** One-time donation. POST /donations/one-time -> { paymentUrl } */
   createOneTime: (payload: OneTimePayload): Promise<PaymentResponse> =>
     api.post<PaymentResponse>('/donations/one-time', payload).then((r) => r.data),
 
-  /** Стати опікуном. POST /donations/guardianship → { paymentUrl } */
+  /** Become a guardian. POST /donations/guardianship -> { paymentUrl } */
   createGuardianship: (payload: GuardianshipPayload): Promise<PaymentResponse> =>
     api.post<PaymentResponse>('/donations/guardianship', payload).then((r) => r.data),
 
-  /** Відмінити опікунство. DELETE /donations/guardianship/:id */
+  /** Cancel guardianship. DELETE /donations/guardianship/:id */
   cancelGuardianship: (id: number): Promise<void> =>
     api.delete(`/donations/guardianship/${id}`).then(() => undefined),
 
-  /** Отримати посилання на оплату простроченого/очікуючого опікунства */
+  /** Get a payment link for overdue/pending guardianship */
   getPendingGuardianshipPayment: (id: number): Promise<PaymentResponse> =>
     api.get<PaymentResponse>(`/donations/guardianship/${id}/pay`).then((r) => r.data),
 
-  /** DEBUG: штучно пересунути дати і згенерувати інвойси */
+  /** DEBUG: manually shift dates to generate invoices */
   debugTriggerBilling: (): Promise<void> =>
     api.post(`/donations/debug/trigger-billing`).then(() => undefined),
 
-  /** Мої підопічні. GET /donations/my-guardianships */
+  /** My guardianships. GET /donations/my-guardianships */
   getMyGuardianships: (): Promise<VirtualGuardianship[]> =>
     api
       .get<GuardianshipDTO[]>('/donations/my-guardianships')
       .then((r) => r.data.map(mapGuardianship)),
 
   /**
-   * Перевірка Stripe Checkout Session після redirect на /payment-success.
-   * GET /donations/verify-session?session_id= → { status: 'success' | 'pending' | 'failed' }.
-   * Бекенд звертається до Stripe напряму, тож результат реальний (не optimistic).
+   * Verify Stripe Checkout Session after redirect to /payment-success.
+   * GET /donations/verify-session?session_id= -> { status: 'success' | 'pending' | 'failed' }.
+   * The backend communicates directly with Stripe, so the result is real (not optimistic).
    */
   verifySession: (sessionId: string): Promise<{ status: PaymentVerificationStatus }> =>
     api

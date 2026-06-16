@@ -16,6 +16,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { adminService, type AdminStats } from '@/services/admin';
 
+/**
+ * Main dashboard tab for system administrators.
+ * Displays high-level platform metrics and active alerts.
+ */
 export default function AdminOverviewScreen() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');

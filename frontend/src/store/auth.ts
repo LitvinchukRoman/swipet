@@ -18,8 +18,11 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isLoading: boolean;
-  /** Інкрементується на кожен login/logout. In-flight refresh порівнює епоху,
-   *  щоб не відновити стару сесію після виходу (race refresh ↔ logout). */
+  /** 
+   * Incremented on every login/logout. 
+   * Used by in-flight token refresh logic to compare the epoch,
+   * preventing the restoration of an old session after a logout (race condition prevention).
+   */
   sessionEpoch: number;
 
   setAuth: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
@@ -53,7 +56,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearAuth: async () => {
-    // Рвемо глобальний сокет лише тут (на logout), не в кожній кімнаті чату.
+    // Disconnect the global socket on logout only, rather than in individual chat rooms.
     disconnectSocket();
     await Promise.all([
       storage.removeItem(KEYS.ACCESS),

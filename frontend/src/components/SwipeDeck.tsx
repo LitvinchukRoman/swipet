@@ -18,7 +18,10 @@ import { SwipeCard } from '@/components/SwipeCard';
 import { Colors, Shadow, Spacing } from '@/lib/theme';
 import type { Animal, SwipeDirection } from '@/types/models';
  
-// ─── Constants ───────────────────────────────
+/**
+ * Core feed component managing the stack of SwipeCards.
+ * Handles gestures, swipe logic, and loading more animals from the feed store.
+ */
 const { width: SCREEN_W } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_W * 0.28;
 const VELOCITY_THRESHOLD = 500;
@@ -30,9 +33,7 @@ const TAB_BAR_HEIGHT   = 72;
 const TAB_BAR_MARGIN_B = 12;
 const TAB_BAR_CLEARANCE = TAB_BAR_HEIGHT + TAB_BAR_MARGIN_B + 12;
  
-// ─────────────────────────────────────────────
 //  TopCard
-// ─────────────────────────────────────────────
 interface TopCardRef {
   swipeLeft: () => void;
   swipeRight: () => void;
@@ -138,9 +139,7 @@ const TopCard = forwardRef<TopCardRef, TopCardProps>(
 );
 TopCard.displayName = 'TopCard';
  
-// ─────────────────────────────────────────────
 //  SwipeDeck
-// ─────────────────────────────────────────────
 interface SwipeDeckProps {
   cards: Animal[];
   currentIndex: number;
@@ -244,9 +243,7 @@ export function SwipeDeck({ cards, currentIndex, onSwipe, onOpenDetail }: SwipeD
   );
 }
  
-// ─────────────────────────────────────────────
 //  ActionBtn
-// ─────────────────────────────────────────────
 interface ActionBtnProps {
   onPress: () => void;
   size: number;
@@ -291,7 +288,6 @@ function ActionBtn({ onPress, size, borderColor, shadowStyle, children }: Action
   );
 }
  
-// ─── Styles ──────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,

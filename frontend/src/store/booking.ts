@@ -8,16 +8,16 @@ interface BookingState {
   isLoading: boolean;
   error: string | null;
 
-  /** Завантажити слоти притулку + мої бронювання (щоб знати, на що я записаний). */
+  /** Fetch shelter slots and my reservations (to know what I'm currently booked for). */
   fetchSlots: (shelterId: number) => Promise<void>;
 
-  /** Лише мої бронювання (для екрана «My visits»). */
+  /** Fetch only my reservations (for the "My visits" screen). */
   fetchMyReservations: () => Promise<void>;
 
-  /** Забронювати слот: оптимістично ++bookedCount, відкат при помилці. */
+  /** Book a slot: optimistically increment bookedCount, revert on error. */
   bookSlot: (slotId: number, notes?: string) => Promise<void>;
 
-  /** Скасувати бронювання: оптимістично прибрати + звільнити місце, відкат при помилці. */
+  /** Cancel a reservation: optimistically remove it and free up the spot, revert on error. */
   cancelReservation: (reservationId: number) => Promise<void>;
 }
 
@@ -45,14 +45,14 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       const mine = await bookingService.getMyReservations();
       set({ myReservations: mine });
     } catch {
-      // лишаємо попередній стан
+      // retain previous state
     }
   },
 
   bookSlot: async (slotId, notes) => {
     const prevSlots = get().slots;
 
-    // Оптимістично займаємо місце
+    // Optimistically book the spot
     set((s) => ({
       slots: s.slots.map((slot) =>
         slot.id === slotId ? { ...slot, bookedCount: slot.bookedCount + 1 } : slot,
@@ -61,7 +61,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
 
     try {
       await bookingService.bookSlot(slotId, notes);
-      // Підтягуємо свіжі брони — щоб з'явився reservationId для скасування.
+      // Fetch fresh bookings to retrieve the reservationId required for cancellation.
       await get().fetchMyReservations();
     } catch {
       set({ slots: prevSlots });
@@ -73,7 +73,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     const { slots, myReservations } = get();
     const res = myReservations.find((r) => r.id === reservationId);
 
-    // Оптимістично: прибираємо бронь і звільняємо місце у відповідному слоті.
+    // Optimistically remove the reservation and free up the space in the corresponding slot.
     set({
       myReservations: myReservations.filter((r) => r.id !== reservationId),
       slots: res

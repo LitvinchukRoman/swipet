@@ -32,9 +32,12 @@ import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { donationService } from '@/services/donation';
 import type { VirtualGuardianship } from '@/types/models';
 
-// ─── useFadeSlide ─────────────────────────────────────────────────────────────
 // Returns opacity and translateY separately so callers can freely combine
 // them with other transforms (e.g. scale) without overwriting each other.
+/**
+ * Screen displaying the user's active virtual guardianships.
+ * Shows monthly donation statuses and related animals.
+ */
 function useFadeSlide(delay = 0) {
   const opacity    = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -55,7 +58,6 @@ function useFadeSlide(delay = 0) {
   return { opacity, translateY };
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   const pulse = useRef(new Animated.Value(0.5)).current;
 
@@ -91,7 +93,6 @@ function SkeletonCard() {
   );
 }
 
-// ─── Stats banner ─────────────────────────────────────────────────────────────
 function StatsBanner({ guardianships }: { guardianships: VirtualGuardianship[] }) {
   const active  = guardianships.filter(g => g.isActive).length;
   const totalMo = guardianships.filter(g => g.isActive).reduce((s, g) => s + g.monthlyAmount, 0);
@@ -155,7 +156,6 @@ function StatsBanner({ guardianships }: { guardianships: VirtualGuardianship[] }
   );
 }
 
-// ─── Guardianship card ────────────────────────────────────────────────────────
 function GuardianshipCard({
   item,
   index,
@@ -388,7 +388,6 @@ function GuardianshipCard({
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyGuardianships() {
   const { opacity, translateY } = useFadeSlide(100);
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -456,7 +455,6 @@ function EmptyGuardianships() {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function GuardianshipScreen() {
   const [guardianships, setGuardianships] = useState<VirtualGuardianship[]>([]);
   const [loading,       setLoading]       = useState(true);

@@ -4,6 +4,9 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
  
 import { Colors, Shadow } from '@/lib/theme';
  
+/**
+ * UI Component for displaying user or shelter circular avatars with fallback initials.
+ */
 interface AvatarProps {
   uri?: string;
   name?: string;
@@ -51,10 +54,8 @@ export function Avatar({
     </View>
   );
  
-  // ── Without edit badge ────────────────────
   if (!onEditPress) return imageEl;
  
-  // ── With edit badge ───────────────────────
   return (
     <TouchableOpacity
       onPress={onEditPress}

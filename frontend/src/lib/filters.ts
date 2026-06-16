@@ -1,6 +1,9 @@
 import type { FeedFilters } from '@/types/models';
 
 /** Радіус за замовчуванням — не вважається активним фільтром. */
+/**
+ * Utility functions and types for handling and persisting feed filters.
+ */
 export const DEFAULT_RADIUS_KM = 50;
 
 /**

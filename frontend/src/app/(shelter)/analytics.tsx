@@ -10,6 +10,10 @@ import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/the
 import { shelterService } from '@/services/shelter';
 import type { AnimalAnalyticsRow } from '@/types/models';
 
+/**
+ * Detailed analytics screen for shelters.
+ * Shows granular statistics on user engagement with specific animals over time.
+ */
 const SCREEN_W = Dimensions.get('window').width;
 const CHART_W = SCREEN_W - Spacing[4] * 2 - Spacing[4] * 2;
 const CHART_H = 180;

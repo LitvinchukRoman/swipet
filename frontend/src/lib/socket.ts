@@ -3,6 +3,10 @@ import { io, type Socket } from 'socket.io-client';
 // Типізований клієнт до chat-service (Socket.io). Контракт подій — ТЗ 3.9,
 // дзеркалить server: handlers/registerHandlers.js.
 
+/**
+ * WebSocket client configuration and connection management using Socket.io.
+ * Handles real-time events for chat messaging and notifications.
+ */
 export interface ChatMessageDTO {
   id: number;
   roomId: number;

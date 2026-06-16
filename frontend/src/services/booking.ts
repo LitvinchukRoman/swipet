@@ -1,15 +1,15 @@
 import { api } from './api';
 
-// Booking API (ТЗ 3.8) — підключено до живого бекенду (BookingController).
-// ⚠️ Реальна модель — на МІСТКІСТЬ (maxGuests + bookedCount), а не single-user booked/free.
-// Канонічний сервіс слотів для ОБОХ екранів: користувацький booking/[shelterId] та admin shelter/booking/slots.
+// Booking API - connected to the backend (BookingController).
+// The model is based on CAPACITY (maxGuests + bookedCount), rather than single-user free/booked state.
+// This is the canonical slot service for BOTH the user booking screen and admin slot management.
 //
-// Ендпоінти:
-//   GET  /shelters/{shelterId}/slots                 → список слотів (без фільтра по даті)
-//   POST /shelters/{shelterId}/slots   (SHELTER_ADMIN)→ створити слот
-//   POST /slots/{slotId}/reservations                → забронювати (без скасування на бекенді)
+// Endpoints:
+//   GET  /shelters/{shelterId}/slots                 -> List slots (no date filter applied here)
+//   POST /shelters/{shelterId}/slots   (SHELTER_ADMIN)-> Create a new slot
+//   POST /slots/{slotId}/reservations                -> Book a slot
 
-/** Дзеркалить backend BookingSlotResponse. */
+/** Mirrors the backend BookingSlotResponse. */
 export interface Slot {
   id: number;
   shelterId: number;
@@ -37,7 +37,7 @@ export interface Reservation {
 
 export type ReservationStatus = 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
 
-/** Моє бронювання (GET /me/reservations) — з контекстом притулку. */
+/** My booking details (GET /me/reservations) - includes shelter context. */
 export interface MyReservation {
   id: number;
   slotId: number;
@@ -49,7 +49,7 @@ export interface MyReservation {
   notes?: string;
 }
 
-/** Бронювання слоту очима адміна притулку (GET /slots/:id/reservations). */
+/** Slot reservation details for shelter admins (GET /slots/:id/reservations). */
 export interface SlotReservation {
   id: number;
   userId: number;
@@ -60,12 +60,12 @@ export interface SlotReservation {
   createdAt: string;
 }
 
-/** Скільки місць лишилось у слоті. */
+/** Calculate remaining spots in a slot. */
 export function spotsLeft(slot: Slot): number {
   return Math.max(0, slot.maxGuests - slot.bookedCount);
 }
 
-/** "10 чер, 10:00–11:00" з пари ISO-час. */
+/** Format start and end ISO strings to a human-readable date and time range. */
 export function formatSlotTime(startIso: string, endIso: string): string {
   const start = new Date(startIso);
   const end = new Date(endIso);
@@ -75,31 +75,31 @@ export function formatSlotTime(startIso: string, endIso: string): string {
 }
 
 export const bookingService = {
-  /** Слоти притулку. GET /shelters/{shelterId}/slots */
+  /** Fetch shelter slots. GET /shelters/{shelterId}/slots */
   getSlots: (shelterId: number): Promise<Slot[]> =>
     api.get<Slot[]>(`/shelters/${shelterId}/slots`).then((r) => r.data),
 
-  /** Створити слот (admin). POST /shelters/{shelterId}/slots */
+  /** Create a new slot (admin). POST /shelters/{shelterId}/slots */
   createSlot: (shelterId: number, payload: SlotPayload): Promise<Slot> =>
     api.post<Slot>(`/shelters/${shelterId}/slots`, payload).then((r) => r.data),
 
-  /** Забронювати слот. POST /slots/{slotId}/reservations */
+  /** Book a slot. POST /slots/{slotId}/reservations */
   bookSlot: (slotId: number, notes?: string): Promise<Reservation> =>
     api.post<Reservation>(`/slots/${slotId}/reservations`, { notes }).then((r) => r.data),
 
-  /** Мої бронювання. GET /me/reservations */
+  /** Fetch my reservations. GET /me/reservations */
   getMyReservations: (): Promise<MyReservation[]> =>
     api.get<MyReservation[]>('/me/reservations').then((r) => r.data),
 
-  /** Скасувати бронювання (власник / адмін притулку / ADMIN). DELETE /reservations/:id */
+  /** Cancel a reservation (owner / shelter admin / ADMIN). DELETE /reservations/:id */
   cancelReservation: (reservationId: number): Promise<void> =>
     api.delete(`/reservations/${reservationId}`).then(() => undefined),
 
-  /** Хто записаний на слот (адмін притулку). GET /slots/:id/reservations */
+  /** Get users booked for a slot (shelter admin). GET /slots/:id/reservations */
   getSlotReservations: (slotId: number): Promise<SlotReservation[]> =>
     api.get<SlotReservation[]>(`/slots/${slotId}/reservations`).then((r) => r.data),
 
-  /** Видалити слот разом з усіма бронями (адмін притулку). DELETE /slots/:id */
+  /** Delete a slot along with all its reservations (shelter admin). DELETE /slots/:id */
   deleteSlot: (slotId: number): Promise<void> =>
     api.delete(`/slots/${slotId}`).then(() => undefined),
 };

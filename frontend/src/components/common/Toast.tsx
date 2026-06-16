@@ -11,6 +11,9 @@ import Animated, {
 
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing, ZIndex } from '@/lib/theme';
 
+/**
+ * Globally accessible Toast notification component for displaying ephemeral success/error messages.
+ */
 export type ToastType = 'like' | 'skip' | 'info';
 
 interface ToastProps {

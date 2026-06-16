@@ -9,6 +9,9 @@ import { notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { adminService } from '@/services/admin';
 
+/**
+ * Screen for system administrators to register a new shelter in the platform.
+ */
 const DEFAULT_LAT = '50.4501';
 const DEFAULT_LNG = '30.5234';
 

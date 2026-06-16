@@ -23,6 +23,10 @@ import { shelterService } from '@/services/shelter';
 import { useShelterStore } from '@/store/shelter';
 import type { Animal, AnimalStats } from '@/types/models';
 
+/**
+ * "My Animals" tab for shelters.
+ * Lists all animals currently registered to the shelter, allowing editing or adding new ones.
+ */
 export default function ShelterAnimalsScreen() {
   const { animals, stats, status, load } = useShelterStore();
   const [refreshing, setRefreshing] = useState(false);

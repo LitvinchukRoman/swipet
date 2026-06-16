@@ -6,6 +6,11 @@ import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanima
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import { useDialogStore } from '@/store/dialog';
 
+/**
+ * A globally accessible dialog component controlled by `useDialogStore`.
+ * Supports rendering alert (single action) or confirmation (two actions) dialogs,
+ * including destructive styles, with smooth entering/exiting animations.
+ */
 export function GlobalDialog() {
   const { current, closeDialog } = useDialogStore();
 
@@ -13,10 +18,12 @@ export function GlobalDialog() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Sync internal state when a new dialog config is provided via the store.
     if (current) {
       setData(current);
       setIsVisible(true);
     } else if (isVisible) {
+      // Delay unmounting to allow the exit animation (FadeOut) to complete.
       const timer = setTimeout(() => setIsVisible(false), 250);
       return () => clearTimeout(timer);
     }

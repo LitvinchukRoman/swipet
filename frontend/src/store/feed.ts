@@ -14,19 +14,22 @@ interface FeedState {
   isPrefetching: boolean;
   coords: FeedCoords | null;
   filters: FeedFilters;
-  /** Зростає при кожному новому фіді/зміні фільтра. Pre-fetch порівнює епоху,
-   *  щоб не дописати картки старого фільтра у вже оновлений фід (race). */
+  /** 
+   * Incremented upon new feed fetch or filter changes. 
+   * Used during pre-fetching to prevent race conditions where 
+   * cards from an old filter are appended to an updated feed.
+   */
   feedEpoch: number;
 
   setCoords: (coords: FeedCoords) => void;
   setFilters: (filters: FeedFilters) => void;
   loadFeed: (coords?: FeedCoords, filters?: FeedFilters) => Promise<void>;
-  /** Завантажити всі лайкнуті тварини з сервера */
+  /** Fetch all liked animals from the server. */
   loadLiked: () => Promise<void>;
   swipe: (animal: Animal, direction: SwipeDirection) => void;
-  /** Лайк з екрана деталей: персистимо свайп RIGHT + додаємо в liked (ідемпотентно). */
+  /** Like an animal from the details screen: persists a RIGHT swipe and idempotently adds to liked list. */
   likeAnimal: (animal: Animal) => Promise<void>;
-  /** Бекенд не має "unlike"-ендпоінта — прибираємо лише з локального списку. */
+  /** The backend currently lacks an "unlike" endpoint. This only removes it from the local state. */
   unlikeAnimal: (animalId: number) => void;
   reset: () => void;
 }
@@ -52,12 +55,12 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     const resolvedFilters = filters ?? state.filters;
     if (!resolvedCoords) return;
 
-    // Нова епоха фіда: будь-який in-flight prefetch старого фіда буде відкинуто.
+    // A new feed epoch invalidates any in-flight prefetch for the previous feed state.
     const epoch = state.feedEpoch + 1;
     set({ isLoading: true, feedEpoch: epoch });
     try {
       const newCards = await feedService.getFeed(resolvedCoords, resolvedFilters);
-      // Якщо за час запиту фід знову змінили — не перетираємо новіший результат.
+      // Do not overwrite results if the feed epoch has changed during the request.
       if (get().feedEpoch !== epoch) return;
       set({ cards: newCards, currentIndex: 0, isLoading: false, coords: resolvedCoords, filters: resolvedFilters });
     } catch {
@@ -76,8 +79,8 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
 
   swipe: (animal, direction) => {
-    // Оптимістично надсилаємо свайп; на помилці RIGHT — відкочуємо лайк,
-    // щоб Favorites не показували те, що сервер не прийняв.
+    // Optimistically send the swipe. On failure during a RIGHT swipe, rollback the like
+    // so the Favorites screen doesn't show an unacknowledged action.
     feedService.swipe(animal.id, direction).catch(() => {
       if (direction === 'RIGHT') {
         set((state) => ({ liked: state.liked.filter((a) => a.id !== animal.id) }));
@@ -88,7 +91,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       const nextIndex = state.currentIndex + 1;
       const remaining = state.cards.length - nextIndex;
 
-      // Pre-fetch коли ≤ PREFETCH_THRESHOLD карток
+      // Initiate pre-fetch when cards remaining are <= PREFETCH_THRESHOLD
       if (remaining <= PREFETCH_THRESHOLD && !state.isPrefetching && state.coords) {
         const epoch = state.feedEpoch;
         setTimeout(() => {
@@ -98,7 +101,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
           feedService
             .getFeed(s.coords!, s.filters, s.cards.map((c) => c.id))
             .then((newCards) => {
-              // Фільтр/фід змінився під час prefetch — відкидаємо старі картки.
+              // Discard fetched cards if the filter or feed changed during the network request.
               if (get().feedEpoch !== epoch) {
                 set({ isPrefetching: false });
                 return;
@@ -131,7 +134,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     try {
       await feedService.swipe(animal.id, 'RIGHT');
     } catch {
-      // Лишаємо optimistic-стан: тварина могла бути вже лайкнута раніше (свайп існує).
+      // Retain the optimistic state since the animal might have already been liked (swipe exists).
     }
   },
 

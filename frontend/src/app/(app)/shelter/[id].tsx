@@ -41,7 +41,10 @@ import { animalService } from '@/services/animal';
 import { chatService } from '@/services/chat';
 import type { Animal, Shelter, Species } from '@/types/models';
 
-// ─── Species icon map ─────────────────────────────────────────────────────────
+/**
+ * Detailed shelter profile screen.
+ * Displays shelter contact information, location, and its currently available animals.
+ */
 export const SPECIES_ICON: Record<
   Species,
   ComponentType<{ size: number; color: string; strokeWidth?: number }>
@@ -52,14 +55,11 @@ export const SPECIES_ICON: Record<
   OTHER:  PawPrint,
 };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const { width: SCREEN_W } = Dimensions.get('window');
 const HEADER_H   = 280;
 const AVATAR_SIZE = 88;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Action Button — reusable animated dual-variant CTA component
-// ─────────────────────────────────────────────────────────────────────────────
 function ActionBtn({
   label,
   icon,
@@ -109,9 +109,7 @@ function ActionBtn({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Stat pill — small info chip
-// ─────────────────────────────────────────────────────────────────────────────
 function StatPill({
   icon,
   label,
@@ -155,9 +153,7 @@ function StatPill({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Contact row — tappable contact info item
-// ─────────────────────────────────────────────────────────────────────────────
 function ContactRow({
   icon,
   label,
@@ -219,9 +215,7 @@ function ContactRow({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Animal card — 2-column grid tile
-// ─────────────────────────────────────────────────────────────────────────────
 function AnimalCard({ animal, index }: { animal: Animal; index: number }) {
   const anim  = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
@@ -293,9 +287,7 @@ function AnimalCard({ animal, index }: { animal: Animal; index: number }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Section header
-// ─────────────────────────────────────────────────────────────────────────────
 function SectionHeader({ title, count }: { title: string; count?: number }) {
   return (
     <View style={styles.sectionHeader}>
@@ -309,9 +301,7 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Main screen
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ShelterDetailScreen() {
   const { id }  = useLocalSearchParams<{ id: string }>();
   const insets  = useSafeAreaInsets();
@@ -361,7 +351,6 @@ export default function ShelterDetailScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -371,7 +360,6 @@ export default function ShelterDetailScreen() {
     );
   }
 
-  // ── Not found ────────────────────────────────────────────────────────────
   if (!shelter) {
     return (
       <View style={[styles.centered, { paddingTop: insets.top }]}>
@@ -668,7 +656,6 @@ export default function ShelterDetailScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -687,7 +674,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
   },
 
-  // ── Sticky top bar
   stickyBar: {
     position: 'absolute',
     top: 0,
@@ -708,7 +694,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing[2],
   },
 
-  // ── Floating nav buttons
   floatingNav: {
     position: 'absolute',
     left: Spacing[4],
@@ -726,7 +711,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Hero
   hero: {
     height: HEADER_H,
     backgroundColor: Colors.primary[50],
@@ -819,7 +803,6 @@ const styles = StyleSheet.create({
     color: Colors.neutral[700],
   },
 
-  // ── Body
   body: {
     paddingTop: Spacing[4],
     paddingHorizontal: Spacing[4],
@@ -863,7 +846,6 @@ const styles = StyleSheet.create({
     lineHeight: FontSize.base * 1.65,
   },
 
-  // ── Contacts
   contactList: {
     gap: Spacing[2],
   },
@@ -903,7 +885,6 @@ const styles = StyleSheet.create({
     color: Colors.primary[600],
   },
 
-  // ── Animal grid
   animalGrid: {
     flexDirection: 'column',
     gap: Spacing[3],
@@ -957,7 +938,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ── Empty state
   emptyAnimals: {
     alignItems: 'center',
     paddingVertical: Spacing[8],
@@ -969,7 +949,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
   },
 
-  // ── Bottom dual-action panel
   ctaBar: {
     flexDirection: 'row',
     gap: Spacing[3],

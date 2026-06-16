@@ -19,6 +19,10 @@ import { notify } from '@/lib/notify';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { adminService, type AdminShelter } from '@/services/admin';
 
+/**
+ * "Shelters" tab for system administrators.
+ * Lists all registered shelters with options to manage them.
+ */
 export default function AdminSheltersScreen() {
   const [shelters, setShelters] = useState<AdminShelter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +32,6 @@ export default function AdminSheltersScreen() {
     try {
       setShelters(await adminService.getShelters());
     } catch {
-      // keep list — EmptyState below
     } finally {
       setLoading(false);
     }
@@ -47,7 +50,6 @@ export default function AdminSheltersScreen() {
   };
 
   const toggleVerify = async (shelter: AdminShelter, next: boolean) => {
-    // optimistic
     setShelters((prev) => prev.map((s) => (s.id === shelter.id ? { ...s, isVerified: next } : s)));
     try {
       await adminService.verifyShelter(shelter.id, next);

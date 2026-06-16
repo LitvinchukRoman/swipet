@@ -6,6 +6,10 @@ import { Colors, FontSize, FontWeight } from '@/lib/theme';
 import { useShelterStore } from '@/store/shelter';
 
 // Shelter-admin shell (SHELTER_ADMIN). Access is gated by the root _layout by role.
+/**
+ * Root layout for the authenticated shelter administrator role.
+ * Secures routes and manages stack navigation for shelter workflows.
+ */
 export default function ShelterLayout() {
   const { status, load } = useShelterStore();
 

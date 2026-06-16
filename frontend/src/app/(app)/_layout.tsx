@@ -1,6 +1,10 @@
 import { Colors, FontSize, FontWeight } from '@/lib/theme';
 import { Stack } from 'expo-router';
 
+/**
+ * Root layout for the authenticated user (adopter) role.
+ * Manages the stack navigation for user-specific screens.
+ */
 export default function AppLayout() {
   return (
     <Stack

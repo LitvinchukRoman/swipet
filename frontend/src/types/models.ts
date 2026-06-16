@@ -1,5 +1,9 @@
 // Доменні моделі — відповідають таблицям БД та API-контракту з ТЗ (розділи 2-3).
 
+/**
+ * Core domain models and TypeScript interfaces used across the application.
+ * Includes models for Users, Animals, Shelters, Bookings, Chats, and Analytics.
+ */
 export type Species = 'DOG' | 'CAT' | 'RABBIT' | 'OTHER';
 export type AnimalSize = 'SMALL' | 'MEDIUM' | 'LARGE';
 export type Gender = 'MALE' | 'FEMALE';
@@ -68,7 +72,6 @@ export interface FeedFilters {
   radiusKm?: number;
 }
 
-// ─── Shelter admin (дашборд) — ТЗ 3.3 / 3.5 ─────────────────────────────────
 
 /** Рядок аналітики — дзеркалить backend AnimalAnalyticsResponse (GET /shelters/me/analytics). */
 export interface AnimalAnalyticsRow {
@@ -92,7 +95,6 @@ export interface AnimalStats {
   likeRate: number;
 }
 
-// ─── Donations & Guardianship — ТЗ розділи 2.1, 3.7 ─────────────────────────
 
 export type DonationType   = 'ONE_TIME' | 'SUBSCRIPTION';
 export type DonationStatus = 'PENDING'  | 'SUCCESS' | 'FAILED';

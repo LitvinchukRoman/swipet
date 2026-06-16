@@ -15,14 +15,16 @@ import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { useFeedStore } from '@/store/feed';
 import type { Animal, FeedFilters, SwipeDirection } from '@/types/models';
 
-// ─── Types ────────────────────────────────────
+/**
+ * The main "Feed" tab for users.
+ * Displays the Tinder-like swipe deck for discovering available animals.
+ */
 interface ToastState {
   visible: boolean;
   message: string;
   type: ToastType;
 }
 
-// ─── Component ───────────────────────────────
 export default function FeedScreen() {
   const { cards, currentIndex, isLoading, filters, loadFeed, swipe, setCoords, setFilters } =
     useFeedStore();
@@ -31,7 +33,6 @@ export default function FeedScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── SC-FEED-001: геолокація при монтуванні ──────────────────────────────
   // Геолокація — це ПОКРАЩЕННЯ, а не умова. Якщо дозволу немає / помилка /
   // таймаут — все одно вантажимо стрічку з фолбек-координатами (Київ), щоб
   // користувач завжди бачив тварин. Раніше відмова в дозволі повністю блокувала фід.
@@ -72,7 +73,6 @@ export default function FeedScreen() {
     };
   }, [initLocation]);
 
-  // ── Toast helper ─────────────────────────────────────────────────────────
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     setToast({ visible: true, message, type });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -82,7 +82,6 @@ export default function FeedScreen() {
     );
   }, []);
 
-  // ── Swipe handler ─────────────────────────────────────────────────────────
   const handleSwipe = useCallback(
     (animal: Animal, direction: SwipeDirection) => {
       swipe(animal, direction);
@@ -93,7 +92,6 @@ export default function FeedScreen() {
     [swipe, showToast],
   );
 
-  // ── SC-FEED-011: застосування фільтрів ───────────────────────────────────
   const handleApplyFilters = useCallback(
     (newFilters: FeedFilters) => {
       setFilters(newFilters);
@@ -172,7 +170,6 @@ export default function FeedScreen() {
   );
 }
 
-// ─── Loading state ────────────────────────────
 function LoadingState() {
   return (
     <View style={styles.loading}>
@@ -185,7 +182,6 @@ function LoadingState() {
   );
 }
 
-// ─── Styles ──────────────────────────────────
 const styles = StyleSheet.create({
   screen: {
     flex: 1,

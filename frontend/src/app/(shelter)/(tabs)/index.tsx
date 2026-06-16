@@ -28,6 +28,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, FontSize, FontWeight, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { summarize, useShelterStore } from '@/store/shelter';
 
+/**
+ * Main dashboard tab for shelter administrators.
+ * Displays summary analytics (views, likes, passes) for their animals.
+ */
 export default function ShelterDashboardScreen() {
   const { shelter, animals, stats, status, load } = useShelterStore();
   const [refreshing, setRefreshing] = useState(false);
@@ -181,7 +185,6 @@ export default function ShelterDashboardScreen() {
   );
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────────────────
 function MetricTile({ icon, value, label }: { icon: React.ReactNode; value: number | string; label: string }) {
   return (
     <View style={s.metricTile}>

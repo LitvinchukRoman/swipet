@@ -4,6 +4,9 @@ import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 
+/**
+ * UI Component displayed when a list is empty or a resource is not found.
+ */
 interface EmptyStateProps {
   title?: string;
   subtitle?: string;

@@ -3,6 +3,9 @@ import { LayoutDashboard, Shield, Store, Users } from 'lucide-react-native';
 
 import { FloatingTabBar, type TabConfig } from '@/components/navigation/FloatingTabBar';
 
+/**
+ * Bottom tab navigation layout for the system administrator flow.
+ */
 const TABS: TabConfig[] = [
   { name: 'index', label: 'Overview', Icon: LayoutDashboard },
   { name: 'shelters', label: 'Shelters', Icon: Store },

@@ -2,8 +2,9 @@ import axios from 'axios';
 
 import { useAuthStore } from '@/store/auth';
 
-// Дефолт — HTTPS: веб-білд віддається nginx-ом по https://localhost, тож HTTP-дефолт
-// блокувався б браузером як mixed content. EXPO_PUBLIC_API_URL (якщо заданий) перекриває.
+// Default to HTTPS: The web build is served by nginx via https://localhost, 
+// so defaulting to HTTP would be blocked by browsers as mixed content. 
+// EXPO_PUBLIC_API_URL overrides this if provided.
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://localhost/api/v1';
 
 export const api = axios.create({

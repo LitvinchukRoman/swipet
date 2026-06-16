@@ -3,21 +3,21 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+/**
+ * Custom floating bottom tab bar component used across different role layouts.
+ */
 const ORANGE_500 = '#F97316';
 const ORANGE_50 = '#FFF7ED';
 const STONE_400 = '#A8A29E';
 const WHITE = '#FFFFFF';
 const SHADOW_COLOR = '#1C1917';
 
-// ─── Tab config ───────────────────────────────────────────────────────────────
 export type TabConfig = {
   name: string;
   label: string;
   Icon: React.FC<{ size: number; color: string; strokeWidth: number }>;
 };
 
-// ─── Individual animated tab item ────────────────────────────────────────────
 type TabItemProps = {
   tab: TabConfig;
   isFocused: boolean;
@@ -136,7 +136,6 @@ function TabItem({ tab, isFocused, onPress, onLongPress }: TabItemProps) {
   );
 }
 
-// ─── Custom floating tab bar ──────────────────────────────────────────────────
 // Shared between the adopter (app) shell and the shelter-admin (shelter) shell.
 // Pass the per-shell `tabs` config; visuals stay identical.
 export function FloatingTabBar({

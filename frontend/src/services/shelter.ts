@@ -10,11 +10,10 @@ import type {
 } from '@/types/models';
 import { api } from './api';
 
-// Shelter-admin API — підключено до ЖИВОГО бекенду (ТЗ 3.3, 3.4).
-// `api` має baseURL `/api/v1` та інтерсептор з Bearer-токеном.
-// Працює лише з піднятим стеком + логіном під роллю SHELTER_ADMIN.
+// Shelter-admin API - connected to the LIVE backend.
+// `api` has baseURL `/api/v1` and a Bearer-token interceptor.
+// Only works when logged in with the SHELTER_ADMIN role.
 
-// ─── Backend DTO shapes (для типобезпечного маппінгу) ───────────────────────
 interface ShelterResponseDTO {
   id: number;
   adminUserId: number;
@@ -49,7 +48,6 @@ interface AnimalResponseDTO {
   createdAt: string;
 }
 
-// ─── Payloads ───────────────────────────────────────────────────────────────
 export interface AnimalPayload {
   shelterId: number;
   name: string;
@@ -75,7 +73,6 @@ export interface ShelterPayload {
   websiteUrl?: string;
 }
 
-// ─── Mappers ──────────────────────────────────────────────────────────────────
 function mapShelter(d: ShelterResponseDTO): Shelter {
   return {
     id: d.id,
@@ -121,7 +118,7 @@ function mapAnimal(d: AnimalResponseDTO, shelterName = ''): Animal {
   };
 }
 
-/** Агрегує денні рядки аналітики у сумарну статистику по кожній тварині. */
+/** Aggregates daily analytics rows into summary statistics for each animal. */
 export function aggregateStats(rows: AnimalAnalyticsRow[]): Map<number, AnimalStats> {
   const byAnimal = new Map<number, AnimalStats>();
   for (const r of rows) {
@@ -141,37 +138,36 @@ export function aggregateStats(rows: AnimalAnalyticsRow[]): Map<number, AnimalSt
   return byAnimal;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
 export const shelterService = {
-  /** Притулок поточного адміна. GET /shelters/me */
+  /** Current admin's shelter. GET /shelters/me */
   getMyShelter: (): Promise<Shelter> =>
     api.get<ShelterResponseDTO>('/shelters/me').then((r) => mapShelter(r.data)),
 
-  /** Тварини притулку. GET /animals?shelterId= */
+  /** Shelter's animals. GET /animals?shelterId= */
   getShelterAnimals: (shelterId: number, shelterName = ''): Promise<Animal[]> =>
     api
       .get<AnimalResponseDTO[]>('/animals', { params: { shelterId } })
       .then((r) => r.data.map((a) => mapAnimal(a, shelterName))),
 
-  /** Аналітика. GET /shelters/me/analytics?dateFrom&dateTo */
+  /** Analytics. GET /shelters/me/analytics?dateFrom&dateTo */
   getMyAnalytics: (dateFrom?: string, dateTo?: string): Promise<AnimalAnalyticsRow[]> =>
     api
       .get<AnimalAnalyticsRow[]>('/shelters/me/analytics', { params: { dateFrom, dateTo } })
       .then((r) => r.data),
 
-  /** Створити анкету тварини. POST /animals */
+  /** Create an animal profile. POST /animals */
   createAnimal: (payload: AnimalPayload): Promise<Animal> =>
     api.post<AnimalResponseDTO>('/animals', payload).then((r) => mapAnimal(r.data)),
 
-  /** Оновити анкету. PATCH /animals/:id */
+  /** Update an animal profile. PATCH /animals/:id */
   updateAnimal: (id: number, payload: AnimalPayload): Promise<Animal> =>
     api.patch<AnimalResponseDTO>(`/animals/${id}`, payload).then((r) => mapAnimal(r.data)),
 
-  /** Видалити анкету. DELETE /animals/:id */
+  /** Delete an animal profile. DELETE /animals/:id */
   deleteAnimal: (id: number): Promise<void> =>
     api.delete(`/animals/${id}`).then(() => undefined),
 
-  /** Завантажити фото тварини. POST /animals/:id/photos (multipart) */
+  /** Upload an animal photo. POST /animals/:id/photos (multipart) */
   uploadAnimalPhoto: (animalId: number, file: FormData): Promise<{ id: number; url: string; sortOrder: number }> =>
     api
       .post(`/animals/${animalId}/photos`, file, {
@@ -179,22 +175,22 @@ export const shelterService = {
       })
       .then((r) => r.data),
 
-  /** Видалити фото тварини. DELETE /animals/:id/photos/:photoId */
+  /** Delete an animal photo. DELETE /animals/:id/photos/:photoId */
   deleteAnimalPhoto: (animalId: number, photoId: number): Promise<void> =>
     api.delete(`/animals/${animalId}/photos/${photoId}`).then(() => undefined),
 
   setPrimaryPhoto: (animalId: number, photoId: number): Promise<void> =>
     api.put(`/animals/${animalId}/photos/${photoId}/primary`).then(() => undefined),
 
-  /** Зареєструвати притулок. POST /shelters */
+  /** Register a shelter. POST /shelters */
   registerShelter: (payload: ShelterPayload): Promise<Shelter> =>
     api.post<ShelterResponseDTO>('/shelters', payload).then((r) => mapShelter(r.data)),
 
-  /** Оновити притулок. PATCH /shelters/:id */
+  /** Update a shelter. PATCH /shelters/:id */
   updateShelter: (id: number, payload: ShelterPayload): Promise<Shelter> =>
     api.patch<ShelterResponseDTO>(`/shelters/${id}`, payload).then((r) => mapShelter(r.data)),
 
-  /** Завантажити лого притулку. POST /shelters/:id/logo (multipart) */
+  /** Upload a shelter logo. POST /shelters/:id/logo (multipart) */
   uploadLogo: (id: number, file: FormData): Promise<Shelter> =>
     api
       .post<ShelterResponseDTO>(`/shelters/${id}/logo`, file, {

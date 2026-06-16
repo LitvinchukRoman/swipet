@@ -39,12 +39,14 @@ import { chatService } from '@/services/chat';
 import { useFeedStore } from '@/store/feed';
 import type { Animal } from '@/types/models';
 
+/**
+ * "Liked Animals" tab for users.
+ * Shows a list of animals the user has swiped right on.
+ */
 const TAB_BAR_HEIGHT   = 72;
 const TAB_BAR_MARGIN_B = 12;
 
-// ─────────────────────────────────────────────
 //  Screen
-// ─────────────────────────────────────────────
 export default function LikedScreen() {
   const liked           = useFeedStore((s) => s.liked);
   const loadLiked       = useFeedStore((s) => s.loadLiked);
@@ -163,9 +165,7 @@ export default function LikedScreen() {
   );
 }
 
-// ─────────────────────────────────────────────
 //  LikedCard
-// ─────────────────────────────────────────────
 interface LikedCardProps {
   animal: Animal;
   index: number;
@@ -280,9 +280,7 @@ function LikedCard({ animal, index, onChat, onDonate }: LikedCardProps) {
   );
 }
 
-// ─────────────────────────────────────────────
 //  ActionCell
-// ─────────────────────────────────────────────
 interface ActionCellProps {
   icon: ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   label: string;
@@ -315,9 +313,7 @@ function ActionCell({ icon: Icon, label, color, bgColor, onPress, showRightBorde
   );
 }
 
-// ─────────────────────────────────────────────
 //  Styles
-// ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing[4],

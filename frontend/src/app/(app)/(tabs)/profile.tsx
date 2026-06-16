@@ -31,16 +31,17 @@ import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 import { useFeedStore } from '@/store/feed';
 
-// ── Role labels ───────────────────────────────
+/**
+ * User profile tab.
+ * Displays user information, settings, and navigation to guardianships or edit profile screens.
+ */
 const ROLE_LABEL: Record<string, string> = {
   USER:          'Adopter',
   SHELTER_ADMIN: 'Shelter Admin',
   ADMIN:         'Administrator',
 };
 
-// ─────────────────────────────────────────────
 //  Screen
-// ─────────────────────────────────────────────
 export default function ProfileScreen() {
   const { user, refreshToken, clearAuth, updateUser } = useAuthStore();
   const liked = useFeedStore((s) => s.liked);
@@ -49,7 +50,6 @@ export default function ProfileScreen() {
   const [wardsCount, setWardsCount] = useState(0);
   const [contactedCount, setContactedCount] = useState(0);
 
-  // ── Load stats on mount ───────────────────
   useEffect(() => {
     loadLiked();
 
@@ -64,7 +64,6 @@ export default function ProfileScreen() {
       .catch(console.error);
   }, []);
 
-  // ── Avatar upload (web + mobile) ─────────
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -244,9 +243,7 @@ export default function ProfileScreen() {
   );
 }
 
-// ─────────────────────────────────────────────
 //  Sub-components
-// ─────────────────────────────────────────────
 function SectionLabel({ title }: { title: string }) {
   return (
     <Text className="mb-2 mt-5 px-1 text-xs font-semibold uppercase tracking-widest text-stone-400">
@@ -297,9 +294,7 @@ function MenuRow({ icon: Icon, iconColor, iconBg, label, onPress, isLast }: Menu
   );
 }
 
-// ─────────────────────────────────────────────
 //  Styles
-// ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing[4],
@@ -308,7 +303,6 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.tabBarHeight + Spacing[8],
   },
 
-  // ── Header card
   headerCard: {
     backgroundColor: Colors.neutral[0],
     borderRadius: Radius['2xl'],
@@ -367,7 +361,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
 
-  // ── Stats
   statsCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -383,7 +376,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral[150],
   },
 
-  // ── Menu
   sectionCard: {
     backgroundColor: Colors.neutral[0],
     borderRadius: Radius['2xl'],
@@ -415,7 +407,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
   },
 
-  // ── Logout
   logoutWrap: {
     marginTop: Spacing[6],
   },

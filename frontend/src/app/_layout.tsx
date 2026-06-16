@@ -19,7 +19,7 @@ export default function RootLayout() {
     loadFromStorage();
   }, []);
 
-  // Маршрутизація за роллю: тримаємо користувача у його оболонці.
+  // Role-based routing: keep the user in their respective route group.
   useEffect(() => {
     if (isLoading) return;
     if (!segments.length) return;
@@ -32,8 +32,8 @@ export default function RootLayout() {
       return;
     }
 
-    // Кеш user може ще не підвантажитись — тоді беремо роль із валідного JWT,
-    // щоб не кинути SHELTER_ADMIN/ADMIN помилково в USER-оболонку.
+    // The user cache might not be loaded yet — so we take the role from the valid JWT.
+    // This prevents a SHELTER_ADMIN/ADMIN from being mistakenly redirected to the USER shell.
     const role = user?.role ?? roleFromToken(accessToken) ?? 'USER';
     const homePath = homePathForRole(role);
 

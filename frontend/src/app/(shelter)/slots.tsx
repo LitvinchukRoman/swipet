@@ -12,6 +12,10 @@ import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/the
 import { bookingService, formatSlotTime, type Slot, type SlotReservation } from '@/services/booking';
 import { useShelterStore } from '@/store/shelter';
 
+/**
+ * Booking slot management screen for shelters.
+ * Allows shelter admins to view, approve, or cancel upcoming user visits.
+ */
 const DURATIONS = [30, 60, 90, 120];
 
 /** Local ISO "YYYY-MM-DDTHH:MM:00" without a timezone offset. */

@@ -6,6 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Radius, Shadow, Spacing } from '@/lib/theme';
 
+/**
+ * Screen displayed when a Stripe payment or donation process is cancelled by the user.
+ */
 export default function PaymentCancelScreen() {
   const scale      = useRef(new Animated.Value(0.5)).current;
   const opacity    = useRef(new Animated.Value(0)).current;

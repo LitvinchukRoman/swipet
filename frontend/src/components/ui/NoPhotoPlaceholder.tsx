@@ -2,6 +2,9 @@ import { Colors } from '@/lib/theme';
 import { PawPrint } from 'lucide-react-native';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
+/**
+ * UI Component displaying a placeholder graphic when an animal or user has no photo.
+ */
 interface Props {
   style?: StyleProp<ViewStyle>;
   iconSize?: number;

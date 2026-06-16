@@ -19,6 +19,10 @@ import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/the
 import type { MyReservation } from '@/services/booking';
 import { useBookingStore } from '@/store/booking';
 
+/**
+ * User screen displaying scheduled visits to shelters.
+ * Fetches and displays booking slots using the bookingService.
+ */
 const fmt = (startIso: string, endIso: string) => {
   const s = new Date(startIso);
   const e = new Date(endIso);

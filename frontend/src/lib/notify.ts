@@ -1,6 +1,9 @@
 import { useDialogStore } from '@/store/dialog';
 
 /**
+ * Helper utility for triggering global toast notifications across the application.
+ */
+/**
  * Cross-platform сповіщення.
  * Тепер використовує кастомний Zustand-модал.
  */

@@ -1,9 +1,9 @@
-// ─────────────────────────────────────────────
 //  Swipet — Design Tokens
 //  Single source of truth for all visual values
-// ─────────────────────────────────────────────
 
-// ── Palette ──────────────────────────────────
+/**
+ * Global design system and theme configuration containing colors, typography, and spacing tokens.
+ */
 export const Colors = {
   // Primary — orange family (matches Tailwind orange-* exactly)
   primary: {
@@ -57,7 +57,6 @@ export const Colors = {
   },
 } as const;
 
-// ── Typography ────────────────────────────────
 export const FontSize = {
   xs:   11,
   sm:   13,
@@ -85,7 +84,6 @@ export const LineHeight = {
   relaxed: 1.65,
 } as const;
 
-// ── Spacing (4-pt grid) ───────────────────────
 export const Spacing = {
   0:   0,
   1:   4,
@@ -102,7 +100,6 @@ export const Spacing = {
   20:  80,
 } as const;
 
-// ── Border Radius ─────────────────────────────
 export const Radius = {
   sm:    8,
   md:    12,
@@ -112,7 +109,6 @@ export const Radius = {
   full:  9999,
 } as const;
 
-// ── Shadows ───────────────────────────────────
 export const Shadow = {
   sm: {
     shadowColor: '#1C1917',
@@ -151,7 +147,6 @@ export const Shadow = {
   },
 } as const;
 
-// ── Animation durations (ms) ──────────────────
 export const Duration = {
   instant: 100,
   fast:    180,
@@ -160,7 +155,6 @@ export const Duration = {
   xslow:   800,
 } as const;
 
-// ── Z-Index ───────────────────────────────────
 export const ZIndex = {
   base:    0,
   raised:  10,
@@ -169,7 +163,6 @@ export const ZIndex = {
   toast:   300,
 } as const;
 
-// ── Layout ────────────────────────────────────
 export const Layout = {
   screenPaddingH: Spacing[6],  // 24
   maxContentWidth: 480,
@@ -179,7 +172,6 @@ export const Layout = {
   headerHeight: 60,
 } as const;
 
-// ── NativeWind class helpers (reusable combos) ─
 export const NW = {
   // Buttons
   btnPrimary: 'bg-orange-500 active:bg-orange-600 rounded-2xl h-14 items-center justify-center',

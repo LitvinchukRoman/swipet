@@ -24,6 +24,9 @@ import { shelterService, type AnimalPayload } from '@/services/shelter';
 import { useShelterStore } from '@/store/shelter';
 import type { Animal, AnimalSize, Gender, Species } from '@/types/models';
 
+/**
+ * Screen for shelter admins to edit an existing animal profile or view its details.
+ */
 const SPECIES: Species[] = ['DOG', 'CAT', 'RABBIT', 'OTHER'];
 const SIZES: AnimalSize[] = ['SMALL', 'MEDIUM', 'LARGE'];
 const GENDERS: Gender[] = ['MALE', 'FEMALE'];

@@ -7,6 +7,9 @@
 // characters) only *strengthens* an already-valid password — it is NOT
 // required, so the UI must never imply otherwise.
 
+/**
+ * Utility functions for client-side password validation and strength checking.
+ */
 export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 72;
 

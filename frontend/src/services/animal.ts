@@ -1,7 +1,7 @@
 import type { Animal, AnimalSize, Shelter, Species } from '@/types/models';
 import { api } from './api';
 
-// Animals + Shelters API (ТЗ 3.3, 3.4) — підключено до живого бекенду.
+// Animals + Shelters API - connected to the backend.
 
 interface AnimalDTO {
   id: number;
@@ -77,8 +77,8 @@ function mapShelter(d: ShelterDTO): Shelter {
 
 export const animalService = {
   /**
-   * Детальна картка тварини. GET /animals/:id
-   * AnimalResponse не містить shelterName → дотягуємо його окремим запитом притулку.
+   * Detailed animal profile. GET /animals/:id
+   * AnimalResponse does not contain shelterName -> fetch it with a separate shelter query.
    */
   getById: async (id: number): Promise<Animal | null> => {
     try {
@@ -88,7 +88,7 @@ export const animalService = {
         const shelter = await api.get<ShelterDTO>(`/shelters/${data.shelterId}`);
         shelterName = shelter.data.name;
       } catch {
-        /* назва притулку не критична для рендеру */
+        /* Shelter name is not critical for rendering */
       }
       return mapAnimal(data, shelterName);
     } catch (err: any) {
@@ -98,8 +98,8 @@ export const animalService = {
   },
 
   /**
-   * Профіль притулку + його тварини. GET /shelters/:id  +  GET /animals?shelterId=
-   * (ShelterResponse бекенду не містить animals[], тож робимо два запити.)
+   * Shelter profile and its animals. GET /shelters/:id  +  GET /animals?shelterId=
+   * (The backend's ShelterResponse doesn't include an animals[] array, so we make two requests.)
    */
   getShelter: async (id: number): Promise<Shelter | null> => {
     try {

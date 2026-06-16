@@ -19,9 +19,10 @@ import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 
-// ─────────────────────────────────────────────
 //  Screen
-// ─────────────────────────────────────────────
+/**
+ * Screen for editing the user's profile details (name, phone, avatar).
+ */
 export default function EditProfileScreen() {
   const { user, updateUser } = useAuthStore();
   const [fullName,  setFullName]  = useState(user?.fullName ?? '');
@@ -30,7 +31,6 @@ export default function EditProfileScreen() {
   const [saving,    setSaving]    = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // ── Avatar upload ─────────────────────────
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -72,7 +72,6 @@ export default function EditProfileScreen() {
     }
   };
 
-  // ── Save profile ──────────────────────────
   const handleSave = async () => {
     if (!fullName.trim()) {
       notify('Name required', 'Full name cannot be empty.');
@@ -169,9 +168,7 @@ export default function EditProfileScreen() {
   );
 }
 
-// ─────────────────────────────────────────────
 //  Field — form input with label
-// ─────────────────────────────────────────────
 interface FieldProps {
   label: string;
   value: string;
@@ -202,9 +199,7 @@ function Field({ label, value, onChangeText, placeholder, keyboardType = 'defaul
   );
 }
 
-// ─────────────────────────────────────────────
 //  Styles
-// ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing[4],
@@ -212,7 +207,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing[10],
   },
 
-  // ── Avatar
   avatarSection: {
     alignItems: 'center',
     marginBottom: Spacing[6],
@@ -224,7 +218,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.semibold,
   },
 
-  // ── Form card
   formCard: {
     backgroundColor: Colors.neutral[0],
     borderRadius: Radius['2xl'],
@@ -266,7 +259,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral[100],
   },
 
-  // ── Save
   saveWrap: {
     marginTop: Spacing[5],
   },

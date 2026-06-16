@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+/**
+ * Zustand store for managing the state of the GlobalDialog component.
+ */
 export type DialogType = 'alert' | 'confirm';
 
 export interface DialogOptions {

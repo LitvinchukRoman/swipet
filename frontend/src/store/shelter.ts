@@ -11,8 +11,10 @@ interface ShelterState {
   stats: Map<number, AnimalStats>;
   status: ShelterStatus;
 
-  /** Завантажує притулок поточного адміна + його тварин + статистику.
-   *  Не показує спінер, якщо дані вже є (тихий refresh при фокусі табів). */
+  /** 
+   * Fetches the current admin's shelter, its animals, and analytics.
+   * Does not show a spinner if the data is already present (silent refresh on tab focus).
+   */
   load: () => Promise<void>;
   reset: () => void;
 }
@@ -44,7 +46,7 @@ export const useShelterStore = create<ShelterState>((set, get) => ({
   reset: () => set({ shelter: null, animals: [], stats: new Map(), status: 'idle' }),
 }));
 
-/** Сумарні метрики по притулку для дашборду. */
+/** Summary shelter metrics for the dashboard. */
 export function summarize(animals: Animal[], stats: Map<number, AnimalStats>) {
   let views = 0;
   let likes = 0;

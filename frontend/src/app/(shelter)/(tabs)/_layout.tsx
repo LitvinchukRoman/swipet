@@ -3,6 +3,9 @@ import { LayoutDashboard, MessageCircle, PawPrint, Store } from 'lucide-react-na
 
 import { FloatingTabBar, type TabConfig } from '@/components/navigation/FloatingTabBar';
 
+/**
+ * Bottom tab navigation layout for the shelter administrator flow.
+ */
 const TABS: TabConfig[] = [
   { name: 'index', label: 'Dashboard', Icon: LayoutDashboard },
   { name: 'animals', label: 'Animals', Icon: PawPrint },

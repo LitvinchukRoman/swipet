@@ -8,7 +8,9 @@ import Animated, {
 
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 
-// ─── Types ────────────────────────────────────
+/**
+ * Reusable, themeable Button component supporting various sizes, variants, and loading states.
+ */
 type Variant = 'primary' | 'outline' | 'ghost' | 'destructive';
 type Size    = 'md' | 'lg';
 
@@ -24,7 +26,6 @@ interface ButtonProps {
   iconPosition?: 'left' | 'right';
 }
 
-// ─── Style maps ───────────────────────────────
 const CONTAINER: Record<Variant, object> = {
   primary:     { backgroundColor: Colors.primary[500] },
   outline:     { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary[500] },
@@ -56,7 +57,6 @@ const FONT_SIZE: Record<Size, number> = {
   lg: FontSize.md,
 };
 
-// ─── Component ───────────────────────────────
 export function Button({
   label,
   onPress,
@@ -119,7 +119,6 @@ export function Button({
   );
 }
 
-// ─── Styles ──────────────────────────────────
 const styles = StyleSheet.create({
   base: {
     flexDirection: 'row',

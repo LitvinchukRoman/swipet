@@ -39,7 +39,9 @@ import { notify } from '@/lib/notify';
 import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { donationService } from '@/services/donation';
 
-// ─── Types ────────────────────────────────────
+/**
+ * Bottom sheet component presenting donation and guardianship options via Stripe.
+ */
 export type DonationMode = 'ONE_TIME' | 'GUARDIANSHIP';
 
 export interface DonationSheetProps {
@@ -51,7 +53,6 @@ export interface DonationSheetProps {
   initialMode?: DonationMode;
 }
 
-// ─── Constants ────────────────────────────────
 const SCREEN_H = Dimensions.get('window').height;
 const ONE_TIME_PRESETS     = [50, 100, 200];
 const GUARDIANSHIP_PRESETS = [100, 200, 500];
@@ -59,7 +60,6 @@ const GUARDIANSHIP_PRESETS = [100, 200, 500];
 const MIN_ONE_TIME      = 50;
 const MIN_GUARDIANSHIP  = 50;
 
-// ─── Spring press hook (untouched) ────────────
 function usePress() {
   const scale = useRef(new Animated.Value(1)).current;
   const onIn  = () => Animated.spring(scale, { toValue: 0.94, useNativeDriver: true, damping: 12, stiffness: 300 }).start();
@@ -67,7 +67,6 @@ function usePress() {
   return { scale, onIn, onOut };
 }
 
-// ─── PresetBtn (untouched) ────────────────────
 function PresetBtn({ 
   amount, 
   selected, 
@@ -129,7 +128,6 @@ function PresetBtn({
   );
 }
 
-// ─── ModeTab (untouched) ──────────────────────
 function ModeTab({
   label,
   icon,
@@ -175,7 +173,6 @@ function ModeTab({
   );
 }
 
-// ─── SuccessView (untouched) ──────────────────
 function SuccessView({ mode, amount, onClose }: { mode: DonationMode; amount: number; onClose: () => void }) {
   const scale      = useRef(new Animated.Value(0.4)).current;
   const opacity    = useRef(new Animated.Value(0)).current;
@@ -221,7 +218,6 @@ function SuccessView({ mode, amount, onClose }: { mode: DonationMode; amount: nu
   );
 }
 
-// ─── DonationSheet ────────────────────────────
 export function DonationSheet({
   visible,
   onClose,
@@ -242,7 +238,6 @@ export function DonationSheet({
   // якщо користувач закрив sheet до спрацювання (інакше браузер відкриється «привидом»).
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Reanimated State (Замінив Animated на Reanimated для жестів) ──
   const [isMounted, setIsMounted] = useState(visible);
   const translateY = useSharedValue(SCREEN_H);
   const keyboardOffset = useSharedValue(0);
@@ -279,7 +274,6 @@ export function DonationSheet({
     }
   }, [visible]);
 
-  // ── Keyboard listeners ────────────────────────────────
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -301,7 +295,6 @@ export function DonationSheet({
     if (openTimer.current) clearTimeout(openTimer.current);
   }, []);
 
-  // ── Жест свайпу вниз ──────────────────────────────────
   const pan = Gesture.Pan()
     .onChange((e) => {
       if (e.translationY > 0) {
@@ -335,7 +328,6 @@ export function DonationSheet({
   const finalAmount  = parsedCustom != null && !Number.isNaN(parsedCustom) ? parsedCustom : selectedAmt ?? 0;
   const minAmount    = mode === 'GUARDIANSHIP' ? MIN_GUARDIANSHIP : MIN_ONE_TIME;
 
-  // ── Submit ────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!finalAmount || finalAmount < minAmount) {
       notify(

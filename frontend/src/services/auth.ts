@@ -1,5 +1,8 @@
 import { api } from './api';
 
+/**
+ * Authentication API service handling login, registration, and token management.
+ */
 export interface LoginPayload {
   email: string;
   password: string;

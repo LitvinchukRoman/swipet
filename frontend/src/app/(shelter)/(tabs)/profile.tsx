@@ -25,6 +25,10 @@ import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 import { useShelterStore } from '@/store/shelter';
 
+/**
+ * Shelter profile tab.
+ * Displays the shelter's public information and settings.
+ */
 export default function ShelterProfileScreen() {
   const { user, refreshToken, clearAuth, updateUser } = useAuthStore();
   const { shelter, load, reset } = useShelterStore();

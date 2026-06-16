@@ -1,7 +1,7 @@
 import type { User } from '@/store/auth';
 import { api } from './api';
 
-// User profile API (ТЗ 3.2) — підключено до живого бекенду (UserController /api/v1/users).
+// User profile API - connected to the backend (UserController /api/v1/users).
 
 interface UserDTO {
   id: number;
@@ -28,15 +28,15 @@ function mapUser(d: UserDTO): User {
 export interface UpdateProfilePayload {
   fullName?: string;
   phone?: string;
-  avatarUrl?: string; // ← додано
+  avatarUrl?: string;
 }
 
 export const userService = {
-  /** Оновити профіль. PATCH /users/me → оновлений user */
+  /** Update user profile. PATCH /users/me -> updated user */
   updateMe: (payload: UpdateProfilePayload): Promise<User> =>
     api.patch<UserDTO>('/users/me', payload).then((r) => mapUser(r.data)),
 
-  /** Завантажити аватар. POST /users/me/avatar (multipart) → { avatarUrl } */
+  /** Upload an avatar image. POST /users/me/avatar (multipart) -> { avatarUrl } */
   uploadAvatar: (file: FormData): Promise<string> =>
     api
       .post<{ avatarUrl: string }>('/users/me/avatar', file, {
@@ -44,7 +44,7 @@ export const userService = {
       })
       .then((r) => r.data.avatarUrl),
 
-  /** Оновити геолокацію. PATCH /users/me/location */
+  /** Update user geolocation. PATCH /users/me/location */
   setLocation: (lat: number, lng: number): Promise<void> =>
     api.patch('/users/me/location', { lat, lng }).then(() => undefined),
 };

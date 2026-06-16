@@ -10,7 +10,10 @@ import { formatAge, formatDistance } from '@/lib/format';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/theme';
 import type { Animal } from '@/types/models';
 
-// ─── Types ────────────────────────────────────
+/**
+ * Individual card component representing an animal in the SwipeDeck.
+ * Animates out of the screen based on user swipe direction.
+ */
 interface SwipeCardProps {
   animal: Animal;
   /** Animated opacity for the LIKE badge — provided by SwipeDeck */
@@ -20,13 +23,11 @@ interface SwipeCardProps {
   onPress?: (animal: Animal) => void;
 }
 
-// ─── Helpers ─────────────────────────────────
 const GENDER_LABEL: Record<string, string> = {
   MALE:   '♂ Male',
   FEMALE: '♀ Female',
 };
 
-// ─── Component ───────────────────────────────
 export function SwipeCard({ animal, likeStyle, nopeStyle, onPress }: SwipeCardProps) {
   return (
     <TouchableOpacity
@@ -127,7 +128,6 @@ export function SwipeCard({ animal, likeStyle, nopeStyle, onPress }: SwipeCardPr
   );
 }
 
-// ─── Styles ──────────────────────────────────
 const styles = StyleSheet.create({
   card: {
     flex: 1,
@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
     height: '60%',
   },
 
-  // ── Info
   info: {
     position: 'absolute',
     bottom: 0,
@@ -234,7 +233,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
   },
 
-  // ── Overlays
   overlayBadge: {
     position: 'absolute',
     top: Spacing[7],

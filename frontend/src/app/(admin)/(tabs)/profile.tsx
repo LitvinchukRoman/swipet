@@ -13,6 +13,9 @@ import { authService } from '@/services/auth';
 import { userService } from '@/services/user';
 import { useAuthStore } from '@/store/auth';
 
+/**
+ * System administrator profile tab.
+ */
 export default function AdminProfileScreen() {
   const { user, refreshToken, clearAuth, updateUser } = useAuthStore();
   const [uploading, setUploading] = useState(false);

@@ -2,6 +2,9 @@ import type { AnimalSize, AnimalStatus, Gender, Species } from '@/types/models';
 import { Cat, Dog, PawPrint, Rabbit } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 
+/**
+ * Formatting utilities for dates, currency, and general string manipulations.
+ */
 export function formatAge(ageMonths: number): string {
   if (ageMonths <= 0) return '< 1mo';
   const years = Math.floor(ageMonths / 12);

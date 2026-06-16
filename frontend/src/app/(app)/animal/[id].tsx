@@ -58,8 +58,11 @@ import type { Animal, Species } from '@/types/models';
 
 // Constants removed in favor of dynamic dimensions
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * Detailed animal profile screen for users.
+ * Shows photos, descriptions, characteristics, and actions like "Donate" or "Message".
+ */
 function useFadeSlide(delay = 0, fromY = 20) {
   const opacity    = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(fromY)).current;
@@ -71,7 +74,6 @@ function useFadeSlide(delay = 0, fromY = 20) {
   return { anim: { opacity, transform: [{ translateY }] }, run };
 }
 
-// ─── Badge ────────────────────────────────────────────────────────────────────
 function Badge({
   label,
   icon,
@@ -98,7 +100,6 @@ function Badge({
   );
 }
 
-// ─── Species icon map ─────────────────────────────────────────────────────────
 const SPECIES_ICON: Record<
   Species,
   ComponentType<{ size: number; color: string; strokeWidth?: number }>
@@ -109,7 +110,6 @@ const SPECIES_ICON: Record<
   OTHER:  PawPrint,
 };
 
-// ─── Stat tile ────────────────────────────────────────────────────────────────
 function StatTile({
   icon,
   label,
@@ -131,7 +131,6 @@ function StatTile({
   );
 }
 
-// ─── Heart button ─────────────────────────────────────────────────────────────
 // Контрольований: стан лайку та персист — у власника (екран ↔ feed store),
 // тож лайк зберігається на бекенді (свайп RIGHT), а не губиться у локальному useState.
 function HeartButton({
@@ -183,7 +182,6 @@ function HeartButton({
   );
 }
 
-// ─── Photo carousel ───────────────────────────────────────────────────────────
 function PhotoCarousel({ photos, width, height }: { photos: string[], width: number, height: number }) {
   const [index, setIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -313,7 +311,6 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
   );
 }
 
-// ─── Section heading ──────────────────────────────────────────────────────────
 function SectionHeading({ label }: { label: string }) {
   return (
     <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.neutral[900], marginBottom: Spacing[3] }}>
@@ -322,7 +319,6 @@ function SectionHeading({ label }: { label: string }) {
   );
 }
 
-// ─── Action button ────────────────────────────────────────────────────────────
 function ActionBtn({
   label,
   icon,
@@ -358,7 +354,6 @@ function ActionBtn({
   );
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
 function SkeletonBlock({ h, w = '100%', radius = 12 }: { h: number; w?: any; radius?: number }) {
   const anim = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
@@ -391,7 +386,6 @@ function LoadingSkeleton({ height }: { height: number }) {
   );
 }
 
-// ─── Reusable Animal Content ────────────────────────────────────────────────────
 function AnimalContentInner({
   animal,
   header,
@@ -540,7 +534,6 @@ function AnimalContentInner({
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function AnimalDetailScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isWideScreen = windowWidth >= 800 && windowHeight >= 600 && windowWidth > windowHeight;

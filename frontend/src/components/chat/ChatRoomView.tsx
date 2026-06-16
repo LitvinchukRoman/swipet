@@ -22,6 +22,9 @@ import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/the
 import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/store/auth';
 
+/**
+ * Component rendering the messaging interface (message history and input) for a specific chat room.
+ */
 interface UIMessage {
   id: number;
   senderId: number;
@@ -38,9 +41,7 @@ function makeClientMessageId(): string {
 
 const TYPING_OFF_DELAY = 1500;
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ChatRoomView
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ChatRoomView() {
   const { id, peerName, animalName } = useLocalSearchParams<{
     id: string; peerName: string; animalName: string;
@@ -307,9 +308,7 @@ export default function ChatRoomView() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  MessageBubble
-// ─────────────────────────────────────────────────────────────────────────────
 function MessageBubble({ message, mine }: { message: UIMessage; mine: boolean }) {
   const scale = useRef(new Animated.Value(0.85)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -347,9 +346,7 @@ function MessageBubble({ message, mine }: { message: UIMessage; mine: boolean })
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  TypingIndicator
-// ─────────────────────────────────────────────────────────────────────────────
 function TypingIndicator() {
   const dots = [
     useRef(new Animated.Value(0.3)).current,
@@ -382,9 +379,7 @@ function TypingIndicator() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Styles
-// ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
@@ -396,7 +391,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Header
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -447,14 +441,12 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.semibold,
   },
 
-  // ── List
   listContent: {
     paddingHorizontal: Spacing[4],
     paddingVertical: Spacing[4],
     gap: Spacing[2],
   },
 
-  // ── Bubbles
   bubbleRow: {
     maxWidth: '78%',
     gap: 3,
@@ -509,7 +501,6 @@ const styles = StyleSheet.create({
     color: Colors.neutral[400],
   },
 
-  // ── Typing
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -524,7 +515,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral[400],
   },
 
-  // ── Input bar
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',

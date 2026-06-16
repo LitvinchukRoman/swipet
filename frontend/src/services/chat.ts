@@ -1,9 +1,9 @@
 import type { ChatMessage, ChatRoom, Species } from '@/types/models';
 import { api } from './api';
 
-// Chat REST API (ТЗ 3.6) — підключено до живого бекенду (ChatController /api/v1/chats).
-// Real-time (socket) — окремо у lib/socket.ts + chat-service. Авторизація — Bearer (інтерсептор).
-// Списки приходять як Spring Page<T> → дані у `data.content`.
+// Chat REST API - connected to the backend (ChatController /api/v1/chats).
+// Real-time (socket) - handled separately in lib/socket.ts + chat-service. Auth is Bearer (interceptor).
+// Lists are returned as Spring Page<T> -> data is in `data.content`.
 
 // Backend DTO: ChatRoomResponse.
 interface ChatRoomDTO {
@@ -18,7 +18,7 @@ interface ChatRoomDTO {
   animalSpecies?: string;
   animalPrimaryPhotoUrl?: string;
   lastMessageAt?: string;
-  // ⚠️ бекенд поки НЕ повертає текст останнього повідомлення та лічильник непрочитаних
+  // ⚠️ the backend currently DOES NOT return the last message text and unread count
   lastMessage?: string;
   unreadCount?: number;
 }
@@ -66,29 +66,29 @@ function mapMessage(d: ChatMessageDTO): ChatMessage {
 }
 
 export const chatService = {
-  /** Список кімнат. GET /chats/rooms */
+  /** Room list. GET /chats/rooms */
   getRooms: (page = 1, size = 50): Promise<ChatRoom[]> =>
     api
       .get<Page<ChatRoomDTO>>('/chats/rooms', { params: { page, size } })
       .then((r) => r.data.content.map(mapRoom)),
 
-  /** Історія кімнати (новіші першими → розвертаємо). GET /chats/rooms/:id/messages */
+  /** Room history (newest first -> we reverse it). GET /chats/rooms/:id/messages */
   getMessages: (roomId: number): Promise<ChatMessage[]> =>
     api
       .get<Page<ChatMessageDTO>>(`/chats/rooms/${roomId}/messages`, { params: { page: 1, size: 20 } })
       .then((r) => r.data.content.map(mapMessage).reverse()),
 
-  /** Створити/отримати кімнату. POST /chats/rooms?shelterId&animalId (userId — з JWT) */
+  /** Create/get a room. POST /chats/rooms?shelterId&animalId (userId is from JWT) */
   createRoom: (animalId: number, shelterId: number): Promise<{ roomId: number }> =>
     api
       .post<ChatRoomDTO>('/chats/rooms', null, { params: { shelterId, animalId } })
       .then((r) => ({ roomId: r.data.id })),
 
   /**
-   * Позначити повідомлення кімнати прочитаними (персистить is_read=true на бекенді).
-   * POST /chats/rooms/:id/read. Викликається при відкритті кімнати, щоб лічильник
-   * непрочитаних обнулявся у списку чатів. Socket-подія `mark_read` — окремо, для
-   * realtime read-receipt іншому учаснику.
+   * Mark room messages as read (persists is_read=true on the backend).
+   * POST /chats/rooms/:id/read. Called when a room is opened, to reset the
+   * unread count in the chat list. The socket event `mark_read` is separate, for
+   * realtime read-receipts to the other participant.
    */
   markRead: (roomId: number): Promise<void> =>
     api.post(`/chats/rooms/${roomId}/read`).then(() => undefined),

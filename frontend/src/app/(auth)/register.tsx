@@ -21,7 +21,10 @@ import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
 
-// ─── Password strength ───────────────────────────────────────────────────────
+/**
+ * New user registration screen.
+ * Captures initial user details and creates a new account.
+ */
 const STRENGTH_CFG: Record<Strength, { label: string; color: string; width: number }> = {
   empty:  { label: '',        color: Colors.neutral[200],    width: 0    },
   weak:   { label: 'Weak',   color: Colors.strength.weak,   width: 0.2  },
@@ -78,7 +81,6 @@ function PasswordStrengthBar({ password }: { password: string }) {
   );
 }
 
-// ─── useShake ────────────────────────────────────────────────────────────────
 const useShake = () => {
   const x = useRef(new Animated.Value(0)).current;
   const shake = useCallback(() => {
@@ -93,7 +95,6 @@ const useShake = () => {
   return { shakeStyle: { transform: [{ translateX: x }] }, shake };
 };
 
-// ─── useFadeSlide ────────────────────────────────────────────────────────────
 const useFadeSlide = (delay = 0) => {
   const opacity    = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(24)).current;
@@ -106,7 +107,6 @@ const useFadeSlide = (delay = 0) => {
   return { opacity, transform: [{ translateY }] };
 };
 
-// ─── FloatingInput ───────────────────────────────────────────────────────────
 function FloatingInput({
   label,
   error,
@@ -221,7 +221,6 @@ function FloatingInput({
   );
 }
 
-// ─── RegisterScreen ──────────────────────────────────────────────────────────
 export default function RegisterScreen() {
   const { setAuth } = useAuthStore();
 
@@ -245,7 +244,6 @@ export default function RegisterScreen() {
   const clearErr = (key: string) =>
     setErrors(p => { const n = { ...p }; delete n[key]; return n; });
 
-  // ── Validate ──────────────────────────────────────────────────────────────
   const validate = () => {
     const e: Record<string, string> = {};
     if (!fullName.trim())                        e.fullName   = 'Full name is required';
@@ -259,7 +257,6 @@ export default function RegisterScreen() {
     return Object.keys(e).length === 0;
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   const handleRegister = async () => {
     if (!validate()) { shake(); return; }
     setLoading(true);
@@ -290,7 +287,6 @@ export default function RegisterScreen() {
 
   const pwMatch = confirmPwd.length > 0 ? password === confirmPwd : null;
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
       <KeyboardAvoidingView

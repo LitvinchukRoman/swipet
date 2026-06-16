@@ -12,6 +12,9 @@ import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/lib/theme';
 import { shelterService } from '@/services/shelter';
 import { useShelterStore } from '@/store/shelter';
 
+/**
+ * Screen for editing shelter details (name, address, description, logo).
+ */
 const DEFAULT_LAT = '50.4501';
 const DEFAULT_LNG = '30.5234';
 

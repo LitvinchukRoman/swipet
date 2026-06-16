@@ -10,6 +10,9 @@ import { Platform } from 'react-native';
  */
 const isWeb = Platform.OS === 'web';
 
+/**
+ * Secure key-value storage wrapper for persisting tokens and app state using Expo SecureStore.
+ */
 export const storage = {
   getItem: async (key: string): Promise<string | null> => {
     if (isWeb) {

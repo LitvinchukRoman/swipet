@@ -20,7 +20,10 @@ import { Colors, Duration, Layout, Radius, Shadow, Spacing } from '@/lib/theme';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store/auth';
 
-// ─── useShake ────────────────────────────────────────────────────────────────
+/**
+ * User login screen.
+ * Handles authentication via email/password and dispatches credentials to the auth store.
+ */
 const useShake = () => {
   const x = useRef(new Animated.Value(0)).current;
   const shake = useCallback(() => {
@@ -35,7 +38,6 @@ const useShake = () => {
   return { shakeStyle: { transform: [{ translateX: x }] }, shake };
 };
 
-// ─── useFadeSlide — entrance animation ──────────────────────────────────────
 const useFadeSlide = (delay = 0) => {
   const opacity    = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(24)).current;
@@ -48,7 +50,6 @@ const useFadeSlide = (delay = 0) => {
   return { opacity, transform: [{ translateY }] };
 };
 
-// ─── Floating label input ────────────────────────────────────────────────────
 function FloatingInput({
   label,
   error,
@@ -178,7 +179,6 @@ function FloatingInput({
   );
 }
 
-// ─── Paw logo with pulse ring ────────────────────────────────────────────────
 function PawLogo() {
   const pulse = useRef(new Animated.Value(1)).current;
   const pulseOpacity = useRef(new Animated.Value(0.6)).current;
@@ -228,7 +228,6 @@ function PawLogo() {
   );
 }
 
-// ─── LoginScreen ─────────────────────────────────────────────────────────────
 export default function LoginScreen() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -245,7 +244,6 @@ export default function LoginScreen() {
   const anim3 = useFadeSlide(300);
 
 
-  // ── Validate ─────────────────────────────────────────────────────────────
   const validate = () => {
     const e: typeof errors = {};
     if (!email.trim())                             e.email    = 'Email is required';
@@ -255,7 +253,6 @@ export default function LoginScreen() {
     return Object.keys(e).length === 0;
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   const handleLogin = async () => {
     if (!validate()) { shake(); return; }
     setLoading(true);
@@ -273,7 +270,6 @@ export default function LoginScreen() {
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.neutral[0] }}>
       <KeyboardAvoidingView

@@ -39,8 +39,11 @@ import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/lib/the
 import { spotsLeft, type Slot } from '@/services/booking';
 import { useBookingStore } from '@/store/booking';
 
-// ─── Helpers ──────────────────────────────────
 /** Ключ дати без зсуву таймзони — беремо префікс ISO LocalDateTime. */
+/**
+ * Booking screen allowing users to schedule a visit to a specific shelter.
+ * Displays available time slots and handles the reservation flow.
+ */
 const dateKey = (iso: string) => iso.slice(0, 10);
 
 /** Сьогоднішня дата у ЛОКАЛЬНІЙ зоні (YYYY-MM-DD). toISOString() дає UTC і біля
@@ -70,9 +73,7 @@ const formatDateLabel = (key: string) =>
 
 const isPast = (iso: string) => new Date(iso).getTime() < Date.now();
 
-// ─────────────────────────────────────────────
 //  Screen
-// ─────────────────────────────────────────────
 export default function BookingScreen() {
   const params = useLocalSearchParams<{
     shelterId: string;
@@ -223,7 +224,6 @@ export default function BookingScreen() {
   );
 }
 
-// ─── DateCell ──────────────────────────────────
 function DateCell({ dateKeyStr, selected, onPress }: { dateKeyStr: string; selected: boolean; onPress: () => void }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -247,7 +247,6 @@ function DateCell({ dateKeyStr, selected, onPress }: { dateKeyStr: string; selec
   );
 }
 
-// ─── SlotCard ──────────────────────────────────
 function SlotCard({
   slot,
   index,
@@ -329,7 +328,6 @@ function SlotCard({
   );
 }
 
-// ─── BookingSheet (confirm + notes + success) ──
 function BookingSheet({
   slot,
   shelterName,
@@ -472,7 +470,6 @@ function SuccessView({ slot, shelterName, onDone }: { slot: Slot; shelterName: s
   );
 }
 
-// ─── States ────────────────────────────────────
 function LoadingSlots() {
   return (
     <View style={styles.loadingWrap}>

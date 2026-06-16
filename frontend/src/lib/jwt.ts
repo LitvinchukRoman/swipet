@@ -1,5 +1,8 @@
 import type { User } from '@/store/auth';
 
+/**
+ * Utility functions for parsing and validating JSON Web Tokens.
+ */
 type Role = User['role'];
 
 const B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
