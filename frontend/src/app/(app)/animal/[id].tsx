@@ -64,11 +64,11 @@ import type { Animal, Species } from '@/types/models';
  * Shows photos, descriptions, characteristics, and actions like "Donate" or "Message".
  */
 function useFadeSlide(delay = 0, fromY = 20) {
-  const opacity    = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(fromY)).current;
   const run = () =>
     Animated.parallel([
-      Animated.timing(opacity,    { toValue: 1, duration: Duration.slow, delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(opacity, { toValue: 1, duration: Duration.slow, delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
       Animated.timing(translateY, { toValue: 0, duration: Duration.slow, delay, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
     ]).start();
   return { anim: { opacity, transform: [{ translateY }] }, run };
@@ -83,7 +83,7 @@ function Badge({
   icon?: React.ReactNode;
   tone?: 'default' | 'success' | 'orange';
 }) {
-  const bg    = tone === 'success' ? '#F0FDF4' : tone === 'orange' ? Colors.primary[50]  : Colors.neutral[100];
+  const bg = tone === 'success' ? '#F0FDF4' : tone === 'orange' ? Colors.primary[50] : Colors.neutral[100];
   const color = tone === 'success' ? Colors.success : tone === 'orange' ? Colors.primary[500] : Colors.neutral[600];
 
   return (
@@ -104,10 +104,10 @@ const SPECIES_ICON: Record<
   Species,
   ComponentType<{ size: number; color: string; strokeWidth?: number }>
 > = {
-  DOG:    Dog,
-  CAT:    Cat,
+  DOG: Dog,
+  CAT: Cat,
   RABBIT: Rabbit,
-  OTHER:  PawPrint,
+  OTHER: PawPrint,
 };
 
 function StatTile({
@@ -144,7 +144,7 @@ function HeartButton({
   size?: number;
   darkMode?: boolean;
 }) {
-  const scale  = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
   const bgAnim = useRef(new Animated.Value(liked ? 1 : 0)).current;
 
   useEffect(() => {
@@ -154,16 +154,16 @@ function HeartButton({
   const toggle = () => {
     Animated.sequence([
       Animated.spring(scale, { toValue: 1.22, useNativeDriver: true, damping: 4, stiffness: 300 }),
-      Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10, stiffness: 200 }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 10, stiffness: 200 }),
     ]).start();
     onToggle();
   };
 
   const bg = bgAnim.interpolate({
-    inputRange:  [0, 1],
+    inputRange: [0, 1],
     outputRange: darkMode
       ? ['rgba(0,0,0,0.35)', 'rgba(239,68,68,0.55)']
-      : ['#F5F5F4',          '#FEE2E2'],
+      : ['#F5F5F4', '#FEE2E2'],
   });
 
   return (
@@ -192,8 +192,8 @@ function PhotoCarousel({ photos, width, height }: { photos: string[], width: num
     if (i !== index) {
       setIndex(i);
       Animated.sequence([
-        Animated.timing(fadeAnim, { toValue: 0.7, duration: 80,  useNativeDriver: true }),
-        Animated.timing(fadeAnim, { toValue: 1,   duration: 160, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 0.7, duration: 80, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 160, useNativeDriver: true }),
       ]).start();
     }
   };
@@ -331,8 +331,8 @@ function ActionBtn({
   onPress: () => void;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const onIn  = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
-  const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
+  const onIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
+  const onOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 10 }).start();
   const isPrimary = variant === 'primary';
 
   return (
@@ -359,7 +359,7 @@ function SkeletonBlock({ h, w = '100%', radius = 12 }: { h: number; w?: any; rad
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(anim, { toValue: 1,   duration: 700, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 1, duration: 700, useNativeDriver: true }),
         Animated.timing(anim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
       ])
     ).start();
@@ -415,7 +415,7 @@ function AnimalContentInner({
               </Text>
               <Text style={{ fontSize: 18, color: Colors.neutral[300] }}>·</Text>
               {animal.gender === 'MALE'
-                ? <Mars  size={20} color={Colors.neutral[400]} strokeWidth={1.8} />
+                ? <Mars size={20} color={Colors.neutral[400]} strokeWidth={1.8} />
                 : <Venus size={20} color={Colors.neutral[400]} strokeWidth={1.8} />
               }
               <Text style={{ fontSize: 18, color: Colors.neutral[400] }}>
@@ -439,9 +439,9 @@ function AnimalContentInner({
         </View>
 
         <View className="flex-row flex-wrap gap-2 mt-4">
-          <Badge 
-            label={STATUS_LABEL[animal.status] || animal.status} 
-            icon={<Info size={14} color={animal.status === 'AVAILABLE' ? Colors.success : animal.status === 'RESERVED' ? Colors.primary[500] : Colors.neutral[500]} strokeWidth={1.8} />} 
+          <Badge
+            label={STATUS_LABEL[animal.status] || animal.status}
+            icon={<Info size={14} color={animal.status === 'AVAILABLE' ? Colors.success : animal.status === 'RESERVED' ? Colors.primary[500] : Colors.neutral[500]} strokeWidth={1.8} />}
             tone={animal.status === 'AVAILABLE' ? 'success' : animal.status === 'RESERVED' ? 'orange' : 'default'}
           />
           <Badge label={SIZE_LABEL[animal.size]} icon={<Ruler size={14} color={Colors.neutral[500]} strokeWidth={1.8} />} />
@@ -468,7 +468,7 @@ function AnimalContentInner({
         />
         <StatTile
           icon={animal.gender === 'MALE'
-            ? <Mars  size={20} color={Colors.primary[500]} strokeWidth={1.8} />
+            ? <Mars size={20} color={Colors.primary[500]} strokeWidth={1.8} />
             : <Venus size={20} color={Colors.primary[500]} strokeWidth={1.8} />
           }
           label="Gender"
@@ -537,23 +537,23 @@ function AnimalContentInner({
 export default function AnimalDetailScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isWideScreen = windowWidth >= 800 && windowHeight >= 600 && windowWidth > windowHeight;
-  
+
   const contentWidth = isWideScreen ? windowWidth * 0.45 : windowWidth;
   const photoWidth = isWideScreen ? windowWidth * 0.55 : windowWidth;
-  const photoHeight = isWideScreen 
-    ? windowHeight 
+  const photoHeight = isWideScreen
+    ? windowHeight
     : (Platform.OS === 'web' ? Math.min(windowWidth * 1.05, 500) : windowWidth * 1.05);
 
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [animal,          setAnimal]          = useState<Animal | null>(null);
+  const [animal, setAnimal] = useState<Animal | null>(null);
 
-  const [loading,         setLoading]         = useState(true);
+  const [loading, setLoading] = useState(true);
   const [donationVisible, setDonationVisible] = useState(false);
 
-  const liked        = useFeedStore((s) => s.liked);
-  const likeAnimal   = useFeedStore((s) => s.likeAnimal);
+  const liked = useFeedStore((s) => s.liked);
+  const likeAnimal = useFeedStore((s) => s.likeAnimal);
   const unlikeAnimal = useFeedStore((s) => s.unlikeAnimal);
-  const isLiked      = !!animal && liked.some((a) => a.id === animal.id);
+  const isLiked = !!animal && liked.some((a) => a.id === animal.id);
 
   const toggleLike = () => {
     if (!animal) return;
@@ -561,9 +561,9 @@ export default function AnimalDetailScreen() {
     else likeAnimal(animal);
   };
 
-  const header  = useFadeSlide(0);
-  const stats   = useFadeSlide(80);
-  const about   = useFadeSlide(160);
+  const header = useFadeSlide(0);
+  const stats = useFadeSlide(80);
+  const about = useFadeSlide(160);
   const shelter = useFadeSlide(240);
   const actions = useFadeSlide(320);
   // Share button scale
@@ -595,7 +595,7 @@ export default function AnimalDetailScreen() {
         params: {
           id: String(roomId),
           shelterName: animal.shelterName,
-          animalName:  animal.name,
+          animalName: animal.name,
         },
       });
     } catch {
@@ -604,9 +604,9 @@ export default function AnimalDetailScreen() {
   };
 
   const copyLink = async () => {
-    const url = Platform.OS === 'web' 
-      ? window.location.href 
-      : `https://swipet.com/animal/${id}`;
+    const url = Platform.OS === 'web'
+      ? window.location.href
+      : `https://swipet.naukma.com/animal/${id}`;
     await Clipboard.setStringAsync(url);
     notify('Link copied', 'The link has been copied to your clipboard.');
   };
@@ -616,9 +616,9 @@ export default function AnimalDetailScreen() {
     router.push({
       pathname: '/(app)/booking/[shelterId]',
       params: {
-        shelterId:   String(animal.shelterId),
+        shelterId: String(animal.shelterId),
         shelterName: animal.shelterName ?? '',
-        animalName:  animal.name,
+        animalName: animal.name,
       },
     });
   };

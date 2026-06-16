@@ -49,14 +49,14 @@ export const SPECIES_ICON: Record<
   Species,
   ComponentType<{ size: number; color: string; strokeWidth?: number }>
 > = {
-  DOG:    Dog,
-  CAT:    Cat,
+  DOG: Dog,
+  CAT: Cat,
   RABBIT: Rabbit,
-  OTHER:  PawPrint,
+  OTHER: PawPrint,
 };
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const HEADER_H   = 280;
+const HEADER_H = 280;
 const AVATAR_SIZE = 88;
 
 //  Action Button — reusable animated dual-variant CTA component
@@ -72,8 +72,8 @@ function ActionBtn({
   onPress: () => void;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const onIn  = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
-  const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
+  const onIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, damping: 10 }).start();
+  const onOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 10 }).start();
 
   const isPrimary = variant === 'primary';
 
@@ -89,10 +89,10 @@ function ActionBtn({
           isPrimary
             ? { backgroundColor: Colors.primary[500], ...Shadow.orange }
             : {
-                backgroundColor: Colors.neutral[0],
-                borderWidth: 1.5, borderColor: Colors.neutral[200],
-                ...Shadow.sm,
-              },
+              backgroundColor: Colors.neutral[0],
+              borderWidth: 1.5, borderColor: Colors.neutral[200],
+              ...Shadow.sm,
+            },
         ]}
       >
         {icon}
@@ -167,7 +167,7 @@ function ContactRow({
   onPress?: () => void;
   delay?: number;
 }) {
-  const anim  = useRef(new Animated.Value(0)).current;
+  const anim = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -217,7 +217,7 @@ function ContactRow({
 
 //  Animal card — 2-column grid tile
 function AnimalCard({ animal, index }: { animal: Animal; index: number }) {
-  const anim  = useRef(new Animated.Value(0)).current;
+  const anim = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -303,13 +303,13 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 
 //  Main screen
 export default function ShelterDetailScreen() {
-  const { id }  = useLocalSearchParams<{ id: string }>();
-  const insets  = useSafeAreaInsets();
-  const [shelter, setShelter]   = useState<Shelter | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
+  const [shelter, setShelter] = useState<Shelter | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Scroll-driven header animations
-  const scrollY     = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
   const headerScale = scrollY.interpolate({
     inputRange: [-80, 0],
     outputRange: [1.08, 1],
@@ -332,7 +332,7 @@ export default function ShelterDetailScreen() {
   const shareScale = useRef(new Animated.Value(1)).current;
 
   // Entrance animations
-  const heroAnim   = useRef(new Animated.Value(0)).current;
+  const heroAnim = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -341,7 +341,7 @@ export default function ShelterDetailScreen() {
       .then((s) => {
         setShelter(s);
         Animated.stagger(120, [
-          Animated.spring(heroAnim,    { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
+          Animated.spring(heroAnim, { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
           Animated.spring(contentAnim, { toValue: 1, useNativeDriver: true, tension: 240, friction: 22 }),
         ]).start();
       })
@@ -373,7 +373,7 @@ export default function ShelterDetailScreen() {
   const copyLink = async () => {
     const url = Platform.OS === 'web'
       ? window.location.href
-      : `https://swipet.com/shelter/${id}`;
+      : `https://swipet.naukma.com/shelter/${id}`;
     await Clipboard.setStringAsync(url);
     notify('Link copied', 'The link has been copied to your clipboard.');
   };
@@ -615,7 +615,7 @@ export default function ShelterDetailScreen() {
           onPress={() => router.push({
             pathname: '/(app)/booking/[shelterId]',
             params: {
-              shelterId:   String(shelter.id),
+              shelterId: String(shelter.id),
               shelterName: shelter.name,
             },
           })}
