@@ -63,27 +63,31 @@ export function GlobalDialog() {
 
             <View style={styles.buttonRow}>
               {!isAlert && (
+                <View style={styles.buttonWrapper}>
+                  <Pressable
+                    onPress={() => closeDialog(false)}
+                    style={({ pressed }) => [
+                      styles.button,
+                      styles.cancelButton,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Text style={styles.cancelText}>{data.cancelText ?? 'Cancel'}</Text>
+                  </Pressable>
+                </View>
+              )}
+              <View style={styles.buttonWrapper}>
                 <Pressable
-                  onPress={() => closeDialog(false)}
+                  onPress={() => closeDialog(true)}
                   style={({ pressed }) => [
                     styles.button,
-                    styles.cancelButton,
-                    pressed && { opacity: 0.7 },
+                    { backgroundColor: confirmBg },
+                    { opacity: pressed ? 0.8 : 1 },
                   ]}
                 >
-                  <Text style={styles.cancelText}>{data.cancelText ?? 'Cancel'}</Text>
+                  <Text style={styles.okText}>{data.confirmText ?? 'OK'}</Text>
                 </Pressable>
-              )}
-              <Pressable
-                onPress={() => closeDialog(true)}
-                style={({ pressed }) => [
-                  styles.button,
-                  { backgroundColor: confirmBg },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Text style={styles.okText}>{data.confirmText ?? 'OK'}</Text>
-              </Pressable>
+              </View>
             </View>
           </Animated.View>
         </Animated.View>
@@ -136,8 +140,11 @@ const styles = StyleSheet.create({
     gap: Spacing[3],
     width: '100%',
   },
-  button: {
+  buttonWrapper: {
     flex: 1,
+  },
+  button: {
+    width: '100%',
     height: 44,
     borderRadius: Radius.lg,
     alignItems: 'center',

@@ -50,25 +50,27 @@ const TopCard = forwardRef<TopCardRef, TopCardProps>(
   ({ animal, swipeProgress, onSwipeDone, onPress }, ref) => {
     const x = useSharedValue(0);
     const y = useSharedValue(0);
-    // Гард від подвійного свайпу однієї картки (жест + кнопка одночасно):
-    // без нього onSwipeDone міг спрацювати двічі → currentIndex += 2 → пропуск тварини.
-    const exitingRef = useRef(false);
+    // Гард від подвійного свайпу однієї картки та від переривання жестів
+    const isExiting = useSharedValue(false);
 
     const animateExit = useCallback(
       (direction: SwipeDirection) => {
-        if (exitingRef.current) return;
-        exitingRef.current = true;
+        'worklet';
+        if (isExiting.value) return;
+        isExiting.value = true;
         const toX = direction === 'RIGHT' ? EXIT_X : -EXIT_X;
         x.value = withTiming(toX, { duration: EXIT_DURATION }, (finished) => {
-          'worklet';
           if (finished) {
             swipeProgress.value = withSpring(0);
+            runOnJS(onSwipeDone)(direction);
+          } else {
+            // Фолбек: якщо анімація раптом перервана, все одно завершуємо свайп
             runOnJS(onSwipeDone)(direction);
           }
         });
         y.value = withTiming(-24, { duration: EXIT_DURATION });
       },
-      [onSwipeDone, swipeProgress, x, y],
+      [onSwipeDone, swipeProgress, x, y, isExiting],
     );
  
     useImperativeHandle(ref, () => ({
@@ -81,18 +83,20 @@ const TopCard = forwardRef<TopCardRef, TopCardProps>(
     const pan = Gesture.Pan()
       .enabled(!isWeb)
       .onUpdate((e) => {
+        if (isExiting.value) return;
         x.value = e.translationX;
         y.value = e.translationY * 0.18;
         swipeProgress.value = Math.min(Math.abs(e.translationX) / SWIPE_THRESHOLD, 1);
       })
       .onEnd((e) => {
+        if (isExiting.value) return;
         const goRight = e.translationX > SWIPE_THRESHOLD || e.velocityX > VELOCITY_THRESHOLD;
         const goLeft  = e.translationX < -SWIPE_THRESHOLD || e.velocityX < -VELOCITY_THRESHOLD;
  
         if (goRight) {
-          runOnJS(animateExit)('RIGHT');
+          animateExit('RIGHT');
         } else if (goLeft) {
-          runOnJS(animateExit)('LEFT');
+          animateExit('LEFT');
         } else {
           x.value = withSpring(0, { damping: 18, stiffness: 180, mass: 0.9 });
           y.value = withSpring(0, { damping: 18, stiffness: 180, mass: 0.9 });

@@ -355,7 +355,7 @@ export function FilterBottomSheet({
             </View>
           </GestureDetector>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing[6], gap: Spacing[6] }}>
+          <ScrollView style={{ flexShrink: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing[6], gap: Spacing[6] }}>
             {/* ── Species ── */}
             <View>
               <SectionLabel label="Animal type" />
@@ -437,21 +437,27 @@ export function FilterBottomSheet({
           </ScrollView>
 
           {/* Apply CTA */}
-          <View style={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[4] }}>
-            <Pressable
-              onPress={handleApply}
-              style={({ pressed }) => ({
-                backgroundColor: pressed ? Colors.primary[600] : Colors.primary[500],
-                borderRadius: Radius.lg, height: 56,
-                alignItems: 'center', justifyContent: 'center',
-                ...Shadow.orange,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              })}
-            >
-              <Text style={{ color: Colors.neutral[0], fontSize: 16, fontWeight: '700' }}>
-                Show results{activeCount > 0 ? ` · ${activeCount} active` : ''}
-              </Text>
-            </Pressable>
+          <View style={{ paddingHorizontal: Spacing[6], paddingTop: Spacing[4], width: '100%' }}>
+            <View style={{ width: '100%', borderRadius: Radius.lg, ...Shadow.orange }}>
+              <Pressable
+                onPress={handleApply}
+                style={({ pressed }) => [
+                  {
+                    backgroundColor: Colors.primary[500],
+                    borderRadius: Radius.lg,
+                    height: 56,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                  },
+                  { opacity: pressed ? 0.8 : 1 }
+                ]}
+              >
+                <Text style={{ color: Colors.neutral[0], fontSize: 16, fontWeight: '700' }}>
+                  Show results{activeCount > 0 ? ` · ${activeCount} active` : ''}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </Animated.View>
       </GestureHandlerRootView>
