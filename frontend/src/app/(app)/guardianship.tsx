@@ -14,8 +14,8 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
-  Easing,
+  Animated as RNAnimated,
+  Easing as RNEasing,
   FlatList,
   Linking,
   Pressable,
@@ -23,6 +23,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated, { FadeInDown, withRepeat, withSequence, withTiming, useSharedValue, useAnimatedStyle, Easing } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NoPhotoPlaceholder } from '@/components/ui/NoPhotoPlaceholder';
@@ -32,40 +33,16 @@ import { Colors, Duration, Radius, Shadow, Spacing } from '@/lib/theme';
 import { donationService } from '@/services/donation';
 import type { VirtualGuardianship } from '@/types/models';
 
-// Returns opacity and translateY separately so callers can freely combine
-// them with other transforms (e.g. scale) without overwriting each other.
-/**
- * Screen displaying the user's active virtual guardianships.
- * Shows monthly donation statuses and related animals.
- */
-function useFadeSlide(delay = 0) {
-  const opacity    = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1, duration: Duration.slow, delay,
-        useNativeDriver: true, easing: Easing.out(Easing.cubic),
-      }),
-      Animated.timing(translateY, {
-        toValue: 0, duration: Duration.slow, delay,
-        useNativeDriver: true, easing: Easing.out(Easing.cubic),
-      }),
-    ]).start();
-  }, []);
-
-  return { opacity, translateY };
-}
+// ── Removed useFadeSlide because it caused the 0 opacity bug on mobile ──
 
 function SkeletonCard() {
-  const pulse = useRef(new Animated.Value(0.5)).current;
+  const pulse = useRef(new RNAnimated.Value(0.5)).current;
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1,   duration: 700, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+    RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(pulse, { toValue: 1,   duration: 700, useNativeDriver: true }),
+        RNAnimated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true }),
       ])
     ).start();
   }, []);
@@ -83,11 +60,11 @@ function SkeletonCard() {
         ...Shadow.sm,
       }}
     >
-      <Animated.View style={{ width: 68, height: 68, borderRadius: 16, backgroundColor: Colors.neutral[200], opacity: pulse }} />
+      <RNAnimated.View style={{ width: 68, height: 68, borderRadius: 16, backgroundColor: Colors.neutral[200], opacity: pulse }} />
       <View style={{ flex: 1, gap: 8 }}>
-        <Animated.View style={{ height: 16, width: '60%', borderRadius: 6, backgroundColor: Colors.neutral[200], opacity: pulse }} />
-        <Animated.View style={{ height: 12, width: '40%', borderRadius: 6, backgroundColor: Colors.neutral[200], opacity: pulse }} />
-        <Animated.View style={{ height: 12, width: '50%', borderRadius: 6, backgroundColor: Colors.neutral[200], opacity: pulse }} />
+        <RNAnimated.View style={{ height: 16, width: '60%', borderRadius: 6, backgroundColor: Colors.neutral[200], opacity: pulse }} />
+        <RNAnimated.View style={{ height: 12, width: '40%', borderRadius: 6, backgroundColor: Colors.neutral[200], opacity: pulse }} />
+        <RNAnimated.View style={{ height: 12, width: '50%', borderRadius: 6, backgroundColor: Colors.neutral[200], opacity: pulse }} />
       </View>
     </View>
   );
@@ -97,13 +74,10 @@ function StatsBanner({ guardianships }: { guardianships: VirtualGuardianship[] }
   const active  = guardianships.filter(g => g.isActive).length;
   const totalMo = guardianships.filter(g => g.isActive).reduce((s, g) => s + g.monthlyAmount, 0);
 
-  const { opacity, translateY } = useFadeSlide(0);
-
   return (
     <Animated.View
+      entering={FadeInDown.duration(Duration.slow).easing(Easing.out(Easing.cubic))}
       style={{
-        opacity,
-        transform: [{ translateY }],
         marginHorizontal: Spacing[5],
         marginBottom: Spacing[5],
       }}
@@ -165,12 +139,15 @@ function GuardianshipCard({
   index: number;
   onCancel: (id: number) => void;
 }) {
-  const { opacity, translateY } = useFadeSlide(index * 60);
-  const scale = useRef(new Animated.Value(1)).current;
   const [paying, setPaying] = useState(false);
 
-  const onIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, damping: 12 }).start();
-  const onOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, damping: 10 }).start();
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const onIn  = () => scale.value = withTiming(0.97, { duration: 150 });
+  const onOut = () => scale.value = withTiming(1, { duration: 200 });
 
   const nextBilling = new Date(item.nextBillingAt);
   const daysUntil   = Math.ceil((nextBilling.getTime() - Date.now()) / 86_400_000);
@@ -204,12 +181,9 @@ function GuardianshipCard({
   };
 
   return (
-    // ✅ opacity and translateY from useFadeSlide, scale from press — all in one transform array
     <Animated.View
-      style={{
-        opacity,
-        transform: [{ translateY }, { scale }],
-      }}
+      entering={FadeInDown.delay(index * 60).duration(Duration.slow).easing(Easing.out(Easing.cubic))}
+      style={animStyle}
     >
       <Pressable
         onPress={() => router.push(`/(app)/animal/${item.animalId}`)}
@@ -389,29 +363,27 @@ function GuardianshipCard({
 }
 
 function EmptyGuardianships() {
-  const { opacity, translateY } = useFadeSlide(100);
-  const floatAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, { toValue: -8, duration: 1600, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
-        Animated.timing(floatAnim, { toValue:  0, duration: 1600, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
+    RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(floatAnim, { toValue: -8, duration: 1600, useNativeDriver: true, easing: RNEasing.inOut(RNEasing.sin) }),
+        RNAnimated.timing(floatAnim, { toValue:  0, duration: 1600, useNativeDriver: true, easing: RNEasing.inOut(RNEasing.sin) }),
       ])
     ).start();
   }, []);
 
   return (
     <Animated.View
+      entering={FadeInDown.delay(100).duration(Duration.slow).easing(Easing.out(Easing.cubic))}
       style={{
-        opacity,
-        transform: [{ translateY }],
         alignItems: 'center',
         paddingTop: Spacing[12],
         paddingHorizontal: Spacing[8],
       }}
     >
-      <Animated.View style={{ transform: [{ translateY: floatAnim }], marginBottom: Spacing[5] }}>
+      <RNAnimated.View style={{ transform: [{ translateY: floatAnim }], marginBottom: Spacing[5] }}>
         <View
           style={{
             width: 96, height: 96, borderRadius: 28,
@@ -422,7 +394,7 @@ function EmptyGuardianships() {
         >
           <PawPrint size={44} color={Colors.primary[400]} strokeWidth={1.5} />
         </View>
-      </Animated.View>
+      </RNAnimated.View>
 
       <Text style={{ fontSize: 22, fontWeight: '800', color: Colors.neutral[900], textAlign: 'center', marginBottom: Spacing[2] }}>
         No guardianships yet
